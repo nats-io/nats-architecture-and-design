@@ -187,6 +187,10 @@ func renderIndexes(adrs []*ADR) error {
 			}
 		}
 
+		sort.Slice(matched, func(i, j int) bool {
+			return matched[i].Meta.Index < matched[j].Meta.Index
+		})
+
 		renderList = append(renderList, tagAdrs{Tag: tag, Adrs: matched})
 	}
 
