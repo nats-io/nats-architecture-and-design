@@ -1,23 +1,34 @@
 ---
 name: Client Enhancement
 about: Request a new feature to be added to NATS clients
-labels: 🎉 enhancement
+labels: enhancement, client
+assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, spacejam
 ---
 
 ## Overview
 
-The server now supports extended purges that is wildcard subject aware and a few other enhancements
+Short one-liner description of the feature.
 
-The behavior is documented in **ADR-10**
+The behavior is documented in ADR-X.
 
-## Clients
+## Clients and Tools
 
-- [x] schemas @ripienaar https://github.com/nats-io/jsm.go/pull/257
-- [x] cli @ripienaar https://github.com/nats-io/natscli/pull/179
-- [ ] nats.go @wallyqs
-- [ ] java.go @scottf
-- [ ] node @aricart
-- [ ] .Net @ColinSullivan1
-- [ ] docs.nats.io updated
+ - [ ] Schemas @ripienaar
+ - [ ] CLI @ripienaar
+ - [ ] Terraform @ripienaar
+ - [ ] Github Actions @ripienaar
+ - [ ] Go @wallyqs
+ - [ ] Java @scottf
+ - [ ] JavaScript @aricart
+ - [ ] .Net @ColinSullivan1
+ - [ ] C @kozlovic
+ - [ ] Python @wallyqs
+ - [ ] Rust @spacejam
+   
+## Other Tasks
 
-Client authors please update with your progress.
+ - [ ] docs.nats.io updated
+ - [ ] Update ADR to `Implemented`
+ - [ ] Update client features spreadsheet
+
+Client authors please update with your progress. If you open issues in your own repositories as a result of this request, please link them to this one by pasting the issue URL in a comment or main issue description.
