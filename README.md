@@ -15,7 +15,7 @@ Issues can be used to request design records or to propose or discuss client fea
 
 ## Template
 
-The [template](template.md) is a guideline, a suggestion for what to include in an ADR. Feel free to add or remove sections as you feel appropriate. Look at the other ADRs for examples.
+The [template](adr-template.md) is a guideline, a suggestion for what to include in an ADR. Feel free to add or remove sections as you feel appropriate. Look at the other ADRs for examples.
 
 ## Repositories
 
