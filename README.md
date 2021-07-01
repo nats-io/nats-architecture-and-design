@@ -10,23 +10,23 @@ This repo is used to capture architectural and design decisions as a reference o
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-1](adr/ADR-1.md)|jetstream, client, server|JetStream JSON API Design|
-|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-2](adr/ADR-2.md)|jetstream, server, client|NATS Typed Messages|
 |[ADR-4](adr/ADR-4.md)|server, client|NATS Message Headers|
 |[ADR-5](adr/ADR-5.md)|server, client|Lame Duck Notification|
 |[ADR-6](adr/ADR-6.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-8.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 
 ## Jetstream
 
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-1](adr/ADR-1.md)|jetstream, client, server|JetStream JSON API Design|
-|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-2](adr/ADR-2.md)|jetstream, server, client|NATS Typed Messages|
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-8.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 
 ## Observability
 
@@ -39,7 +39,6 @@ This repo is used to capture architectural and design decisions as a reference o
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-1](adr/ADR-1.md)|jetstream, client, server|JetStream JSON API Design|
-|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-2](adr/ADR-2.md)|jetstream, server, client|NATS Typed Messages|
 |[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
 |[ADR-4](adr/ADR-4.md)|server, client|NATS Message Headers|
@@ -47,6 +46,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-6](adr/ADR-6.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-8.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 
 ## When to write an ADR
 
