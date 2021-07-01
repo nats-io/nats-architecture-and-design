@@ -143,6 +143,19 @@ func isValidStatus(status string) bool {
 	return false
 }
 
+func verifyUniqueIndexes(adrs []*ADR) error {
+	indexes := map[int]string{}
+	for _, a := range adrs {
+		path, ok := indexes[a.Meta.Index]
+		if ok {
+			return fmt.Errorf("duplicate index %d, conflict between %s and %s", a.Meta.Index, a.Meta.Path, path)
+		}
+		indexes[a.Meta.Index] = a.Meta.Path
+	}
+
+	return nil
+}
+
 func renderIndexes(adrs []*ADR) error {
 	tags := map[string]int{}
 	for _, adr := range adrs {
@@ -216,6 +229,11 @@ func main() {
 		}
 
 		adrs = append(adrs, adr)
+	}
+
+	err = verifyUniqueIndexes(adrs)
+	if err != nil {
+		panic(err)
 	}
 
 	err = renderIndexes(adrs)

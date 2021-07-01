@@ -1,0 +1,25 @@
+name: Testing
+on: [pull_request]
+
+jobs:
+  lint_and_test:
+    runs-on: ubuntu-latest
+    env:
+      GO111MODULE: "on"
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v1
+        with:
+          ref: ${{ github.ref }}
+          path: src/github.com/nats-io/nats-architecture-and-design
+
+      - name: Setup Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.16
+
+      - name: Valid metadata and readme updated
+        shell: bash --noprofile --norc -x -eo pipefail {0}
+        run: |
+          go run main.go > /tmp/readme.new
+          diff /tmp/readme.new README.md
