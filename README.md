@@ -1,10 +1,10 @@
 ![NATS](large-logo.png)
 
-# NATS Architecture And Design
+# NATS Client Functionality Record
 
-This repo is used to capture architectural and design decisions as a reference of the server implementation and expected client behavior.
+This repo is used as a reference of suggested client behavior based on available server functionality. 
 
-For now this will consist of Architecture Decision Records (ADRs), but main include proposals. Issues will be used to track work needed for ADRs to be completed or for design discussions.
+## Architecture Decision Records
 
 # Architecture Decision Records
 ## ADRs for **client**
@@ -48,15 +48,13 @@ For now this will consist of Architecture Decision Records (ADRs), but main incl
 |[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
 
-## When to write an ADR
+## Issues
 
-Not every little decision needs an ADR, and we are not overly prescriptive about the format.
-The kind of change that should have an ADR are ones likely to impact many client libraries, server configuration, security, deployment
-and those where we specifically wish to solicit wider community input.
+Issues can be used to request design records or to propose or discuss client features. Eventually issues should become ADRs
 
 ## Template
 
-Please see the [template](adr-template.md). The template is a guideline, a suggestion. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples.
+The [template](adr-template.md) is a guideline, a suggestion for what to include in an ADR. Feel free to add or remove sections as you feel appropriate. Look at the other ADRs for examples.
 
 ## Repositories
 
@@ -73,7 +71,3 @@ Java Script [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://gi
 C Client [nats.c](https://github.com/nats-io/nats.c)
 
 Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
-
-### Client Tracking
-
-There is a [Client Feature Parity](https://docs.google.com/spreadsheets/d/1VcYcKqwOp8h8zZwNSRXMS5wrdA1jZz6AumMTHZbXrmY/edit#gid=1032495336) spreadsheet that tracks the clients somewhat, but it is not guaranteed to be complete or up to date.
