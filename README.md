@@ -1,10 +1,8 @@
 ![NATS](large-logo.png)
 
-# NATS Client Functionality Record
+# NATS Architecture And Design
 
-This repo is used as a reference of suggested client behavior based on available server functionality. 
-
-## Architecture Decision Records
+This repo is used to capture architectural and design decisions as a reference of the server implementation and expected client behavior.
 
 # Architecture Decision Records
 ## ADRs for **client**
@@ -17,7 +15,6 @@ This repo is used as a reference of suggested client behavior based on available
 |[ADR-5](adr/0005-lame-duck-notification.md)|server, client|Lame Duck Notification|
 |[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
-|[ADR-8](adr/0008-jetstream-kv.md)|jetstream, client, kv|JetStream based Key-Value Stores|
 ## ADRs for **jetstream**
 
 |Index|Tags|Description|
@@ -25,12 +22,6 @@ This repo is used as a reference of suggested client behavior based on available
 |[ADR-1](adr/0001-jetstream-json-api-design.md)|jetstream, client, server|JetStream JSON API Design|
 |[ADR-2](adr/0002-nats-typed-messages.md)|jetstream, server, client|NATS Typed Messages|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
-|[ADR-8](adr/0008-jetstream-kv.md)|jetstream, client, kv|JetStream based Key-Value Stores|
-## ADRs for **kv**
-
-|Index|Tags|Description|
-|-----|----|-----------|
-|[ADR-8](adr/0008-jetstream-kv.md)|jetstream, client, kv|JetStream based Key-Value Stores|
 ## ADRs for **observability**
 
 |Index|Tags|Description|
@@ -48,26 +39,28 @@ This repo is used as a reference of suggested client behavior based on available
 |[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
 
-## Issues
+## When to write an ADR
 
-Issues can be used to request design records or to propose or discuss client features. Eventually issues should become ADRs
+Not every little decision needs an ADR, and we are not overly prescriptive about the format apart from the initial header format.
+The kind of change that should have an ADR are ones likely to impact many client libraries, server configuration, security, deployment
+and those where we specifically wish to solicit wider community input.
 
 ## Template
 
-The [template](adr-template.md) is a guideline, a suggestion for what to include in an ADR. Feel free to add or remove sections as you feel appropriate. Look at the other ADRs for examples.
+Please see the [template](adr-template.md). The template is a guideline, a suggestion. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples.
 
-## Repositories
+After editing / adding a ADR please run `go run main.go > README.md` to update the embedded index. This will also validate the header part of your ADR.
 
-Server [nats-server](https://github.com/nats-io/nats-server)
+## Related Repositories
 
-Reference implementation [nats.go](https://github.com/nats-io/nats.go)
+ * Server [nats-server](https://github.com/nats-io/nats-server)
+ * Reference implementation [nats.go](https://github.com/nats-io/nats.go)
+ * Java Client [nats.java](https://github.com/nats-io/nats..java)
+ * .NET / C# client [nats.net](https://github.com/nats-io/nats.net)
+ * JavaScript [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
+ * C Client [nats.c](https://github.com/nats-io/nats.c)
+ * Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
 
-Java Client [nats.java](https://github.com/nats-io/nats..java)
+### Client Tracking
 
-.NET / C# client [nats.net](https://github.com/nats-io/nats.net)
-
-Java Script [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
-
-C Client [nats.c](https://github.com/nats-io/nats.c)
-
-Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
+There is a [Client Feature Parity](https://docs.google.com/spreadsheets/d/1VcYcKqwOp8h8zZwNSRXMS5wrdA1jZz6AumMTHZbXrmY/edit#gid=1032495336) spreadsheet that tracks the clients somewhat, but it is not guaranteed to be complete or up to date.
