@@ -15,6 +15,8 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-5](adr/0005-lame-duck-notification.md)|server, client|Lame Duck Notification|
 |[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
+|[ADR-9](adr/0009-js-idle-heartbeat.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/0010-js-purge.md)|server, client, jetstream|JetStream Extended Purge|
 ## ADRs for **jetstream**
 
 |Index|Tags|Description|
@@ -22,6 +24,8 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-1](adr/0001-jetstream-json-api-design.md)|jetstream, client, server|JetStream JSON API Design|
 |[ADR-2](adr/0002-nats-typed-messages.md)|jetstream, server, client|NATS Typed Messages|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
+|[ADR-9](adr/0009-js-idle-heartbeat.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/0010-js-purge.md)|server, client, jetstream|JetStream Extended Purge|
 ## ADRs for **observability**
 
 |Index|Tags|Description|
@@ -38,6 +42,8 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-5](adr/0005-lame-duck-notification.md)|server, client|Lame Duck Notification|
 |[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
+|[ADR-9](adr/0009-js-idle-heartbeat.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/0010-js-purge.md)|server, client, jetstream|JetStream Extended Purge|
 
 ## When to write an ADR
 
