@@ -5,7 +5,7 @@
 This repo is used to capture architectural and design decisions as a reference of the server implementation and expected client behavior.
 
 # Architecture Decision Records
-## ADRs for **client**
+## Client
 
 |Index|Tags|Description|
 |-----|----|-----------|
@@ -17,7 +17,8 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/0009-js-idle-heartbeat.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/0010-js-purge.md)|server, client, jetstream|JetStream Extended Purge|
-## ADRs for **jetstream**
+
+## Jetstream
 
 |Index|Tags|Description|
 |-----|----|-----------|
@@ -26,12 +27,14 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/0009-js-idle-heartbeat.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/0010-js-purge.md)|server, client, jetstream|JetStream Extended Purge|
-## ADRs for **observability**
+
+## Observability
 
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-3](adr/0003-distributed-tracing.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
-## ADRs for **server**
+
+## Server
 
 |Index|Tags|Description|
 |-----|----|-----------|
@@ -51,9 +54,12 @@ Not every little decision needs an ADR, and we are not overly prescriptive about
 The kind of change that should have an ADR are ones likely to impact many client libraries, server configuration, security, deployment
 and those where we specifically wish to solicit wider community input.
 
+For a background of the rationale driving ADRs see [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) by
+Michael Nygard
+
 ## Template
 
-Please see the [template](adr-template.md). The template is a guideline, a suggestion. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples.
+Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However the initial Table of metadata and header format is required to match.
 
 After editing / adding a ADR please run `go run main.go > README.md` to update the embedded index. This will also validate the header part of your ADR.
 

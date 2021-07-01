@@ -193,7 +193,11 @@ func renderIndexes(adrs []*ADR) error {
 	funcMap := template.FuncMap{
 		"join": func(i []string) string {
 			return strings.Join(i, ", ")
-		}}
+		},
+		"title": func(i string) string {
+			return strings.Title(i)
+		},
+	}
 
 	readme, err := template.New(".readme.templ").Funcs(funcMap).ParseFiles(".readme.templ")
 	if err != nil {

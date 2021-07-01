@@ -6,24 +6,26 @@ This repo is used to capture architectural and design decisions as a reference o
 
 # Architecture Decision Records
 {{- range . }}
-## ADRs for **{{ .Tag }}**
+## {{ .Tag | title }}
 
 |Index|Tags|Description|
 |-----|----|-----------|
 {{- range .Adrs }}
 |[ADR-{{.Meta.Index}}]({{.Meta.Path}})|{{.Meta.Tags|join}}|{{.Heading}}|
 {{- end }}
-{{- end }}
-
+{{ end }}
 ## When to write an ADR
 
 Not every little decision needs an ADR, and we are not overly prescriptive about the format apart from the initial header format.
 The kind of change that should have an ADR are ones likely to impact many client libraries, server configuration, security, deployment
 and those where we specifically wish to solicit wider community input.
 
+For a background of the rationale driving ADRs see [Documenting Architecture Decisions](https://cognitect.com/blog/2011/11/15/documenting-architecture-decisions) by
+Michael Nygard
+
 ## Template
 
-Please see the [template](adr-template.md). The template is a guideline, a suggestion. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples.
+Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However the initial Table of metadata and header format is required to match.
 
 After editing / adding a ADR please run `go run main.go > README.md` to update the embedded index. This will also validate the header part of your ADR.
 
