@@ -7,11 +7,46 @@ This repo is used to capture architectural and design decisions as a reference o
 For now this will consist of Architecture Decision Records (ADRs), but main include proposals. Issues will be used to track work needed for ADRs to be completed or for design discussions.
 
 # Architecture Decision Records
+## ADRs for **client**
 
-The [server](server) directory holds ADRs that document major decisions made in the design of the NATS Server. These decisions are used to design server operation and client behavior.
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-1](adr/0001-jetstream-json-api-design.md)|jetstream, client, server|JetStream JSON API Design|
+|[ADR-2](adr/0002-nats-typed-messages.md)|jetstream, server, client|NATS Typed Messages|
+|[ADR-4](adr/0004-nats-headers.md)|server, client|NATS Message Headers|
+|[ADR-5](adr/0005-lame-duck-notification.md)|server, client|Lame Duck Notification|
+|[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
+|[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
+|[ADR-8](adr/0008-jetstream-kv.md)|jetstream, client, kv|JetStream based Key-Value Stores|
+## ADRs for **jetstream**
 
-The [client](client) directory holds ADRS that document suggested client API and behavior. Not all API and behavior is appropriate or implementable for all programming languages or paradigms, 
-but it is a best effort to define behavior in order to provide consistency between clients.
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-1](adr/0001-jetstream-json-api-design.md)|jetstream, client, server|JetStream JSON API Design|
+|[ADR-2](adr/0002-nats-typed-messages.md)|jetstream, server, client|NATS Typed Messages|
+|[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
+|[ADR-8](adr/0008-jetstream-kv.md)|jetstream, client, kv|JetStream based Key-Value Stores|
+## ADRs for **kv**
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-8](adr/0008-jetstream-kv.md)|jetstream, client, kv|JetStream based Key-Value Stores|
+## ADRs for **observability**
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-3](adr/0003-distributed-tracing.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
+## ADRs for **server**
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-1](adr/0001-jetstream-json-api-design.md)|jetstream, client, server|JetStream JSON API Design|
+|[ADR-2](adr/0002-nats-typed-messages.md)|jetstream, server, client|NATS Typed Messages|
+|[ADR-3](adr/0003-distributed-tracing.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
+|[ADR-4](adr/0004-nats-headers.md)|server, client|NATS Message Headers|
+|[ADR-5](adr/0005-lame-duck-notification.md)|server, client|Lame Duck Notification|
+|[ADR-6](adr/0006-protocol-naming-conventions.md)|server, client|Protocol Naming Conventions|
+|[ADR-7](adr/0007-error-codes.md)|server, client, jetstream|NATS Server Error Codes|
 
 ## When to write an ADR
 
@@ -33,7 +68,7 @@ Java Client [nats.java](https://github.com/nats-io/nats..java)
 
 .NET / C# client [nats.net](https://github.com/nats-io/nats.net)
 
-Java Script [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno) 
+Java Script [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
 
 C Client [nats.c](https://github.com/nats-io/nats.c)
 
@@ -41,4 +76,4 @@ Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
 
 ### Client Tracking
 
-There is a [Client Feature Parity](https://docs.google.com/spreadsheets/d/1VcYcKqwOp8h8zZwNSRXMS5wrdA1jZz6AumMTHZbXrmY/edit#gid=1032495336) spreadsheet that tracks the clients somewhat, but it is not guaranteed to be complete or up to date. 
+There is a [Client Feature Parity](https://docs.google.com/spreadsheets/d/1VcYcKqwOp8h8zZwNSRXMS5wrdA1jZz6AumMTHZbXrmY/edit#gid=1032495336) spreadsheet that tracks the clients somewhat, but it is not guaranteed to be complete or up to date.

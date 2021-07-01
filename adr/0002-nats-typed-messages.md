@@ -1,11 +1,12 @@
-# 2. NATS Typed Messages
+# NATS Typed Messages
 
-Date: 2020-05-06
-Author: @ripienaar
-
-## Status
-
-Accepted
+|Metadata|Value|
+|--------|-----|
+|Index   |2|
+|Date    |2020-05-06|
+|Author  |@ripienaar|
+|Status  |Implemented|
+|Tags    |jetstream, server, client|
 
 ## Context
 

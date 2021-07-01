@@ -1,12 +1,12 @@
 # Title
 
-Date: [YYYY-MM-DD when the decision was last updated]
-
-Author: @<github-user>
-
-## Status
-
-[What is the status, such as proposed, accepted, rejected, deprecated, superseded, etc.?]
+|Metadata|Value|
+|--------|-----|
+|Index   |NN|
+|Date    |YYYY-MM-DD|
+|Author  |@<github user>, @<github user>|
+|Status  |`Proposed`, `Approved` `Partially Implemented`, `Implemented` or`Rejected`|
+|Tags    |jetstream, client, server|
 
 ## Context and Problem Statement
 

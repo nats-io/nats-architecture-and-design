@@ -1,10 +1,12 @@
-# 5. lame-duck-notification
+# Lame Duck Notification
 
-Date: 2020-07-20
-
-## Status
-
-Accepted
+|Metadata|Value|
+|--------|-----|
+|Index   |5|
+|Date    |2020-07-20|
+|Author  |@aricart|
+|Status  |Partially Implemented|
+|Tags    |server, client|
 
 ## Context
 

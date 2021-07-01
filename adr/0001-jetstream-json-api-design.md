@@ -1,11 +1,12 @@
-# 1. JetStream JSON API Design
+# JetStream JSON API Design
 
-Date: 2020-04-30
-Author: @ripienaar
-
-## Status
-
-Partially Implemented
+|Metadata|Value|
+|--------|-----|
+|Index   |1|
+|Date    |2020-04-30|
+|Author  |@ripienaar|
+|Status  |Partially Implemented|
+|Tags    |jetstream, client, server|
 
 ## Context
 

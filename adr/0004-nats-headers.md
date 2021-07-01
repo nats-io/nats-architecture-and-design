@@ -1,10 +1,12 @@
-# 4. nats-headers
+# NATS Message Headers
 
-Date: 2021-05-12
-
-## Status
-
-Accepted
+|Metadata|Value|
+|--------|-----|
+|Index   |4|
+|Date    |2021-05-12|
+|Author  |@aricart, @scottf|
+|Status  |Partially Implemented|
+|Tags    |server, client|
 
 ## Context
 

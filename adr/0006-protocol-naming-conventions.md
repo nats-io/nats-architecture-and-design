@@ -1,10 +1,12 @@
-# 6. protocol-naming-conventions
+# Protocol Naming Conventions
 
-Date: 2021-06-28
-
-## Status
-
-Accepted
+|Metadata|Value|
+|--------|-----|
+|Index   |6|
+|Date    |2021-06-28|
+|Author  |@scottf|
+|Status  |Approved|
+|Tags    |server, client|
 
 ## Context
 

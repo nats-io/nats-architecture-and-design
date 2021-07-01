@@ -1,7 +1,12 @@
-# 7. NATS Server Error Codes
+# NATS Server Error Codes
 
-Date: 2021-05-12
-Author: @ripienaar
+|Metadata|Value|
+|--------|-----|
+|Index   |7|
+|Date    |2021-05-12|
+|Author  |@ripienaar|
+|Status  |Partially Implemented|
+|Tags    |server, client, jetstream|
 
 ## Status
 
