@@ -2,7 +2,6 @@
 
 |Metadata|Value|
 |--------|-----|
-|Index   |6|
 |Date    |2021-06-28|
 |Author  |@scottf|
 |Status  |Approved|

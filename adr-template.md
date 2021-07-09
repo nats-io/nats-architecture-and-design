@@ -2,7 +2,6 @@
 
 |Metadata|Value|
 |--------|-----|
-|Index   |NN|
 |Date    |YYYY-MM-DD|
 |Author  |@<github user>, @<github user>|
 |Status  |`Proposed`, `Approved` `Partially Implemented`, `Implemented` or`Rejected`|

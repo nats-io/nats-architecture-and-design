@@ -2,7 +2,6 @@
 
 |Metadata|Value|
 |--------|-----|
-|Index   |9|
 |Date    |2021-05-12|
 |Author  |@aricart|
 |Status  |Approved|

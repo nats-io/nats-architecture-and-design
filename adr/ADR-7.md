@@ -2,7 +2,6 @@
 
 |Metadata|Value|
 |--------|-----|
-|Index   |7|
 |Date    |2021-05-12|
 |Author  |@ripienaar|
 |Status  |Partially Implemented|
