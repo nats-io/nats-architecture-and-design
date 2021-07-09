@@ -2,7 +2,6 @@
 
 |Metadata|Value|
 |--------|-----|
-|Index   |4|
 |Date    |2021-05-12|
 |Author  |@aricart, @scottf|
 |Status  |Partially Implemented|

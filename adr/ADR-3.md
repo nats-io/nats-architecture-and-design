@@ -3,7 +3,6 @@
 
 |Metadata|Value|
 |--------|-----|
-|Index   |3|
 |Date    |2020-05-21|
 |Author  |@ripienaar|
 |Status  |Approved|

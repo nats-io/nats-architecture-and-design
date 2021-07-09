@@ -40,8 +40,8 @@ func parseCommaList(l string) []string {
 	return res
 }
 
-func parseADR(path string) (*ADR, error) {
-	body, err := os.ReadFile(path)
+func parseADR(adrPath string) (*ADR, error) {
+	body, err := os.ReadFile(adrPath)
 	if err != nil {
 		panic(err)
 	}
@@ -51,14 +51,26 @@ func parseADR(path string) (*ADR, error) {
 
 	in1stHdr := false
 	in1stTbl := false
-	metaSet := false
 	curHdrKey := ""
 
 	adr := ADR{
 		Meta: ADRMeta{
-			Path: path,
+			Path: adrPath,
 		},
 	}
+
+	base := strings.TrimSuffix(path.Base(adrPath), path.Ext(adrPath))
+	parts := strings.Split(base, "-")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid filename %s in %s", base, adrPath)
+	}
+
+	idx, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return nil, fmt.Errorf("invalid file sequence %s in %s", parts[1], adrPath)
+	}
+
+	adr.Meta.Index = idx
 
 	for _, t := range tokens {
 		switch tok := t.(type) {
@@ -66,12 +78,6 @@ func parseADR(path string) (*ADR, error) {
 			switch {
 			case in1stHdr:
 				adr.Heading = tok.Content
-
-			case curHdrKey == "Index":
-				adr.Meta.Index, err = strconv.Atoi(tok.Content)
-				if err != nil {
-					return nil, fmt.Errorf("invalid index number %q: %s", tok.Content, err)
-				}
 
 			case curHdrKey == "Date":
 				t, err := time.Parse("2006-01-02", tok.Content)
@@ -94,9 +100,7 @@ func parseADR(path string) (*ADR, error) {
 			}
 
 		case *markdown.TbodyOpen:
-			if !metaSet {
-				in1stTbl = true
-			}
+			in1stTbl = true
 
 		case *markdown.HeadingOpen:
 			if adr.Heading == "" {
@@ -105,6 +109,9 @@ func parseADR(path string) (*ADR, error) {
 
 		case *markdown.TbodyClose:
 			in1stTbl = false
+
+			// stop parsing after first table
+			break
 		case *markdown.HeadingClose:
 			in1stHdr = false
 		case *markdown.TableClose:
