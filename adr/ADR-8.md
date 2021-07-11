@@ -1,4 +1,4 @@
-# 8. JetStream based Key-Value Stores
+# JetStream based Key-Value Stores
 
 |Metadata|Value|
 |--------|-----|
