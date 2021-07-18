@@ -86,12 +86,10 @@ All numerical fields are unsigned 64 bit values.
 Example:
 
 ```
-$JS.ACK.test-stream.test-consumer.1.2.3.1605139610113260000
+$JS.ACK.test-stream.test-consumer.4.5.6.1605139610113260007
 ```
 
-> position is 0 based, delimiter is the period (.)
-
-|position|description|
+|Index|Description|
 |---|---|
 |4|number of delivered messages|
 |5|stream sequence|
