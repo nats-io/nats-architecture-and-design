@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2021-07-15|
 |Author  |@scottf|
-|Status  |Current|
+|Status  |Unapproved|
 |Tags    |server, client, jetstream|
 
 ## Context
