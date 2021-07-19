@@ -28,7 +28,7 @@ type ADR struct {
 }
 
 var (
-	validStatus = []string{"Approved", "Partially Implemented", "Implemented", "Rejected"}
+	validStatus = []string{"Approved", "Partially Implemented", "Implemented", "Rejected", "Unapproved"}
 )
 
 func parseCommaList(l string) []string {
