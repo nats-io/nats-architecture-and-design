@@ -9,7 +9,8 @@
 
 ## Context
 
-This document identifies fields in the JetStream api schema that are unsigned 64 bit numerical values.
+This document summarizes fields in the JetStream api schema that are unsigned 64 bit numerical values. 
+The most up-to-date information can be found in the [schema](https://github.com/nats-io/jsm.go/tree/main/schemas/jetstream/api/v1)
 
 ## Schema Object Fields
 
@@ -55,13 +56,7 @@ Object and list of fields within the object that are unsigned 64 bit values.
 #### `stream_info_response`
 
 * `opt_start_seq`
-
-#### 
-
-
-
 * `first_seq`
-
 * `last_seq`
 
 #### `stream_purge_response`
