@@ -18,7 +18,6 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv|JetStream based Key-Value Stores|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
-|[ADR-11](adr/ADR-11.md)|server, client, jetstream|JetStream API unsigned 64 bit numerical value fields|
 
 ## Jetstream
 
@@ -30,7 +29,6 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv|JetStream based Key-Value Stores|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
-|[ADR-11](adr/ADR-11.md)|server, client, jetstream|JetStream API unsigned 64 bit numerical value fields|
 
 ## Kv
 
@@ -57,7 +55,6 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
-|[ADR-11](adr/ADR-11.md)|server, client, jetstream|JetStream API unsigned 64 bit numerical value fields|
 
 ## When to write an ADR
 
