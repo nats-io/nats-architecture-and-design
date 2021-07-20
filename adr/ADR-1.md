@@ -99,7 +99,7 @@ With the same `error` treatment when some error happens.
 
 ### Numerical Values
 
-Some fields commuincated in the JetStream API are unsigned 64 bit values (uint64). These will be communicated as numbers in json. Clients must handle them, even if it means custom parsing. Commonly fields that represent a message sequence or id, or a field that holds a duration of nanoseconds are uint64 values. The most up-to-date information on specific fields can be found in the [schema](https://github.com/nats-io/jsm.go/tree/main/schemas/jetstream/api/v1)
+Some fields commuincated in the JetStream API are unsigned 64 bit values (uint64). These will be communicated as numbers in json. Clients must handle them, even if it means custom parsing. Commonly fields that represent a message sequence or id, or a field that holds a duration of nanoseconds are uint64 values. The most up-to-date information on specific fields can be found in the [schema](https://github.com/nats-io/jsm.go/tree/main/schemas/jetstream/api/v1).
 
 #### Message Meta Data
 
@@ -118,6 +118,7 @@ $JS.ACK.test-stream.test-consumer.4.5.6.1605139610113260007
 |5|stream sequence|
 |6|consumer sequence|
 |7|timestamp nanos|
+
 ## Implementation
 
 While implementing this in JetStream the following pattern emerged:
