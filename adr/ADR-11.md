@@ -5,7 +5,7 @@
 | Date     | 2021-07-20 Tue            |
 | Author   | wallyqs                   |
 | Status   | `Partially Implemented`   |
-| Tags     | jetstream, client, server |
+| Tags     | jetstream, client         |
 
 ## Motivation
 
@@ -18,12 +18,12 @@ implementing consumption of messages for this type of consumers.
 A pull based consumer is a type of consumer that does not have a
 `delivery subject`, that is the server _does not know_ where to send
 the messages.  Instead, the clients have to request for the messages
-as needed from the server.  For example, given a stream `bar` with the
-consumer with a durable name `dur` (all pull subscribers have to be
+to be delivered as needed from the server.  For example, given a stream `bar`
+with the consumer with a durable name `dur` (all pull subscribers have to be
 durable), a fetch request would look like this in terms of the
 protocol:
 
-```sh
+```shell
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.UBZe2D 0
 ```
 
@@ -32,7 +32,7 @@ PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.UBZe2D 0
 A request with an empty payload results in fetching the next available
 message present in the server, for example:
 
-```sh
+```shell
 SUB _INBOX.example 0
 +OK
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.example 0
@@ -53,7 +53,7 @@ inflight fetch requests [2].  At most, a consumer can only have 512
 inflight fetch requests, though this can be changed when creating the
 consumer with the `max_waiting` option [1]:
 
-```sh
+```shell
 PUB $JS.API.CONSUMER.INFO.bar.dur _INBOX.uMfJLECClHCs0CLfWF7Rsj.ds2ZxC4o 0
 MSG _INBOX.uMfJLECClHCs0CLfWF7Rsj.ds2ZxC4o 1 601
 {
@@ -92,17 +92,21 @@ MSG _INBOX.uMfJLECClHCs0CLfWF7Rsj.ds2ZxC4o 1 601
 
 When making a fetch request it is also possible to request more than one message:
 
-```sh
+```shell
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.OgY4M7 11
 {"batch":5}
 ```
+
+Whenever a fetch request times out, the count of `num_waiting` will increase for a consumer
+but this will eventually reset once it reaches the max waiting inflight that was configured
+for the pull consumer.
 
 ### No Wait Fetch Requests
 
 In order to get a response from the server rigth away, a client can
 make a fetch request with the `no_wait` option enabled. For example:
 
-```sh
+```shell
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.OgY4M7 26
 {"batch":1,"no_wait":true}
 ```
@@ -113,7 +117,7 @@ where an error could be a server error such as `503` in case JS
 service is not available. Most commonly, the result of a no wait fetch
 request will be a `404` no messages error:
 
-```sh
+```shell
 HMSG _INBOX.x7tkDPDLCOEknrfB4RH1V7.OgY4M7 2  28 28
 NATS/1.0 404 No Messages
 ```
@@ -125,7 +129,7 @@ lingering fetch requests described previously.
 
 In the Go client, a simple example of the API looks as follows:
 
-```
+```go
 sub, err := js.PullSubscribe("stream-name", "durable")
 if err != nil {
 	log.Fatal(err)
@@ -154,16 +158,16 @@ done to try to get the messages that may already be available as
 needed.  If there are no messages (a 404 status message error by the
 JetStream server), then a long fetch request is made:
 
-```sh
+```shell
 SUB _INBOX.NQ2uAIXd4GoozKOTfECtIg  1
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 26
 {"batch":5,"no_wait":true}
 
-// Result of no wait request if there are no messages
+# Result of no wait request if there are no messages
 HMSG _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 8  28 28
 NATS/1.0 404 No Messages
 
-// Next fetch request is a long fetch request with client side timeout
+# Next fetch request is a long fetch request with client side timeout
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.NQ2uAIXd4GoozKOTfECtIg 32
 {"expires":4990000000,"batch":5}
 ```
@@ -180,7 +184,7 @@ received as a result of the no wait request.  In case the batch
 request was for 5 messages, the client would auto unsubscribe after
 reeciving 4:
 
-```
+```shell
 UNSUB 1 4
 ```
 
@@ -192,7 +196,7 @@ the awaited messages from the server, otherwise this risks the server
 sending messages to an inbox from a connected client that is no longer
 expecting messages.
 
-```
+```shell
 SUB _INBOX.WvaJLnIXcj8Zf5SrxlHMTS  1
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 26
 {"batch":5,"no_wait":true}
@@ -203,7 +207,7 @@ PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 32
 {"expires":4990000000,"batch":5}
 MSG hello 1 $JS.ACK.bar.dur.2.29034.29041.1626845015078897000.0 4
 ping
-// Only 1 out of 5 messages receives, so client goes away and unsubscribes.
+# Only 1 out of 5 messages receives, so client goes away and unsubscribes.
 UNSUB 1
 ```
 
@@ -215,7 +219,7 @@ receive an error from the server as a status message.
 ```sh
 MSG hello 1 $JS.ACK.bar.dur.2.29034.29041.1626845015078897000.0 5
 hello
-// ...
+# (System reached too many inflight fetch requests condition)
 HMSG _INBOX.WvaJLnIXcj8Zf5SrxlHMRI 1  32 32
 NATS/1.0 408 Request Timeout
 ```
@@ -234,6 +238,7 @@ for {
 		// - request timeout
 		// - bad request
 		// - no responders
+		// - system unavailable (no current JS quorum)
 		log.Println("Error:", err)
 		continue
 	}
@@ -251,7 +256,7 @@ For the case of fetching a single message, it is possible to optimize
 things by making the first fetch request as a no wait request instead
 and by preparing a new style like request/response handler.
 
-```sh
+```shell
 SUB _INBOX.miOJjN58koGhobmCGCWKJz.*  2
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.miOJjN58koGhobmCGCWKJz.asdf 26
 {"batch":1,"no_wait":true}
@@ -261,6 +266,6 @@ Similar to `Fetch(n)`, when the first no wait request fails,
 after the first `Fetch(1)` a longer old style request is made with a
 unique inbox.
 
-Note: Each pull subscriber must have its own fetch request handler.
-The defaul implementation of new style request cannot be used for this
-purpose due to how the subject gets rewritten.
+**Note**: Each pull subscriber must have its own fetch request/response handler.
+The default implementation of new style request cannot be used for this
+purpose due to how the subject gets rewritten which would cause responses to be dropped.
