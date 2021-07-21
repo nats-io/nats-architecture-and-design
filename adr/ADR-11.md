@@ -235,7 +235,7 @@ for {
 		// Any error such as:
 		// 
 		// - client timeout
-		// - request timeout
+		// - request timeout (408)
 		// - bad request
 		// - no responders
 		// - system unavailable (no current JS quorum)
