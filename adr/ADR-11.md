@@ -1,4 +1,4 @@
-# Pull Subscribe and Fetch client APIs
+# Pull Subscribe internals
 
 | Metadata | Value                     |
 |----------|---------------------------|
@@ -27,7 +27,7 @@ protocol:
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.UBZe2D 0
 ```
 
-### Fetch Requests
+### Pull Requests
 
 A request with an empty payload results in fetching the next available
 message present in the server, for example:
@@ -69,7 +69,7 @@ MSG _INBOX.uMfJLECClHCs0CLfWF7Rsj.ds2ZxC4o 1 601
         "max_deliver": -1,
         "filter_subject": "bar",
         "replay_policy": "instant",
-        "max_waiting": 512,          <-- Maximum Inflight Fetch Requests [1]
+        "max_waiting": 512,          <-- Maximum Inflight Pull/Fetch Requests [1]
         "max_ack_pending": 20000
     },
     "delivered": {
@@ -82,7 +82,7 @@ MSG _INBOX.uMfJLECClHCs0CLfWF7Rsj.ds2ZxC4o 1 601
     },
     "num_ack_pending": 0,
     "num_redelivered": 0,
-    "num_waiting": 1,                <-- Inflight Fetch Requests [2]
+    "num_waiting": 1,                <-- Inflight Pull/Fetch Requests [2]
     "num_pending": 0,
     "cluster": {
         "leader": "NCUOUH6YICRESE73CKTXESMGA4ZN4KTELXPUIE6JCRTL6IF4UWE3B2Z4"
@@ -101,7 +101,7 @@ Whenever a fetch request times out, the count of `num_waiting` will increase for
 but this will eventually reset once it reaches the max waiting inflight that was configured
 for the pull consumer.
 
-### No Wait Fetch Requests
+### No Wait Pull/Fetch Requests
 
 In order to get a response from the server rigth away, a client can
 make a fetch request with the `no_wait` option enabled. For example:
@@ -150,9 +150,9 @@ for {
 When implementing `PullSubscribe` there are two main cases to
 consider: `Fetch(n)` and `Fetch(1)`.
 
-#### Fetch(n)
+#### Pull(n)
 
-`Fetch(n)` batch requests are implemented somewhat similarly to old style
+`Pull(n)` batch requests are implemented somewhat similarly to old style
 requests.  When making a fetch request, first a no wait request is
 done to try to get the messages that may already be available as
 needed.  If there are no messages (a 404 status message error by the
@@ -182,7 +182,7 @@ After making the first request no wait request, it is also recommended
 to send an auto unsubscribe protocol discounting the message already
 received as a result of the no wait request.  In case the batch
 request was for 5 messages, the client would auto unsubscribe after
-reeciving 4:
+receiving 4:
 
 ```shell
 UNSUB 1 4
@@ -250,7 +250,7 @@ for {
 }
 ```
 
-#### Fetch(1)
+#### Pull(1)
 
 For the case of fetching a single message, it is possible to optimize
 things by making the first fetch request as a no wait request instead
@@ -262,8 +262,8 @@ PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.miOJjN58koGhobmCGCWKJz.asdf 26
 {"batch":1,"no_wait":true}
 ```
 
-Similar to `Fetch(n)`, when the first no wait request fails, 
-after the first `Fetch(1)` a longer old style request is made with a
+Similar to `Pull(n)`, when the first no wait request fails, 
+after the first `Pull(1)` a longer old style request is made with a
 unique inbox.
 
 **Note**: Each pull subscriber must have its own fetch request/response handler.
