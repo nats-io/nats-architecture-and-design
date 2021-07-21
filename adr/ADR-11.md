@@ -2,7 +2,7 @@
 
 | Metadata | Value                     |
 |----------|---------------------------|
-| Date     | 2021-07-20 Tue            |
+| Date     | 2021-07-20            |
 | Author   | wallyqs                   |
 | Status   | `Partially Implemented`   |
 | Tags     | jetstream, client         |
