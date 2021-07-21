@@ -199,10 +199,11 @@ After making the first request no wait request, it is also recommended
 to send an auto unsubscribe protocol discounting the message already
 received as a result of the no wait request.  In case the batch
 request was for 5 messages, the client would auto unsubscribe after
-receiving 4:
+receiving 6. Since first message was an error the `UNSUB` is (batch+1)
+to account for that initial error status message.
 
 ```shell
-UNSUB 1 4
+UNSUB 1 6
 ```
 
 When successful, the result of a batch request will be at least one
@@ -219,7 +220,7 @@ PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 26
 {"batch":5,"no_wait":true}
 HMSG _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 8  28 28
 NATS/1.0 404 No Messages
-UNSUB 1 4
+UNSUB 1 6
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 32
 {"expires":4990000000,"batch":5}
 MSG hello 1 $JS.ACK.bar.dur.2.29034.29041.1626845015078897000.0 4
