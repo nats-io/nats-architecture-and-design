@@ -165,7 +165,7 @@ for {
 ```
 
 When implementing `PullSubscribe` there are two main cases to
-consider: `Fetch(n)` and `Fetch(1)`.
+consider: `Pull(n)` and `Pull(1)`.
 
 #### Pull(n)
 
