@@ -254,7 +254,9 @@ for {
 
 For the case of fetching a single message, it is possible to optimize
 things by making the first fetch request as a no wait request instead
-and by preparing a new style like request/response handler.
+and by preparing a new style like request/response handler using a wildcard
+subscription.  This will result in less chatty protocol and also works better with
+topologies where JetStream is running as a leafnode on the edge.
 
 ```shell
 SUB _INBOX.miOJjN58koGhobmCGCWKJz.*  2
