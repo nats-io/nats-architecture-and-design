@@ -110,8 +110,8 @@ MSG _INBOX.uMfJLECClHCs0CLfWF7Rsj.ds2ZxC4o 1 601
 When making a pull request it is also possible to request more than one message:
 
 ```shell
-PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.OgY4M7 11
-{"batch":5}
+PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.x7tkDPDLCOEknrfB4RH1V7.OgY4M7 32
+{"batch":5,"expires":4990000000}
 ```
 
 Whenever a pull request times out, the count of `num_waiting` will increase for a consumer
