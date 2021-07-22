@@ -2,9 +2,9 @@
 
 | Metadata | Value                     |
 |----------|---------------------------|
-| Date     | 2021-07-20            |
+| Date     | 2021-07-20                |
 | Author   | wallyqs                   |
-| Status   | `Partially Implemented`   |
+| Status   | Partially Implemented     |
 | Tags     | jetstream, client         |
 
 ## Motivation
