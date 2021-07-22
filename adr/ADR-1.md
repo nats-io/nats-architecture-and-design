@@ -164,7 +164,7 @@ If you're writing a client and have JSON Schema validators to hand you can acces
 ## Data Types
 
 The JetStream API has many data types, generally the JSON Schema tries to point this out, though we have some gaps in the data for sure.
-This section explore a few of the types in details.
+This section explores a few of the types in details.
 
 ### Sequence related unsigned 64bit integers
 
@@ -201,6 +201,8 @@ Some fields are thus going to be dynamically capped to the server architecture, 
 }
 ```
 
+Note while this is an unsigned integer, schema documents may list a different minimum than the minimum for the type.
+
 ### 32bit Integers
 
 Similar to the 64bit integers, we just have a 32bit one, care should be taken not to overflow this number when sending data to the server, here's an example.
@@ -216,6 +218,8 @@ Similar to the 64bit integers, we just have a 32bit one, care should be taken no
 }
 ```
 
+Note while this is an unsigned integer, schema documents may list a different minimum than the minimum for the type. Here the minimum is `-1`.
+
 ### Time Durations
 
 Some fields, like the maximum age of a message, are expressed as durations like `1 day`.
@@ -227,8 +231,8 @@ Here change the `300h` into your time, this tool supports `1ms`, `1m`, `1h` and 
 
 ### Time stamps
 
-Specific time stamps are usually expressed as UTC time and in general when sending times to the API we suggest doing so in UTC time,
-but the server is flexible in handling times with zones and may at times give you back times as zones.
+Specific time stamps should usually be expressed as UTC time and when sending times to the API this should be in UTC time also,
+but the server is flexible in handling times with zones and may at times give you back times as zones and will also accept them.
 
 These times are in JSON as quoted strings in RFC 3339 format, with sub-second precision, here are some examples: `2021-07-22T15:42:12.580770412Z`, `2021-07-22T23:48:48.27104904+08:00`.
 
