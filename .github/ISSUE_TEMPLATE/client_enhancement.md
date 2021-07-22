@@ -20,7 +20,7 @@ The behavior is documented in ADR-X.
  - [ ] Go @wallyqs
  - [ ] Java @scottf
  - [ ] JavaScript @aricart
- - [ ] .Net @ColinSullivan1
+ - [ ] .Net @ColinSullivan1 @scottf
  - [ ] C @kozlovic
  - [ ] Python @wallyqs
  - [ ] Rust @spacejam
