@@ -224,7 +224,7 @@ UNSUB 1 6
 PUB $JS.API.CONSUMER.MSG.NEXT.bar.dur _INBOX.WvaJLnIXcj8Zf5SrxlHMTS 32
 {"expires":4990000000,"batch":5}
 MSG hello 1 $JS.ACK.bar.dur.2.29034.29041.1626845015078897000.0 4
-ping
+helo
 # Only 1 out of 5 messages receives, so client goes away and unsubscribes.
 UNSUB 1
 ```
