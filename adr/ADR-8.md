@@ -31,8 +31,8 @@ Initial feature list:
  * Encoders and Decoders that transforms both keys and values
  * A read-cache that builds an in-memory cache for fast reads
  * read-after-write safety unless read replicas used
- * Valid keys are `\A[-/_a-=zA-Z0-9]+\z` after encoding
- * Valid buckets are `^[a-zA-Z0-9_-]+$`
+ * Valid keys are `\A[\./-_a-zA-Z0-9]+\z` after encoding
+ * Valid buckets are `\A[a-zA-Z0-9_-]+\z`
  * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
  * Key starting with `_kv` is reserved for internal use
  * CLI tool to manage the system as part of `nats`, compatible with client implementations
@@ -95,7 +95,7 @@ type Status interface {
 	// BucketLocation returns a string indicating where the bucket is located, meaning dependent on backend
 	BucketLocation() string
 
-	// Keys returns a list of all keys in the bucket - not possible now
+	// Keys returns a list of all keys in the bucket - not possible now except in caches
 	Keys() ([]string, error)
 
 	// BackingStore is a backend specific name for the underlying storage - eg. stream name. Used so that ops tooling can know what to Backup for example
@@ -122,8 +122,9 @@ type RoKV interface {
 	// History retrieves historic values for a key
 	History(ctx context.Context, key string) ([]Entry, error)
 
-	// WatchBucket watches the entire bucket for changes, all keys and values will be traversed including all historic values
-	WatchBucket(ctx context.Context) (Watch, error)
+	// WatchBucket watches the entire bucket for changes, all keys and values will be traversed including all historic values.
+	// WatchOps can supply modifiers to perform range watches
+	WatchBucket(ctx context.Context, opts ...WatchOpts) (Watch, error)
 
 	// Watch a key for updates, the same Entry might be delivered more than once
 	Watch(ctx context.Context, key string) (Watch, error)
@@ -171,6 +172,9 @@ features, that is, this is the minimal feature set we can expect from any KV bac
 Client developers should keep this in mind and support pluggable backends, for the reference implementation caching
 is implemented as a different backend.
 
+Some options like `WatchOpts` that specify a ranged watch using NATS Subject wildcards is probably inherently unsupported
+by other backends. If those backends can't translate a subject range into something they understand they might fail and that's ok.
+
 ### JetStream interactions
 
 The features to support KV is in NATS Server 2.3.1.
@@ -180,7 +184,7 @@ The features to support KV is in NATS Server 2.3.1.
 A bucket is a Stream with these properties:
 
  * The main write bucket must be called `KV_<Bucket Name>`
- * The ingest subjects must be `$KV.<Bucket Name>.*`
+ * The ingest subjects must be `$KV.<Bucket Name>.>`
  * The bucket history is achieved by setting `max_msgs_per_subject` to the desired history level
  * Write replicas are File backed and can have a varying R value
  * Key TTL is managed using the `max_age` key
@@ -195,7 +199,7 @@ Here is a full example of the `CONFIGURATION` bucket:
 {
   "name": "KV_CONFIGURATION",
   "subjects": [
-    "$KV.CONFIGURATION.*"
+    "$KV.CONFIGURATION.>"
   ],
   "retention": "limits",
   "max_consumers": -1,
@@ -270,8 +274,8 @@ made available to the client.
 
 ##### Bucket Watch
 
-A bucket watch is a consumer set up on the wildcard subject for the bucket - `$KV.<Bucket Name>.*` - and sending every single message
-over the channel to the client.
+A bucket watch is a consumer set up on the wildcard subject for the bucket - `$KV.<Bucket Name>.>` - and sending every single message
+over the channel to the client. A bucket watch can be given a range like `service.nats.>` that gets turned into a wildcard subject `$KV.<Bucket Name>.service.nats.>`, this becomes a range watch of only a subset of keys. 
 
 This means historical values will be sent as well as latest values. In this case we cannot provide the delta on a per key basis. But
 the delta will represent the remainder for the entire bucket, this allows Watcher clients like the memory cache to set themselves
@@ -287,6 +291,13 @@ bucket from start to end and consolidate the list extracting key and processing 
 
 The `Status` interface supports a `Keys()` call, but this is not implemented and might come later.  We could though provide a `Keys()`
 function from a local cache since walking the entire stream is implied in how it works.
+
+Building on this can be easy set operations. For example a service `nats` might live in `$KV.SERVICES.nats.>`, a node running NATS 
+should `register` itself with this service by publishing to `$KV.SERVICES.nats.n1.example.net` every minute. If no publish were 
+received in a minute the registration is expired via `max_age`. This way we can easily build service registries, to discover 
+all the known services we ask for all subjects below `$KV.SERVICES.nats.>`. A node can opt to unregister itself by purging its subject.
+
+This would mean many calls to the underlying API call for known subjects as we would not know via a typical watch about expired data.
 
 ### Codec support
 
