@@ -2,6 +2,7 @@
 name: Feature Documentation
 about: Request documentation to be written for a specific feature
 labels: documentation, enhancement
+assignees: ColinSullivan1
 ---
 
 ## Overview
