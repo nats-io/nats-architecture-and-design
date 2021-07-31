@@ -27,11 +27,11 @@ Initial feature list:
  * Historic values can be kept per key, setable on creation of the bucket
  * Key deletes preserves history
  * Keys can be expired from the bucket based on a TTL
- * Watching a specific key or the entire bucket for live updates
+ * Watching a specific key, ranges based on NATS wildcards, or the entire bucket for live updates
  * Encoders and Decoders that transforms both keys and values
  * A read-cache that builds an in-memory cache for fast reads
  * read-after-write safety unless read replicas used
- * Valid keys are `\A[\./-_a-zA-Z0-9]+\z` after encoding
+ * Valid keys are `\A[-/_=\.a-zA-Z0-9]+\z`, additionally they may not start or end in `.`, after encoding
  * Valid buckets are `\A[a-zA-Z0-9_-]+\z`
  * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
  * Key starting with `_kv` is reserved for internal use
@@ -122,11 +122,8 @@ type RoKV interface {
 	// History retrieves historic values for a key
 	History(ctx context.Context, key string) ([]Entry, error)
 
-	// WatchBucket watches the entire bucket for changes, all keys and values will be traversed including all historic values.
-	// WatchOps can supply modifiers to perform range watches
-	WatchBucket(ctx context.Context, opts ...WatchOpts) (Watch, error)
-
-	// Watch a key for updates, the same Entry might be delivered more than once
+	// Watch a key for updates, the same Entry might be delivered more than once. Key can be a specific key, a NATS wildcard
+	// or an empty string to watch the entire bucket
 	Watch(ctx context.Context, key string) (Watch, error)
 
 	// Close releases in-memory resources held by the KV, called automatically if the context used to create it is canceled
@@ -172,12 +169,9 @@ features, that is, this is the minimal feature set we can expect from any KV bac
 Client developers should keep this in mind and support pluggable backends, for the reference implementation caching
 is implemented as a different backend.
 
-Some options like `WatchOpts` that specify a ranged watch using NATS Subject wildcards is probably inherently unsupported
-by other backends. If those backends can't translate a subject range into something they understand they might fail and that's ok.
-
 ### JetStream interactions
 
-The features to support KV is in NATS Server 2.3.1.
+The features to support KV is in NATS Server 2.3.3.
 
 #### Buckets
 
@@ -219,7 +213,7 @@ Here is a full example of the `CONFIGURATION` bucket:
 
 Writing a key to the bucket is a basic JetStream request.
 
-The KV key `username` in the `CONFIGURATION` bucket is written sent, using a request, to `$KV.CONFIGURATION.username`.
+The KV key `auth.username` in the `CONFIGURATION` bucket is written sent, using a request, to `$KV.CONFIGURATION.auth.username`.
 
 To implement the feature that would accept a write only if the sequence of the current value of a key has a specific sequence
 we use the new `Nats-Expected-Last-Subject-Sequence` header.
@@ -237,15 +231,20 @@ methods with this header set indicates the data was being deleted.  If this is a
 
 We have extended the `io.nats.jetstream.api.v1.stream_msg_get_request` API to support loading the latest value for a specific
 subject.  Thus a read for `CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request` with the
-`last_by_subject` set to `$KV.CONFIGURATION.username`.
+`last_by_subject` set to `$KV.CONFIGURATION.auth.username`.
 
-##### History and Watch Operations
+##### History
 
-These operations requires access to all values for a key, to achieve this we create an ephemeral consumer on filtered by the subject
+These operations require access to all values for a key, to achieve this we create an ephemeral consumer on filtered by the subject
 and read the entire value list in using `deliver_all`.
 
 JetStream will report the Pending count for each message, the latest value from the available history would have a pending of `0`.
 When constructing historic values, dumping all values etc we ensure to only return pending 0 messages as the final value
+
+##### Watch 
+
+A watch, like History, is based on ephemeral consumers reading values, but now we start with the new `last_per_subject` initial start, this
+means we will get all matching latest values for all keys and no keys.
 
 #### Deleting Values
 
@@ -265,21 +264,16 @@ Remove the stream entirely
 
 #### Watchers
 
-Watchers support sending received `PUT` and `DEL` operations across a channel or language specific equivelant.
+Watchers support sending received `PUT` and `DEL` operations across a channel or language specific equivalent.
 
-##### Key Watch
+Watchers support accepting simple keys or ranges, for example watching on `auth.username` will get just operations on that key,
+but watching `auth.>` will get operations for everything below `auth.`, the entire bucket can be watched using a empty key or a 
+key with wildcard `>`.
 
-This is a consumer set up to get the last value for a key. The watch remains active till cancelled and any PUT/DEL on this key should be 
-made available to the client.
-
-##### Bucket Watch
-
-A bucket watch is a consumer set up on the wildcard subject for the bucket - `$KV.<Bucket Name>.>` - and sending every single message
-over the channel to the client. A bucket watch can be given a range like `service.nats.>` that gets turned into a wildcard subject `$KV.<Bucket Name>.service.nats.>`, this becomes a range watch of only a subset of keys. 
-
-This means historical values will be sent as well as latest values. In this case we cannot provide the delta on a per key basis. But
-the delta will represent the remainder for the entire bucket, this allows Watcher clients like the memory cache to set themselves
-ready once the full history was read.
+We set up the watchers using the `last_per_subject` deliver policy, this means historical values will not be sent - only the 
+latest values will. In the case of wildcards we cannot provide the delta on a per key basis. But the delta will represent 
+the remainder for the entire set of matching keys, this allows Watcher clients like the memory cache to set themselves ready
+once the full history was read.
 
 When a stream is empty at create time - `NumPending+Delivered.Consumer==0` - a nil is sent across the channel to signal to the
 caller that they should not expect any values.
@@ -308,6 +302,10 @@ Read only clients would only need a decoder - and so by extension, not need a pr
 
 All keys and values should be encoded/decoded. If users wish to encrypt their buckets both the keys and the values will be encrypted.
 The valid keys after encryption should still match the pattern for acceptable keys. Base64 encoding encrypted keys is a good option.
+
+Encoding keys is done on a per token basis, the key `hello.world` would be encoded in parts, for example a Base64 encoding of this would
+be `aGVsbG8=.d29ybGQ=` wildcards are not encoded. This means if one watch the key `hello.>` it would encode to `aGVsbG8=.>` and still
+do the right thing with regard to watches and ranges.
 
 ### Local Read Caches
 
