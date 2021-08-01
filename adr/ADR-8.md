@@ -233,7 +233,7 @@ methods with this header set indicates the data was being deleted.  If this is a
 
 We have extended the `io.nats.jetstream.api.v1.stream_msg_get_request` API to support loading the latest value for a specific
 subject.  Thus a read for `CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request` with the
-`last_by_subject` set to `$KV.CONFIGURATION.username`.
+`last_by_subj` set to `$KV.CONFIGURATION.username`.
 
 ##### History and Watch Operations
 
