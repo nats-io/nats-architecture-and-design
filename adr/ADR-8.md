@@ -248,7 +248,7 @@ means we will get all matching latest values for all keys and no keys.
 
 #### Deleting Values
 
-Since the store supports history - via the `max_age` for messages - we should preserve history when deleting keys. To do this we
+Since the store support history - via the `max_age` for messages - we should preserve history when deleting keys. To do this we
 place a new message in the subject for the key with a nil body and the header `KV-Operation: DEL`.
 
 This preserves history and communicate to watchers, caches and gets that a delete operation should be handled - clear cache,
