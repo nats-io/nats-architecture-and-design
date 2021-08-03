@@ -42,7 +42,7 @@ This results in 2 messages being in-flight at any given time and ordering, where
 way of mapping sensor data to a particular group additional sensors will automatically result in a particular sensor entering a 
 group - sensor 4 would join group `B` perhaps.
 
-![Consumer Groups](16-ordered-consumer-groups-overview.png)
+![Consumer Groups](images/0016-ordered-consumer-groups-overview.png)
 
 As shown here we should support a standby consumer (`cid:10` here) that will step in anywhere a active consumer fails.
 
