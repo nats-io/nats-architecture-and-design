@@ -193,7 +193,7 @@ Here is a full example of the `CONFIGURATION` bucket:
 {
   "name": "KV_CONFIGURATION",
   "subjects": [
-    "$KV.CONFIGURATION.>"
+    "$KV.CONFIGURATION.*"
   ],
   "retention": "limits",
   "max_consumers": -1,
