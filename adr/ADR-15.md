@@ -21,17 +21,18 @@ The library should have API(s) that allow(s) creation of a JetStream subscriptio
 
 When creating a subscription, the user can provide several things:
 
-- A subject (see meaning of this below)
-- The stream name
-- The consumer name, really a durable name for when the JS consumer already exists
+- A mandatory subject (see meaning of this below)
+- An optional stream name
+- An optional consumer name, really a durable name for when the JS consumer already exists
+- An optional JS consumer configuration (see below), if the library is expected to create the JS consumer
 - A Queue name if this subscription is meant to be a queue subscription
-- A JS consumer configuration (see below), if the library is expected to create the JS consumer
 - Indication if this is a "Pull" subscription or not
 
 At the time of this writing, the consumer configuration object looks like this:
 
 ```go
 type ConsumerConfig struct {
+	Description     string        `json:"description,omitempty"`
 	Durable         string        `json:"durable_name,omitempty"`
 	DeliverSubject  string        `json:"deliver_subject,omitempty"`
 	DeliverPolicy   DeliverPolicy `json:"deliver_policy"`
@@ -57,9 +58,9 @@ When no stream name is specified, the library will use the subject provided as a
 
 #### Consumer name
 
-When no consumer name is specified, but a configuration is provided, the consumer will be the `Durable` field of the `ConsumerConfig` object.
+A consumer name can be specified directly or as the `Durable` field of the `ConsumerConfig`. A value supplied directly takes precedence over the value supplied in the configuration if both are supplied.
 
-Note if the user provides a `Durable` in the configuration, this is treated differently that if the user provides a consumer to the subscribe API. Providing the stream and consumer name through the API makes the subscription being "bound", that is, no attempt to create a JS consumer will be done because the user expects the stream and consumer to already exists.
+There is a separate API call `Bind` which requires a stream name and a durable consumer name. When binding, the subscription will be created with the assumption that both the stream and the consumer already exist.
 
 So if the consumer is not provided but set to the `ConsumerConfig.Durable` field, this means that if the durable exists, it will be attached to it, but if it doesn't, then the library will try to create this durable.
 
@@ -74,7 +75,7 @@ If no error is found, then the internal NATS subscription should be created on t
 If there was a consumer lookup but an error occurs, the behavior depends on few things:
 
 - If the error is a "not found" (that is, the library got a response indicating that the said consumer does not exists):
-    - If the subscription is "bound" (stream and consumer names were provided), then unless this is a "pull" subscription, the error is returned.
+    - If the subscription is "bound" (stream and consumer names were provided), the error is returned.
     - If the subscription is not "bound", then it is ok and the library will attempt to create the JS consumer.
 - For a "lookup error", for instance because the consumer info API is not allowed, or the consumer is not in the current account, etc.. then unless this is a Pull subscription, the library should return an error.
 
@@ -134,4 +135,4 @@ The deletion of the JS consumer need to be delayed passed the point when the sub
 
 ## Consequences
 
-Some libraries have already been released with a workflow that is different and will need to align to the above design, however no public API signature is believed to need change, so it should not cause any SimVer issue.
+It is possible that some existing libraries will need changes that would break SimVer. It will be left to the library maintainer to evaluate this.
