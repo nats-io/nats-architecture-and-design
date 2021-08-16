@@ -9,7 +9,7 @@
 
 ## Status
 
-Partially Implemented in [#1811](https://github.com/nats-io/nats-server/issues/1811)
+Partially Implemented in [#1811](https://github.com/nats-io/nats-server/issues/1811) and [#2409](https://github.com/nats-io/nats-server/pull/2409)
 
 The current focus is JetStream APIs, we will as a followup do a refactor and generalization and move onto other
 areas of the server.
@@ -71,42 +71,45 @@ Here we raise a `stream not found` error without providing any additional contex
 `JSStreamNotFoundErr` from which you can guess it takes no printf style interpolations vs one that does which would
 end in `...ErrF`:
 
-The go doc for this constant would also include the content of the error to assist via intellisense in your IDE.
+The go doc for this function would also include the content of the error to assist via intellisense in your IDE.
 
 ```go
 err = doThing()
 if err != nil {
-	return ApiErrors[JSStreamNotFoundErr]
+	return NewJSStreamNotFoundError()
 }
 ```
 
-If we have to do string interpolation of the error body, here the `JSStreamRestoreErrF` has the body 
-`"restore failed: {err}"`, the `NewT()` will simply use `strings.Replaces()` to create a new `ApiError` with the full string,
-note this is a new instance of ApiError so normal compare of `err == ApiErrors[x]` won't match:
+Some errors require string interpolation of tokens, eg. the `JSStreamRestoreErrF` has the body `restore failed: {err}`, 
+the `NewJSStreamRestoreError(err error)`will use the arguments to in the tokens, the argument name matches the token.
+Some tokens have specific type meaning for example the token `{err}` will always expect a `error` type and `{seq}` always 
+`uint64` to help a bit with sanity checks at compile time.
+
+Note these errors that have tokens are new instances of the ApiError so normal compare of `err == ApiErrors[x]` will fail, 
+the `IsNatsError()` helper should generally always be used to compare errors.
 
 ```go
 err = doRestore()
 if err != nil {
-	return ApiErrors[JSStreamRestoreErrF].NewT("{err}", err)
+	return NewJSStreamRestoreError(err)
 }
 ```
 
-If we had to handle an error that may be an `ApiError` or a traditional go error we can use the `ErrOr` function, 
-this will look at the result from `lookupConsumer()`, if it's an `ApiError` that error will be set else `JSConsumerNotFoundErr` be 
-returned. Essentially the `lookupConsumer()` would return a `JSStreamNotFoundErr` if the stream does not exist else
-a `JSConsumerNotFoundErr` or go error on I/O failure for example.
+If we had to handle an error that may be an `ApiError` or a traditional go error we can use the `Unless` ErrorOption. 
+This example will look at the result from `lookupConsumer()`, if it's an `ApiError` that error will be set else `JSConsumerNotFoundErr` be 
+returned with the error message replaced in the `{err}` token. 
+
+Essentially the `lookupConsumer()` would return a `JSStreamNotFoundErr` if the stream does not exist else a `JSConsumerNotFoundErr` 
+or go error on I/O failure for example.
 
 ```go
 var resp = JSApiConsumerCreateResponse{ApiResponse: ApiResponse{Type: JSApiStreamCreateResponseType}}
 
 _, err = lookupConsumer(stream, consumer)
 if err != nil {
-    resp.Error = ApiErrors[JSConsumerNotFoundErr].ErrOr(err)
+    resp.Error = NewJSConsumerNotFoundError(err, Unless(err))
 }
 ```
-
-While the `ErrOr` function returns the `ApiErrors` pointer exactly - meaning `err == ApiErrors[x]`, the counterpart
-`ErrOrNewT` will create a new instance.
 
 ### Testing Errors
 
