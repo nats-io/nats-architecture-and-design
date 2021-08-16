@@ -21,6 +21,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-11](adr/ADR-11.md)|client|Hostname resolution|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
 |[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
+|[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
 
 ## Jetstream
 
