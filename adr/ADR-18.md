@@ -4,7 +4,7 @@
 |----------|---------------------------|
 | Date     | 2021-07-21            |
 | Author   | philpennock           |
-| Status   | `Partially Implemented`   |
+| Status   | Partially Implemented |
 | Tags     | client         |
 
 ## Motivation
