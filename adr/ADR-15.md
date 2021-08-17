@@ -149,6 +149,8 @@ Ordered consumers (should have its own ADR) will handle all that for the applica
 
 #### JS Ack
 
+When the server sends a message to a subscriber, and if there is an AckPolicy specified other than "AckNone", then the message will have a reply subject that the library is supposed to use in order to acknowledge the message. This subject also encodes some delivery information, such as stream and consumer name, stream sequence, etc..
+
 Until now, ACK reply subject contained 9 tokens, with this layout:
 ```
 $JS.ACK.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
