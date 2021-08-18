@@ -24,10 +24,11 @@ When creating a subscription, the user can provide several things:
 - A subject that is in some cases required (see "Stream name" section below)
 - An optional stream name
 - An optional consumer name
-- An optional JS consumer configuration (see below), if the library is expected to create the JS consumer
+- An optional JS consumer configuration (see below)
 - A Queue name if this subscription is meant to be a queue subscription
-- Indication if this is a "Pull" subscription or not
+- Indication if this is a "Push" or "Pull" subscription
 - An optional way of indicating the the given subject will be used to create the internal subscription, by-passing any lookup/consumer creation. For the purpose of this document, let's call this option `SubjectIsDelivery`.
+- Handlers for receiving messages asynchronously, whatever that means in the library language
 
 Some misconfiguration should be checked by the subscribe API and return an error outright.
 
@@ -54,14 +55,22 @@ type ConsumerConfig struct {
 	Heartbeat       time.Duration `json:"idle_heartbeat,omitempty"`
 	MaxAckPending   int           `json:"max_ack_pending,omitempty"`
 	MaxDeliver      int           `json:"max_deliver,omitempty"`
-	MaxWaiting      int           `json:"max_waiting,omitempty"`
-	OptStartSeq     uint64        `json:"opt_start_seq,omitempty"`
-	OptStartTime    *time.Time    `json:"opt_start_time,omitempty"`
+	MaxWaiting      int           `json:"max_waiting,omitempty"`	// server returns error if provided if a DeliverSubject is provided
+	OptStartSeq     uint64        `json:"opt_start_seq,omitempty"`	// server returns error if provided when Deliver Policy is not by_start_sequence
+	OptStartTime    *time.Time    `json:"opt_start_time,omitempty"`	// server returns error if provided when Deliver Policy is not by_start_time
 	RateLimit       uint64        `json:"rate_limit_bps,omitempty"` // Bits per sec
 	ReplayPolicy    ReplayPolicy  `json:"replay_policy"`
 	SampleFrequency string        `json:"sample_freq,omitempty"`
 }
 ```
+
+#### SubjectIsDelivery option
+
+This option can be considered "Expert" or "Advanced" and means that when specified, the subject passed to a "subscribe" API will be used to create the NATS subscription and no stream or consumer lookup will be done, and obviously no JetStream consumer will be created.
+
+This for situations when, because of cross accounts and import/exports rules, the application will only be given the subject the library needs to subscribe too.
+
+How is that different from a simple NATS subscription (such as in Go: `nc.Subscribe()`)? Since it will be a JetStream subscription, the library will handle possible incoming heartbeats and flow control messages.
 
 #### Stream name
 
