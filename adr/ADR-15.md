@@ -27,17 +27,14 @@ When creating a subscription, the user can provide several things:
 - An optional JS consumer configuration (see below)
 - A Queue name if this subscription is meant to be a queue subscription
 - Indication if this is a "Push" or "Pull" subscription
-- An optional way of indicating the the given subject will be used to create the internal subscription, by-passing any lookup/consumer creation. For the purpose of this document, let's call this option `SubjectIsDelivery`.
 - Handlers for receiving messages asynchronously, whatever that means in the library language
 
 Some misconfiguration should be checked by the subscribe API and return an error outright.
 
 For instance:
 - If a queue name is provided, configuring heartbeat or flow control is a mistake, since the server would send those message to random members.
-- If no subject is provided, along with no stream name or the `SubjectIsDelivery` option set, the library won't be able to locate/create the consumer.
-- For pull subscriptions:
-	- ack policy of "none" or "all" is an error.
-	- setting a deliver subject or using the `SubjectIsDelivery` option is an error.
+- If no subject is provided, along with no stream name, the library won't be able to locate/create the consumer.
+- For pull subscriptions ack policy of "none" or "all" is an error.
 
 At the time of this writing, the consumer configuration object looks like this (ordred alphabetically, not as seen in js.go):
 
@@ -64,20 +61,12 @@ type ConsumerConfig struct {
 }
 ```
 
-#### SubjectIsDelivery option
-
-This option can be considered "Expert" or "Advanced" and means that when specified, the subject passed to a "subscribe" API will be used to create the NATS subscription and no stream or consumer lookup will be done, and obviously no JetStream consumer will be created.
-
-This for situations when, because of cross accounts and import/exports rules, the application will only be given the subject the library needs to subscribe too.
-
-How is that different from a simple NATS subscription (such as in Go: `nc.Subscribe()`)? Since it will be a JetStream subscription, the library will handle possible incoming heartbeats and flow control messages.
-
 #### Stream name
 
-When no stream is specified, the `subject` to the subscribe API calls is required (unless the `SubjectIsDelivery` option is provided). An error will be returned if it is not the case.
+When no stream is specified, the `subject` to the subscribe API calls is required. An error will be returned if it is not the case.
 The library will use the subject provided as a way to find out which stream this subscription is for. A request is sent to the server on the `<JS prefix>.STREAM.NAMES` subject with a JSON content `{"subject":"<subject here>"}`. If the response (a list of stream names) is positive and contains a single entry, then the library will use this stream name, otherwise an error indicating that there is no matching stream name should be returned.
 
-If the stream name is specified, then the `subject` is possibly not needed (except for `SubjectIsDelivery` option).
+If the stream name is specified, then the `subject` is possibly not needed.
 
 #### Consumer name
 
@@ -118,7 +107,7 @@ Other checks:
 
 #### NATS subscription
 
-At this point the NATS subscription will be created on the deliver subject found from the consumer info or on an inbox, or if the option `SubjectIsDelivery` is set to true, the NATS subscription will be created on the `subject` passed to the subscribe API call.
+At this point the NATS subscription will be created on the deliver subject found from the consumer info or on an inbox.
 
 Note that the subscription should be created prior to attempt to create the JS consumer (when applicable) because for durable subscriptions, this is the only way for the server to detect if the durable is already in use or not. If there is no subscription (no interest), then the server will simply update the delivery subject of the JS durable consumer.
 
@@ -132,9 +121,9 @@ The library will set the `FilterSubject` to the user provided subject, ensure th
 
 The request is then sent to `<JS prefix>.CONSUMER.DURABLE.CREATE.<stream name>.<durable name>` for a durable subscription or `<JS prefix>.CONSUMER.CREATE.<stream name>` for an ephemeral.
 
-If the result of this request is "OK", it means that the server has created the JS consumer and uses the deliver subject the NATS subscription is created on. At this point, the jetstream subscription will keep track of the fact that it did create the JetStream consumer and will delete it on Unsubscribe() or Drain(). For ephemerals, the consumer name will be saved from the creation request's response, since it was not available beforehand.
+If the operation is successful, the library will get as an API response with a `ConsumerInfo`. Since the library successfully created the JetStream consumer, it will keep track of this fact and will delete the consumer on Unsubscribe() or Drain(). For ephemerals, the consumer name will be saved from the `ConsumerInfo`'s response, since it was not available beforehand.
 
-If the result indicates that the consumer already exists, then it means that there was a race where a process got a lookup "not found" error, but when attempting to create the JetStream consumer, got an "already exists" error. In this case, the library will perform a consumer lookup and for branch to the description above that describes what to do when getting a consumer info. Note that for pull subscriptions, basic checks of consumer type validity should be done, but not the checks specific to "push" consumers. For them, unless this is a queue subscription, the API call will return an error.
+If the result indicates that the consumer already exists, then it means that there was a race where a process got a lookup "not found" error, but when attempting to create the JetStream consumer, got an "already exists" error. In this case, the library will perform a consumer lookup and will perform the same checks that are described in the "Push Consumer active information and queue group binding" section. Note that for pull subscriptions, basic checks of consumer type validity should be done, but not the checks specific to "push" consumers. For them, unless this is a queue subscription, the API call will return an error.
 
 When the consumer already exists, for push consumers, the NATS queue subscription that was created prior to the "AddConsumer" call needs to be destroyed and replaced with the new NATS queue subscription on the consumer info's `DeliverSubject`.
 
@@ -160,27 +149,29 @@ Ordered consumers (should have its own ADR) will handle all that for the applica
 
 When the server sends a message to a subscriber, and if there is an AckPolicy specified other than "AckNone", then the message will have a reply subject that the library is supposed to use in order to acknowledge the message. This subject also encodes some delivery information, such as stream and consumer name, stream sequence, etc..
 
+Some information allowing proper routing in context of multiple accounts and preventing an ACK for an account to ACK a message for the same stream and consumer names in another, were missing.
+
 Until now, ACK reply subject contained 9 tokens, with this layout:
 ```
 $JS.ACK.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
 ```
 
-This is going to change with newer servers where the number of tokens will be 10 or 11, with the total tokens being:
+This is going to change with newer servers where the number of tokens will be 12, with the tokens being:
 ```
-$JS.ACK.[<domain>.]<account hash>.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
+$JS.ACK.<domain>.<account hash>.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>.<a token with a random value>
 ```
 
-When unpacking an ACK subject, the library should verify that it starts with `$JS.ACK.` but then verify the overall number of tokens, and if 9 assume that it is the "old" ACK messages without domain nor account hash.
+When there is no domain, the server will still set the token to a special value of `_` (the server will make sure that users can't pick this as a domain name). Having the domain always present simplifies the library code which does not have to bother with a variable number of tokens somewhere close to the beginning of the subject, and possibly doing some shifting to find out the location of the fields it cares about.
 
-If the number of token is 10, then the 3rd token will be the account hash.
+Why not append those new tokens at the end? This is to simplify the export/import subject, ie `$JS.ACK.<domain>.<account>.>`. Otherwise, you would need to possibly have something like `$JS.ACK.*.*.*.*.*.*.*.<domain>.<account>.>`
 
-If the number of token is 11, then the 3rd token will be the domain name, and the 4th token will be the account hash.
+When unpacking an ACK subject, the library should verify that it starts with `$JS.ACK.` but then check the overall number of tokens, and if 9 assume that it is the "old" ACK messages without domain nor account hash.
 
-The domain should be surfaced through API that return a message's meta data information (in Go, it would be `MsgMetadata`).
+If it has at *least* 12 tokens, we know that 3rd token is domain, and is reported as a new field `Domain` in the `MsgMetadata` object. The library can replace `_` with empty string when returning a `MsgMetada` object, or document the meaning of the domain named `_`.
 
-But apart from exposing the domain through `MsgMetadata` object, the library does not use the domain or account hash in any way when sending the ACK. This extra information is used by the server to properly route acks across accounts, etc...
+The account hash is not used by the client at this time, only used for routing, same for the last token.
 
-The only thing the library has to worry about is to properly figure out the presence (or not) of 1 or 2 more extra token and "shift" appropriately the location of the tokens that are needed.
+It is recommended that library no longer report an error if there are more than 12 tokens, so that new tokens may be added, especially if their purpose is solely for routing and have no impact on the library itself.
 
 #### Flow control
 
