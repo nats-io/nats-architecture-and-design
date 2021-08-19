@@ -66,11 +66,11 @@ type ConsumerConfig struct {
 When no stream is specified, the `subject` to the subscribe API calls is required. An error will be returned if it is not the case.
 The library will use the subject provided as a way to find out which stream this subscription is for. A request is sent to the server on the `<JS prefix>.STREAM.NAMES` subject with a JSON content `{"subject":"<subject here>"}`. If the response (a list of stream names) is positive and contains a single entry, then the library will use this stream name, otherwise an error indicating that there is no matching stream name should be returned.
 
-If the stream name is specified, then the `subject` is possibly not needed.
+However, even with a provided stream name, the `subject` may be needed, for instance when the JS consumer will be created by the library, the `FilterSubject` is set to that, and when a consumer lookup is performed, if the incoming `FilterSubject` is not empty, we ensure that it matches the `subject`.
 
 #### Consumer name
 
-When a consumer name is specified, it indicates the the library that the intent is to bind to an existing JS Consumer. The library will lookup the consumer from the server and get a `ConsumerInfo`. If the lookup fails, it is considered an error, unless the subscription is for a "pull subscriber", in which case the library still proceeds with the JS subscription.
+When a consumer name is specified, it indicates the the library that the intent is to use an existing JS Consumer. The library will lookup the consumer from the server and get a `ConsumerInfo`. If the lookup fails, it is considered an error, unless the subscription is for a "pull subscriber", in which case the library still proceeds with the JS subscription.
 
 #### Queue name
 
