@@ -179,6 +179,8 @@ When a JetStream consumer has flow control enabled (not applicable to pull consu
 
 That is, suppose messages are received on a connection and pushed to a JetStream subscription, and there are currently 1000 pending messages. When the connection received a JetStream flow control status message for a given subscription, it should mark that the subscription should send an empty message to the given Flow Control subject (which is the reply subject of the incoming control message) when the library has dispatched that 1000's message in the subscription's pending list.
 
+**Note** The format or the number of tokens of the Flow Control subject should not to be inspected, since it may change at the server discretion. From the library perspective, this is a subject that the library needs to send an empty message to, that's it.
+
 For synchronous subscription, the `NextMsg()` call need to perform the same check and if it realized that the current message is the one that was "marked" as being the one at which the flow control should be "responded" to, then send an empty message to the recorded Flow Control subject.
 
 It is possible, that either the flow control or its response is missed and that the consumer is considered stalled from a server perspective.
