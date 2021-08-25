@@ -167,11 +167,11 @@ Why not append those new tokens at the end? This is to simplify the export/impor
 
 When unpacking an ACK subject, the library should verify that it starts with `$JS.ACK.` but then check the overall number of tokens, and if 9 assume that it is the "old" ACK messages without domain nor account hash.
 
-If it has at *least* 12 tokens, we know that 3rd token is domain, and is reported as a new field `Domain` in the `MsgMetadata` object. The library can replace `_` with empty string when returning a `MsgMetada` object, or document the meaning of the domain named `_`.
+If it has at *least* 11 tokens (see below), we know that 3rd token is domain, and is reported as a new field `Domain` in the `MsgMetadata` object. The library can replace `_` with empty string when returning a `MsgMetada` object, or document the meaning of the domain named `_`.
 
 The account hash is not used by the client at this time, only used for routing, same for the last token.
 
-It is recommended that library no longer report an error if there are more than 12 tokens, so that new tokens may be added, especially if their purpose is solely for routing and have no impact on the library itself.
+**Note:** The library MUST only verify that the number of tokens is 9 (the v1 version if you will), or at least 11, not 12. With at least 11, the domain and account hash is assumed to be present. The 12th token (as described in the new account layout above) is not used by the library and may even not always be present in future server releases, or on the contrary, additional ones added. So the library must not report an error if at least 11 tokens are present.
 
 #### Flow control
 
