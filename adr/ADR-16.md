@@ -14,7 +14,7 @@ of JetStream but there may well be a Core NATS solution that play into this, thi
 
 ## Context
 
-Strictly ordered consumption from a Stream requires a Max Ack Outstanding of 1, this ensures that messages are fully processed
+Strictly ordered consumption from a Stream requires a `max_ack_pending` of 1, this ensures that messages are fully processed
 to completion in Stream order.
 
 This has severe implications for scaling - with only 1 message in flight ever it means it's impossible to effectively scale out
@@ -35,7 +35,7 @@ Consider messages from millions of sensors:
 |6  |sensor.3.humidity|70|A|
 
 When doing summarization of these metrics 2 consumers could be created, and consuming messages in parallel, as long as 
-all the messages for a given sensor always goes to the same consumer. Each of the consumers could have a Max Ack Outstanding
+all the messages for a given sensor always goes to the same consumer. Each of the consumers could have a `max_ack_pending`
 of 1 meaning the messages are strictly ordered within the sensors assigned to the group.
 
 This results in 2 messages being in-flight at any given time and ordering, where it matters, being maintained. With an intelligent
@@ -47,6 +47,23 @@ group - sensor 4 would join group `B` perhaps.
 As shown here we should support a standby consumer (`cid:10` here) that will step in anywhere a active consumer fails.
 
 The solution we design has to consider a number of issues discussed below.
+
+### Other examples
+
+The classical ORDERS case, given many clients and orders processing need to be scaled horizontally. With a typical horizontally 
+scaled Pull consumer order of message is not guaranteed, the `ORDER.new.123` message might be failing and retrying resulting in 
+the `ORDER.cancel.123` message being processed before the one creating the ORDER and so the order might never be cancelled leading
+to invalid orders being fulfilled. The system have to guarantee that all messages related to ORDER number 123 are processed 
+in strict order.
+
+One might pre-allocate orders to buckets using something like `orders.<bucket>.new` as a subject, but this restricts us
+to a specific amount of buckets unless we update the entire system. What's needed is the ability to dynamically scale up
+and down the amount of workers consuming the messages.
+
+Given the system discussed here we would create 100 consumption groups on a header or the last token - `123`. A Pull client
+would be attached to each of the 100 consumption groups and all messages related to Order 123 would always be sent to the
+same consumption group. The group would allow for `max_ack_pending:1` thus ensuring that the `new` and `cancel` messages arrive
+in order even when the `new` message is being retried.
 
 ### Group allocation
 
