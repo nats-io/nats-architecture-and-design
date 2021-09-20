@@ -31,5 +31,5 @@ Intercept all status messages, never pass to user. If there is some exceptional 
 ## Consequences
 
 Existing client behavior may be released that the default or only behavior is to pass status messages to the user. 
-Changning to ASM as the default, while not technically breaking, should be documented in release notes and readmes.
+Changing to ASM as the default, while not technically breaking, should be documented in release notes and readmes.
 Providing the option for the user to handle the statuses themself would alleviate breaking existing clients.
