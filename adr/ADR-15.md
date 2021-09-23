@@ -226,7 +226,7 @@ It is possible, that either the flow control or its response is missed and that 
 So the server requires that when flow control is turned on, an idle heartbeat is set.
 If a flow control message is missed, heartbeat messages will contain a header called `Nats-Consumer-Stalled`, 
 the value being identical to the flow control subject.
-When the client detects a heartbeat with the stalled header, it publish to the server as it would responding to flow control.
+When the client detects a heartbeat with the stalled header, it publishes to the server as it would respond to flow control.
 
 It's possible that because of the idle heartbeat duration, that both flow control and multiple heartbeat messages contain the
 flow control subject. It is only required to respond to the specific subject once, so it is suggested that clients track 
@@ -235,6 +235,17 @@ the last flow control subject responded to avoid replying multiple times for the
 #### Pull Mode Statuses
 
 In pull mode, 404 and 408 statuses should not be surfaced to the user or considered in fetch or iterate counts.
+
+#### Miscellaneous Error Statuses
+
+These statuses are know to be error conditions and should not be passed to the user but raised as an error.
+
+- 409 - doing conflicting things like trying to pull from a push consumer, exceeding max ack pending etc
+- 503 - no responder, like if you try to reply to fc and the subscribe went away
+
+#### Unknown Error Statuses
+
+Status that are not recognized by the client should not be passed to the user but raised as an error.
 
 ### Unsubscribe and Drain
 
