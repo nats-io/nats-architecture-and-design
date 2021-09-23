@@ -36,7 +36,7 @@ For instance:
 - If no subject is provided, along with no stream name, the library won't be able to locate/create the consumer.
 - For pull subscriptions ack policy of "none" or "all" is an error.
 
-At the time of this writing, the consumer configuration object looks like this (ordred alphabetically, not as seen in js.go):
+At the time of this writing, the consumer configuration object looks like this (ordered alphabetically, not as seen in js.go):
 
 ```go
 type ConsumerConfig struct {
@@ -135,15 +135,14 @@ A message must contain a reply-to in the JSAck format to be considered a JetStre
 
 The JSAck should be used without modification as the publish subject for the message that ACKs the JetStream message.
 
-This JSAck encodes some delivery information, such as stream and consumer name, stream sequence, etc..
+This JSAck encodes some delivery information, such as stream and consumer name, stream sequence.
+It contains information allowing proper routing in context of multiple accounts and preventing an ACK for an account to ACK a message for the same stream and consumer names in another account.
 
-Some information allowing proper routing in context of multiple accounts and preventing an ACK for an account to ACK a message for the same stream and consumer names in another, were missing.
+There are multiple formats of the JSAck. Both are a period (`.`) delimited strings.
 
-There are multiple formats of the JSAck. Both are a period `.` delimited string.
+Version 1 (v1) contains 9 fields. It must be supported to ensure clients are backward compatible with previous versions of the server.
 
-The old version contains 9 fields. it must be supported to ensure clients are backward compatible with previous versions of the server:
-
-Going forward Domain and Account Hash are inserted in positions 3 and 4 (one relative) of the old format bringing the number of tokens to 11.
+For Version 2 (v2), Domain and Account Hash are inserted in positions directly after `$JS.ACK.`, bringing the number of tokens to 11.
 There may be additional tokens added in the future.
 
 You must ensure that your client can support the 9 token version (v1) and versions with 11 or more tokens (v2), as new tokens may be added to the end of the 11 token format.
@@ -166,7 +165,7 @@ $JS.ACK.<domain>.<account hash>.<stream name>.<consumer name>.<num delivered>.<s
 
 When there is no domain, the server will still set the token to a special value of underscore `_` (the server will make sure that users can't pick this as a domain name.) 
 
-The client should expose to the user domain values of `_` as either an empty/null string or as the `_`, documenting it's meaning of "no domain".
+To the user, the client should expose domain values of `_` as either an empty/null string or as the `_`, documenting its meaning of "no domain".
 
 ##### V2 Notes
 
@@ -174,7 +173,7 @@ Having the domain always present simplifies the library code which does not have
 
 Why not append those new tokens at the end? This is to simplify the export/import subject, ie `$JS.ACK.<domain>.<account>.>`. Otherwise, you would need to possibly have something like `$JS.ACK.*.*.*.*.*.*.*.<domain>.<account>.>`
 
-The account hash is not used by the client at this time, only used for routing, same for the last token.
+The account hash is not used by the client at this time, only used for routing, same for the last (12th) token.
 
 ### Automatic Status Management
 
@@ -188,8 +187,8 @@ It is offered to support backward compatibility for pre-existing users.
 If the JetStream consumer is configured with heartbeats, the server will periodically (based on the specified idle heartbeat interval) send heartbeats containing meta information about the stream and consumer sequences.
 The library should set up a timer to monitor that heartbeats from the server are properly received.
 
-A heartbeat is considered missed if it is not received within the expected "period" since the last messages was received. The default period is equal to the idle heartbeat time.
-An alarm is raised if a "threshold" number of heartbeats messages are not received in the expected period. The default threshold is 3 consecutive periods of missing heartbeats.
+A heartbeat is considered missed if it is not received within the expected "period" since the last message was received. The default period is equal to the idle heartbeat time.
+An alarm is raised if a "threshold" number of heartbeat messages are not received in their expected period. The default threshold is 3 consecutive periods of missing heartbeats.
 The alarm should be surfaced to the user in a way that makes sense in the client language, for example by notifying the user through the asynchronous error callback.
 
 Clients may optionally provide a way for the user to configure the threshold and period.
@@ -215,7 +214,7 @@ so clients may want to provide for optional detection of message gaps.
 When a JetStream consumer has flow control enabled (not applicable to pull consumers), the library may receive a flow control status message instead of a regular JetStream message.
 
 At the time when the message would have been normally passed to the user for processing, either synchronously via "Next Message" or via an asynchronous callback, 
-the client should respond to the provided reply-to by publishing value as the subject for a message with an empty payload.
+the client should respond to the provided reply-to by publishing the value as the subject for a message with an empty payload.
 
 When a flow control message is reached, the server likely had sent more messages.
 If the user is requesting messages synchronously via Next Message, the client should try to respond with the next buffered message after it responds to the flow control, 
@@ -224,13 +223,13 @@ if it is within any wait time supplied by the user as part of the next message c
 **Note:** The format of the Flow Control subject should not to be inspected, since it may change at the server discretion, but it will always be a publishable subject.
 
 It is possible, that either the flow control or its response is missed and that the consumer is considered stalled from a server perspective.
-So the server requires that when Flow Control is turned on, an idle heartbeat is set.
+So the server requires that when flow control is turned on, an idle heartbeat is set.
 If a flow control message is missed, heartbeat messages will contain a header called `Nats-Consumer-Stalled`, 
 the value being identical to the flow control subject.
 When the client detects a heartbeat with the stalled header, it publish to the server as it would responding to flow control.
 
 It's possible that because of the idle heartbeat duration, that both flow control and multiple heartbeat messages contain the
-flow control subject. it is only required to respond to the specific subject once, so it is suggested that clients track 
+flow control subject. It is only required to respond to the specific subject once, so it is suggested that clients track 
 the last flow control subject responded to avoid replying multiple times for the same flow control. The server will ignore duplicates, it is just unnecessary traffic.  
 
 #### Pull Mode Statuses
