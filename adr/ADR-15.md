@@ -184,14 +184,14 @@ It is offered to support backward compatibility for pre-existing users.
 
 #### Heartbeats
 
-If the JetStream consumer is configured with heartbeats, the server will periodically (based on the specified idle heartbeat interval) send heartbeats containing meta information about the stream and consumer sequences.
-The library should set up a timer to monitor that heartbeats from the server are properly received.
+If the JetStream consumer is configured with an idle heartbeat interval, the server will send heartbeats when the server has no pending messages.
+The library should set up a timer to monitor that either messages or status is received, ensuring that the server is connected.
 
-A heartbeat is considered missed if it is not received within the expected "period" since the last message was received. The default period is equal to the idle heartbeat time.
-An alarm is raised if a "threshold" number of heartbeat messages are not received in their expected period. The default threshold is 3 consecutive periods of missing heartbeats.
-The alarm should be surfaced to the user in a way that makes sense in the client language, for example by notifying the user through the asynchronous error callback.
+If no message or status is received within a certain time period,
+an alarm should be surfaced to the user in a way that makes sense in the client language, for example by notifying the user through the asynchronous error callback.
 
-Clients may optionally provide a way for the user to configure the threshold and period.
+The time allowed before an alarm is raised should be 3 times the idle heartbeat interval, 
+but clients may optionally provide a way for the user to configure this time.
 
 #### Messages Gaps
 
