@@ -119,7 +119,7 @@ type RoKV interface {
 	// Get gets a key value from the store
 	Get(key string) ([]byte, error)
 
-        // Get gets a key entry from the store
+        // GetEntry gets a key entry from the store
 	GetEntry(key string) (Entry, error)
 
 	// History retrieves historic values for a key
