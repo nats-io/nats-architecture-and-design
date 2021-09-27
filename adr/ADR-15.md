@@ -104,6 +104,8 @@ Other checks:
 - If the user was trying to create a Pull subscription, but `DeliverSubject` is not empty, then return an error indicating that user can't create a pull subscription for a push based JS consumer
 - The opposite: if the user was not creating a Pull subscription but the `DeliverSubject` is empty, then return an error indicating that a pull susbcription is required
 - More generally, if the user provided configuration does not match the configuration that we get from the `ConsumerInfo.Config`, and error should be returned to indicate that the changes are not applied (only a deliver subject can be changed for an existing JS consumer).
+- If Flow Control is set in the consumer when a queue / deliver group is requested, return an error indicating the Flow Control is not supported over queues.
+- If Heartbeats are configured in the consumer when a queue / deliver group is requested, return an error indicating the Heartbeats are not supported over queues.
 
 #### NATS subscription
 
@@ -203,6 +205,8 @@ For Heartbeat messages, the information can be found in headers `Nats-Last-Consu
 
 If the library detects a gap in the consumer sequence, it can surface a notification to the user in a way that makes sense in the client language, for example by notifying the user through the asynchronous error callback.
 
+**Note:** Gap checking should be disabled on queue / deliver group subscriptions
+
 #### Ordered Consumers
 
 Ordered consumers (see ADR-17 when it's ready) will rely on message gap handling. 
@@ -241,7 +245,7 @@ In pull mode, 404 and 408 statuses should not be surfaced to the user or conside
 These statuses are know to be error conditions and should not be passed to the user but raised as an error.
 
 - 409 - doing conflicting things like trying to pull from a push consumer, exceeding max ack pending etc
-- 503 - no responder, like if you try to reply to fc and the subscribe went away
+- 503 - no responder, like if you try to reply to fc and the subscription went away
 
 #### Unknown Error Statuses
 
