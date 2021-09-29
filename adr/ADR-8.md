@@ -116,11 +116,12 @@ The interface here is a guide of what should function in read-only mode.
 ```go
 // RoKV is a read-only interface to a single key-value store bucket
 type RoKV interface {
-	// Get gets a key value from the store
-	Get(key string) ([]byte, error)
 
         // GetEntry gets a key entry from the store
 	GetEntry(key string) (Entry, error)
+
+        // Get gets a key value from the store
+	GetValue(key string) ([]byte, error)
 
 	// History retrieves historic values for a key
 	History(ctx context.Context, key string) ([]Entry, error)
