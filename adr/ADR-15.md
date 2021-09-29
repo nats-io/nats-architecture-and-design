@@ -15,7 +15,7 @@ This document attempts to describe the workflow of a JetStream subscription in t
 
 ### Creation
 
-The library should have API(s) that allow(s) creation of a JetStream subscription. Depending on the language, there may be various type of subscriptions (like Channel based in Go), or with various options such as Queue subscriptions, etc... There can be different APIs or one with a set of options.
+The library should have API(s) that allows creation of a JetStream subscription. Depending on the language, there may be various type of subscriptions (like Channel based in Go), or with various options such as Queue subscriptions, etc... There can be different APIs or one with a set of options.
 
 #### Configuration
 
@@ -36,7 +36,7 @@ For instance:
 - If no subject is provided, along with no stream name, the library won't be able to locate/create the consumer.
 - For pull subscriptions ack policy of "none" or "all" is an error.
 
-At the time of this writing, the consumer configuration object looks like this (ordred alphabetically, not as seen in js.go):
+At the time of this writing, the consumer configuration object looks like this (ordered alphabetically, not as seen in js.go):
 
 ```go
 type ConsumerConfig struct {
@@ -104,6 +104,8 @@ Other checks:
 - If the user was trying to create a Pull subscription, but `DeliverSubject` is not empty, then return an error indicating that user can't create a pull subscription for a push based JS consumer
 - The opposite: if the user was not creating a Pull subscription but the `DeliverSubject` is empty, then return an error indicating that a pull susbcription is required
 - More generally, if the user provided configuration does not match the configuration that we get from the `ConsumerInfo.Config`, and error should be returned to indicate that the changes are not applied (only a deliver subject can be changed for an existing JS consumer).
+- If Flow Control is set in the consumer when a queue / deliver group is requested, return an error indicating the Flow Control is not supported over queues.
+- If Heartbeats are configured in the consumer when a queue / deliver group is requested, return an error indicating the Heartbeats are not supported over queues.
 
 #### NATS subscription
 
@@ -127,71 +129,127 @@ If the result indicates that the consumer already exists, then it means that the
 
 When the consumer already exists, for push consumers, the NATS queue subscription that was created prior to the "AddConsumer" call needs to be destroyed and replaced with the new NATS queue subscription on the consumer info's `DeliverSubject`.
 
-### Runtime
-
-#### Heartbeats
-
-If the JetStream consumer is configured with heartbeats, the server will periodically (based on the specified heartbeat interval) send hearbeats containing meta information about the stream and consumer sequences.
-
-The library should setup a timer to monitor that heartbeats from the server are properly received. No specific action is taken by the library other than notifying the user through the asynchronous error callback if heartbeats are detected missing.
-
-Also, the library should always check for JetStream heartbeat (and flow control) status messages, regardless of how the subscription was created. That is, the checks should not be conditional to the `IdleHeartbeat` option passed to a subscribe API call.
-
-The library should keep track of all messages which reply subject start with `$JS.ACK` since they contain information about the stream and consumer sequence, etc..
-
-When the library receives a message that is found to be a control message (no payload and containst the "Status" header), if the header is "100 Idle Heartbeat", then the library should check if there is any gap detected between what was the last tracked message meta information and the content of the heartbeat. If a gap is detected, an asynchronous error should be reported indicating what the gap is.
-
-Ordered consumers (should have its own ADR) will handle all that for the application, recreating the subscription as needed at the right stream sequence.
-
-**Note**: In most libraries the hearbeats messages are never presented to the user. Those are handled internally.
-
 #### JS Ack
 
-When the server sends a message to a subscriber, and if there is an AckPolicy specified other than "AckNone", then the message will have a reply subject that the library is supposed to use in order to acknowledge the message. This subject also encodes some delivery information, such as stream and consumer name, stream sequence, etc..
+When the server sends a message to a subscriber, the message will have a reply-to value called the "ACK Reply Subject" aka JSAck.
 
-Some information allowing proper routing in context of multiple accounts and preventing an ACK for an account to ACK a message for the same stream and consumer names in another, were missing.
+A message must contain a reply-to in the JSAck format to be considered a JetStream message. JSAck will always start with `$JS.ACK`
 
-Until now, ACK reply subject contained 9 tokens, with this layout:
+The JSAck should be used without modification as the publish subject for the message that ACKs the JetStream message.
+
+This JSAck encodes some delivery information, such as stream and consumer name, stream sequence.
+It contains information allowing proper routing in context of multiple accounts and preventing an ACK for an account to ACK a message for the same stream and consumer names in another account.
+
+There are multiple formats of the JSAck. Both are a period (`.`) delimited strings.
+
+Version 1 (v1) contains 9 fields. It must be supported to ensure clients are backward compatible with previous versions of the server.
+
+For Version 2 (v2), Domain and Account Hash are inserted in positions directly after `$JS.ACK.`, bringing the number of tokens to 11.
+There may be additional tokens added in the future.
+
+You must ensure that your client can support the 9 token version (v1) and versions with 11 or more tokens (v2), as new tokens may be added to the end of the 11 token format.
+If the reply-to does not start with `$JS.ACK`, is not 9 tokens, is not 11 or more tokens, or the tokens are not of the correct data type, the client should raise an error.
+
+_Token Version 1_
+
+Version 1 (v1) is a 9 token format:
 ```
 $JS.ACK.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
 ```
 
-This is going to change with newer servers where the number of tokens will be 12, with the tokens being:
+_Token Version 2_
+
+Version 2 (v2) is an 11 or more token format:
+
 ```
-$JS.ACK.<domain>.<account hash>.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>.<a token with a random value>
+$JS.ACK.<domain>.<account hash>.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
 ```
 
-When there is no domain, the server will still set the token to a special value of `_` (the server will make sure that users can't pick this as a domain name). Having the domain always present simplifies the library code which does not have to bother with a variable number of tokens somewhere close to the beginning of the subject, and possibly doing some shifting to find out the location of the fields it cares about.
+When there is no domain, the server will still set the token to a special value of underscore `_` (the server will make sure that users can't pick this as a domain name.) 
+
+To the user, the client should expose domain values of `_` as either an empty/null string or as the `_`, documenting its meaning of "no domain".
+
+##### V2 Notes
+
+Having the domain always present simplifies the library code which does not have to bother with a variable number of tokens somewhere close to the beginning of the subject, and possibly doing some shifting to find out the location of the fields it cares about.
 
 Why not append those new tokens at the end? This is to simplify the export/import subject, ie `$JS.ACK.<domain>.<account>.>`. Otherwise, you would need to possibly have something like `$JS.ACK.*.*.*.*.*.*.*.<domain>.<account>.>`
 
-When unpacking an ACK subject, the library should verify that it starts with `$JS.ACK.` but then check the overall number of tokens, and if 9 assume that it is the "old" ACK messages without domain nor account hash.
+The account hash is not used by the client at this time, only used for routing, same for the last (12th) token.
 
-If it has at *least* 11 tokens (see below), we know that 3rd token is domain, and is reported as a new field `Domain` in the `MsgMetadata` object. The library can replace `_` with empty string when returning a `MsgMetada` object, or document the meaning of the domain named `_`.
+### Automatic Status Management
 
-The account hash is not used by the client at this time, only used for routing, same for the last token.
+The client will provide Automatic Status Management (ASM) as the default client behavior.
+ASM means handling all status messages such as Heartbeats, Flow Control, Pull 404s and 408s, Gap Awareness, etc.
+A client can optionally provide a mode to allow the user to handle statuses, but that is not required.
+It is offered to support backward compatibility for pre-existing users.
 
-**Note:** The library MUST only verify that the number of tokens is 9 (the v1 version if you will), or at least 11, not 12. With at least 11, the domain and account hash is assumed to be present. The 12th token (as described in the new account layout above) is not used by the library and may even not always be present in future server releases, or on the contrary, additional ones added. So the library must not report an error if at least 11 tokens are present.
+#### Heartbeats
 
-#### Flow control
+If the JetStream consumer is configured with an idle heartbeat interval, the server will send heartbeats when the server has no pending messages.
+The library should set up a timer to monitor that either messages or status is received, ensuring that the server is connected.
 
-When a JetStream consumer has flow control enabled (not applicable to pull consumers), the library may receive a control message that indicates that this is a flow control and should respond to the provided subject when the current pending message has been processed.
+If no message or status is received within a certain time period,
+an alarm should be surfaced to the user in a way that makes sense in the client language, for example by notifying the user through the asynchronous error callback.
 
-That is, suppose messages are received on a connection and pushed to a JetStream subscription, and there are currently 1000 pending messages. When the connection received a JetStream flow control status message for a given subscription, it should mark that the subscription should send an empty message to the given Flow Control subject (which is the reply subject of the incoming control message) when the library has dispatched that 1000's message in the subscription's pending list.
+The time allowed before an alarm is raised should be 3 times the idle heartbeat interval, 
+but clients may optionally provide a way for the user to configure this time.
 
-**Note** The format or the number of tokens of the Flow Control subject should not to be inspected, since it may change at the server discretion. From the library perspective, this is a subject that the library needs to send an empty message to, that's it.
+#### Messages Gaps
 
-For synchronous subscription, the `NextMsg()` call need to perform the same check and if it realized that the current message is the one that was "marked" as being the one at which the flow control should be "responded" to, then send an empty message to the recorded Flow Control subject.
+Checking for message gaps only applies to consumers that are not participating in queues.
+
+The library should interrogate JetStream messages and Heartbeat messages as each contains the last consumer sequence and the last stream sequence.
+For JetStream messages, the information is found in the JS Ack reply-to subject (see JS Ack above). 
+For Heartbeat messages, the information can be found in headers `Nats-Last-Consumer` and `Nats-Last-Stream`
+
+If the library detects a gap in the consumer sequence, it can surface a notification to the user in a way that makes sense in the client language, for example by notifying the user through the asynchronous error callback.
+
+**Note:** Gap checking should be disabled on queue / deliver group subscriptions
+
+#### Ordered Consumers
+
+Ordered consumers (see ADR-17 when it's ready) will rely on message gap handling. 
+The implementation of ordered consumers will possibly want to handle detection of gaps itself, 
+so clients may want to provide for optional detection of message gaps.
+
+#### Flow Control
+
+When a JetStream consumer has flow control enabled (not applicable to pull consumers), the library may receive a flow control status message instead of a regular JetStream message.
+
+At the time when the message would have been normally passed to the user for processing, either synchronously via "Next Message" or via an asynchronous callback, 
+the client should respond to the provided reply-to by publishing the value as the subject for a message with an empty payload.
+
+When a flow control message is reached, the server likely had sent more messages.
+If the user is requesting messages synchronously via Next Message, the client should try to respond with the next buffered message after it responds to the flow control, 
+if it is within any wait time supplied by the user as part of the next message call.     
+
+**Note:** The format of the Flow Control subject should not to be inspected, since it may change at the server discretion, but it will always be a publishable subject.
 
 It is possible, that either the flow control or its response is missed and that the consumer is considered stalled from a server perspective.
+So the server requires that when flow control is turned on, an idle heartbeat is set.
+If a flow control message is missed, heartbeat messages will contain a header called `Nats-Consumer-Stalled`, 
+the value being identical to the flow control subject.
+When the client detects a heartbeat with the stalled header, it publishes to the server as it would respond to flow control.
 
-The server may include, in heartbeats status messages, a header called `Nats-Consumer-Stalled`, with a value being a flow control subject. If this header is found in an hearbeat message, the library should send "right away" an empty message to the flow control subject, regardless of its current flow control state.
+It's possible that because of the idle heartbeat duration, that both flow control and multiple heartbeat messages contain the
+flow control subject. It is only required to respond to the specific subject once, so it is suggested that clients track 
+the last flow control subject responded to avoid replying multiple times for the same flow control. The server will ignore duplicates, it is just unnecessary traffic.  
 
-Without this, it can be that a consumer remains stalled, so having both heartbeats and flow control configured seem like necessary, so we may make that a misconfiguration if flow control is configured without heartbeat.
+#### Pull Mode Statuses
 
-Again, Ordered consumers should be favored.
+In pull mode, 404 and 408 statuses should not be surfaced to the user or considered in fetch or iterate counts.
 
-**Note**: In most libraries the flow control messages are never presented to the user. Those are handled internally.
+#### Miscellaneous Error Statuses
+
+These statuses are know to be error conditions and should not be passed to the user but raised as an error.
+
+- 409 - doing conflicting things like trying to pull from a push consumer, exceeding max ack pending etc
+- 503 - no responder, like if you try to reply to fc and the subscription went away
+
+#### Unknown Error Statuses
+
+Status that are not recognized by the client should not be passed to the user but raised as an error.
 
 ### Unsubscribe and Drain
 
