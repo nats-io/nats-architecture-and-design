@@ -1,4 +1,4 @@
-# Hostname resolution
+# Ordered Consumer
 
 |Metadata|Value|
 |--------|-----|
