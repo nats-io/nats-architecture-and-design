@@ -5,7 +5,7 @@
 |Date    |2021-09-29|
 |Author  |@scottf|
 |Status  |Proposed|
-|Tags    |client|
+|Tags    |jetstream,client|
 
 ### Context and Problem Statement
 

@@ -20,6 +20,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-11](adr/ADR-11.md)|client|Hostname resolution|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
+|[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 
 ## Jetstream
 
@@ -32,6 +33,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
+|[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 
 ## Kv
 
