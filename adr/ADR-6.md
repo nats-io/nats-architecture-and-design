@@ -2,7 +2,7 @@
 
 |Metadata|Value|
 |--------|-----|
-|Date    |2021-06-28|
+|Date    |2021-08-17|
 |Author  |@scottf|
 |Status  |Approved|
 |Tags    |server, client|
@@ -40,8 +40,13 @@ backslash        = "\"
 pipe             = "|"
 question-mark    = "?"
 ampersand        = "&"
+dash             = "-"
+underscore       = "_"
+equals           = "="
 printable        = all printable ascii (33 to 126 inclusive)
 term             = (printable except dot, asterisk or gt)+
+limited-term     = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals)+
+restricted-term  = (A-Z, a-z, 0-9, dash, underscore)+
 prefix           = (printable except dot, asterisk, gt or dollar)+
 filename-safe    = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand)
 
@@ -53,4 +58,6 @@ durable-name       = term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters
+kv-key-name        = limited-term (dot limited-term)*
+kv-bucket-name     = restricted-term
 ```

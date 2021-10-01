@@ -20,7 +20,10 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-11](adr/ADR-11.md)|client|Hostname resolution|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
+|[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
+|[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
+|[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
 
 ## Jetstream
 
@@ -32,7 +35,9 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv|JetStream based Key-Value Stores|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
+|[ADR-12](adr/ADR-12.md)|jetstream|JetStream Encryption At Rest|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
+|[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 
 ## Kv
@@ -46,6 +51,12 @@ This repo is used to capture architectural and design decisions as a reference o
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
+
+## Security
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
 
 ## Server
 
