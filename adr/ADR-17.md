@@ -37,11 +37,12 @@ The user can provide a consumer configuration but it must be validated. Error wh
 
 Checks:
 
-- durable_name: can not be provided
+- durable_name: must not be provided
+- deliver_subject: must not be provided
 - ack policy: must not be provided or set to none. Set it to none if it is not provided.
 - max_deliver: must be not be provided or set to 1. Set it to 1 if it is not provided.
 - flow_control: must not be provided or set true. Set it to true if it is not provided.
-
+ 
 Check and set these settings without an error:  
 
 - idle_heartbeat if not provided, set to 5 seconds
