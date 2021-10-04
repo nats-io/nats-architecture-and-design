@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2021-09-29|
 |Author  |@scottf|
-|Status  |Proposed|
+|Status  |Partially Implemented|
 |Tags    |jetstream,client|
 
 ### Context and Problem Statement
