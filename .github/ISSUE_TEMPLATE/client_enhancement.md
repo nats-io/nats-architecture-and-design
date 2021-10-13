@@ -23,6 +23,7 @@ The behavior is documented in ADR-X.
  - [ ] .Net @ColinSullivan1 @scottf
  - [ ] C @kozlovic
  - [ ] Python @wallyqs
+ - [ ] Ruby @wallyqs
  - [ ] Rust @matthiashanel @derekcollison
    
 ## Other Tasks
