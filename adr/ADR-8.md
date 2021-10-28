@@ -23,7 +23,7 @@ Initial feature list:
  * Multiple named buckets full of keys with n historical values kept per value
  * Put and Get of `string(k)=[]byte(v)` values
  * Put only if the revision of the last value for a key matches an expected revision
- * Historic values can be kept per key, setable on creation of the bucket
+ * Historic values can be kept per key, setable on creation of the bucket. Limited to 64 entries per key.
  * Key deletes preserves history
  * Keys can be expired from the bucket based on a TTL
  * Watching a specific key, ranges based on NATS wildcards, or the entire bucket for live updates
@@ -126,9 +126,9 @@ type RoKV interface {
 	// History retrieves historic values for a key
 	History(ctx context.Context, key string) ([]Entry, error)
 
-	// Watch a key for updates, the same Entry might be delivered more than once. Key can be a specific key, a NATS wildcard
+	// Watch a key(s) for updates, the same Entry might be delivered more than once. Key can be a specific key, a NATS wildcard
 	// or an empty string to watch the entire bucket
-	Watch(ctx context.Context, key string) (Watch, error)
+	Watch(ctx context.Context, keySpec string) (Watch, error)
 
 	// Keys retrieves a list of all known keys in the bucket
 	Keys(ctx context.Context) ([]string, error)
