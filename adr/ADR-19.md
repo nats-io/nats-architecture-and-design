@@ -37,33 +37,43 @@ Possible future features
 - Capturing Content-Type (mime type)
 - Per chunk Content-Encoding (i.e. gzip)
 
-## Name Conventions
+## Naming Specification
 
 ### Object Store
-The object store name or bucket name `os-bucket-name` will be used to formulate a stream name and is specified as `restricted-term` (see [ADR-6](ADR-6.md).)
-`restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`.
+The object store name or bucket name (`os-bucket-name`) will be used to formulate a stream name and is specified as: 
+
+`restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`
+
+See [ADR-6](ADR-6.md) for more detail. 
 
 ### Objects
-An individual object name is used _sanitized_ to form a portion of a subject. The name is specified as `limited-term-w-sp (dot limited-term-w-sp)*`
-(see [ADR-6](ADR-6.md). `limited-term-w-sp` is defined as 1 or more of `A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, space`. Notice that a dot (`.`) 
-is allowed except for the first or last character.
+An individual object name is used _sanitized_ to form a portion of a subject. The name is specified as:
 
-The object name `os-object-name`, the part used in the subject, is created replacing any dot or space in the name with an underscore.
+`limited-term-w-sp (dot limited-term-w-sp)*`
+
+where 
+
+`limited-term-w-sp` is defined as 1 or more of `A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, space`. 
+
+For an individual object name, a dot `.` is allowed except for the first or last character.
+
+The object name (`os-object-name`) is _sanitized_ by replacing any dot or space in the name with an underscore so it
+can be used in the Meta Info message subject 
 
 > It is under consideration to expand object name to allow printable, which would require some kind of encoding when creating the `os-object-name`. 
 
 ### Chunk Ids
-Chunk ids `chunk-id` should be a nuid.
+Chunk ids (`chunk-id`) should be a nuid.
 
 ### Component Templates
 
 | Component | Template |
 | --- | --- |
 | Stream Name | `OBJ_<os-bucket-name>` |
-| Chunk Stream Subject| `$O.<os-bucket-name>.C.>` |
-| Meta Info Stream Subject| `$O.<os-bucket-name>.M.>` |
-| Chunk Message Subject| `$O.<os-bucket-name>.C.<chunk-id>` |
-| Meta Message Subject| `$O.<os-bucket-name>.M.<os-object-name>` |
+| Chunk Stream subject | `$O.<os-bucket-name>.C.>` |
+| Meta Info Stream subject | `$O.<os-bucket-name>.M.>` |
+| Chunk message subject | `$O.<os-bucket-name>.C.<chunk-id>` |
+| Meta Info message subject | `$O.<os-bucket-name>.M.<os-object-name>` |
 
 ### Default Settings
 
@@ -71,7 +81,7 @@ Default settings can be overridden on a per object basis.
 
 | Setting | Value | Notes |
 | --- | --- | --- |
-| Chunk Size | 128k (128 * 1024) | May not make sense on all platforms. May be tuned at a later time. |
+| Chunk Size | 128k (128 * 1024) | Clients may tune this as appropriate. |
 
 ## Structures
 
@@ -188,7 +198,7 @@ type ObjectStoreStatus interface {
 
 ### ObjectStoreManager 
 
-Object Store maanger creates, loads and deletes Object Stores
+Object Store manger creates, loads and deletes Object Stores
 
 ```go
 type ObjectStoreManager interface {
@@ -217,21 +227,25 @@ type ObjectStore interface {
 
     // PutBytes is convenience function to put a byte slice into this object store.
     PutBytes(name string, data []byte, opts ...ObjectOpt) (*ObjectInfo, error)
+    
     // GetBytes is a convenience function to pull an object from this object store and return it as a byte slice.
     GetBytes(name string, opts ...ObjectOpt) ([]byte, error)
     
     // PutBytes is convenience function to put a string into this object store.
     PutString(name string, data string, opts ...ObjectOpt) (*ObjectInfo, error)
+    
     // GetString is a convenience function to pull an object from this object store and return it as a string.
     GetString(name string, opts ...ObjectOpt) (string, error)
     
     // PutFile is convenience function to put a file into this object store.
     PutFile(file string, opts ...ObjectOpt) (*ObjectInfo, error)
+    
     // GetFile is a convenience function to pull an object from this object store and place it in a file.
     GetFile(name, file string, opts ...ObjectOpt) error
     
     // GetInfo will retrieve the current information for the object.
     GetInfo(name string) (*ObjectInfo, error)
+    
     // UpdateMeta will update the meta data for the object.
     UpdateMeta(name string, meta *ObjectMeta) error
     
