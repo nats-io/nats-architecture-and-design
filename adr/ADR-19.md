@@ -70,10 +70,10 @@ Chunk ids (`chunk-id`) should be a nuid.
 | Component | Template |
 | --- | --- |
 | Stream Name | `OBJ_<os-bucket-name>` |
+| Object Info Stream subject | `$O.<os-bucket-name>.M.>` |
 | Chunk Stream subject | `$O.<os-bucket-name>.C.>` |
-| Meta Info Stream subject | `$O.<os-bucket-name>.M.>` |
+| Object Info message subject | `$O.<os-bucket-name>.M.<os-object-name>` |
 | Chunk message subject | `$O.<os-bucket-name>.C.<chunk-id>` |
-| Meta Info message subject | `$O.<os-bucket-name>.M.<os-object-name>` |
 
 ### Default Settings
 
@@ -82,6 +82,14 @@ Default settings can be overridden on a per object basis.
 | Setting | Value | Notes |
 | --- | --- | --- |
 | Chunk Size | 128k (128 * 1024) | Clients may tune this as appropriate. |
+
+## Basic Design
+
+- Object store or bucket is backed by a stream
+- Multiple objects can be placed in each bucket
+- Object Info is stored as json in the payload of the message on the Object Info message subject. 
+- The Object Info subject is always rolled up (per subject)
+- Object chunks are stored as the payload of messages on the Chunk message subject
 
 ## Structures
 
