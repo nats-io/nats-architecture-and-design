@@ -39,28 +39,16 @@ Possible future features
 
 ## Naming Specification
 
+Protocol Naming Conventions are fully defined in [ADR-6](ADR-6.md)
+
 ### Object Store
-The object store name or bucket name (`os-bucket-name`) will be used to formulate a stream name and is specified as: 
-
-`restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`
-
-See [ADR-6](ADR-6.md) for more detail. 
+The object store name or bucket name (`os-bucket-name`) will be used to formulate a stream name and is specified as: `restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`
 
 ### Objects
-An individual object name is used _sanitized_ to form a portion of a subject. The name is specified as:
-
-`limited-term-w-sp (dot limited-term-w-sp)*`
-
-where 
-
-`limited-term-w-sp` is defined as 1 or more of `A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, space`. 
-
-For an individual object name, a dot `.` is allowed except for the first or last character.
-
-The object name (`os-object-name`) is _sanitized_ by replacing any dot or space in the name with an underscore so it
-can be used in the Meta Info message subject 
-
-> It is under consideration to expand object name to allow printable, which would require some kind of encoding when creating the `os-object-name`. 
+An individual object name is url encoded to form a portion of a subject (`os-object-name`).
+There are essentially no restrictions on the object name except that it has to be a valid filename across operating systems, so it is specified as: 
+one or more file `filename-full`, maximum 255 characters where `filename-full` is defined as 
+`printable except asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand`. 
 
 ### Chunk Ids
 Chunk ids (`chunk-id`) should be a nuid.
@@ -197,7 +185,8 @@ type ObjectStoreStatus interface {
     // Size is the combined size of all data in the bucket including metadata, in bytes
     Size() uint64
     
-    // BackingStore provides details about the underlying storage
+    // BackingStore provides details about the underlying storage. 
+    // Currently the only supported value is `JetStream`
     BackingStore() string
 }    
 ```
@@ -223,7 +212,8 @@ type ObjectStoreManager interface {
 
 ### ObjectStore 
 
-Storing large objects efficiently
+Storing large objects efficiently. Please note that anything that is commented as a "convenience function"
+is recommended but optional if it does not make sense for the client language.
 
 ```go
 type ObjectStore interface {
