@@ -45,10 +45,12 @@ Protocol Naming Conventions are fully defined in [ADR-6](ADR-6.md)
 The object store name or bucket name (`os-bucket-name`) will be used to formulate a stream name and is specified as: `restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`
 
 ### Objects
-An individual object name is url encoded to form a portion of a subject (`os-object-name`).
+An individual object name is custom url encoding to form a portion of a subject (`os-object-name`).
 There are essentially no restrictions on the object name except that it has to be a valid filename across operating systems, so it is specified as: 
 one or more file `filename-full`, maximum 255 characters where `filename-full` is defined as 
-`printable except asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand`. 
+`printable except asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand`.
+
+The custom portion of the url encoding is that dot `.` must also be encoded as `%2e`, which is not required in standard url encoding.
 
 ### Chunk Ids
 Chunk ids (`chunk-id`) should be a nuid.
