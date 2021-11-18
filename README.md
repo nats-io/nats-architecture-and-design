@@ -24,6 +24,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 |[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 
 ## Jetstream
 
@@ -39,12 +40,20 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
 |[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 
 ## Kv
 
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv|JetStream based Key-Value Stores|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
+
+## Objectstore
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 
 ## Observability
 
