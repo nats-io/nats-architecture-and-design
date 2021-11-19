@@ -57,6 +57,7 @@ Thus, the underlying stream still needs to be created with a subscription to `$K
 
 Domains are just a special case of API prefixes and will work the same way.
 The API prefix `$JS.<domain-name>.API` will lead to `$JS.<domain-name>.API.$KV.bin.key`.
+As the leaf node connection into the domain is crossed, the inserted mapping will changes the subject back to `$KV.bin.key`.
 
 ## Consequences 
 
@@ -68,6 +69,7 @@ To avoid accidental API overlaps going forward, the implication for JetStream is
 Specifically, JetStream will never expose any functionality under `$JS.API.$KV.>`.
 The version with an API prefix would look as follows `JS.from-acc1.$KV`, which will clash with the same subject, used by kv.
 This is a side effect of JetStream having a two token API prefix and the materialized views using a single token.
+
 This problem can be avoided by unifying the API name spaces to alway be two tokens with the second token being `API`, resulting in `$JS.API`, `$KV.API` and `$OBJ.API`.
 This however will not be backwards compatible.
 
