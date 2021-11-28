@@ -164,6 +164,9 @@ type KV interface {
 	// Purge removes all data for a key including history, leaving 1 historical entry being the purge
 	Purge(key string) error
 
+	// Completely remove all keys that are in the deleted or purged state, leaving no entries behind for those keys.
+	PurgeDeletes() error
+
 	// Destroy removes the entire bucket and all data, KV cannot be used after
 	Destroy() error
 
