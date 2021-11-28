@@ -165,6 +165,7 @@ type KV interface {
 	Purge(key string) error
 
 	// Completely remove all keys that are in the deleted or purged state, leaving no entries behind for those keys.
+	// This API is OPTIONAL
 	PurgeDeletes() error
 
 	// Destroy removes the entire bucket and all data, KV cannot be used after
