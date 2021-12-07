@@ -187,6 +187,8 @@ Clients must support 3 terminal Ack Types, `+ACK`, `-NAK` and `+TERM` and the pr
 Once a terminal Ack Type has been published for a message, the client should ignore all other 
 user requests to send any type of ack. 
 
+> A suggested implementation is to mark the message as having sent a terminal Ack Type in some way _after_ successful publish of the ack, and to rely on that state for subsequent acks.
+
 If the consumer is configured with Ack Policy of `none`, the client should ignore all requests to send any type of ack.
 
 The client should not return, throw or escalate an error unless the publishing of an ack has an error from the server or for instance due to connectivity.  
