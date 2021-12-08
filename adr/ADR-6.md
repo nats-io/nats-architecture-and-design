@@ -45,7 +45,7 @@ underscore       = "_"
 equals           = "="
 printable        = all printable ascii (33 to 126 inclusive)
 term             = (printable except dot, asterisk or gt)+
-limited-term     = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals)+
+limited-term     = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, colon)+
 restricted-term  = (A-Z, a-z, 0-9, dash, underscore)+
 prefix           = (printable except dot, asterisk, gt or dollar)+
 filename-safe    = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand)
