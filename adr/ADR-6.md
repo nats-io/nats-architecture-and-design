@@ -46,7 +46,6 @@ equals           = "="
 printable        = all printable ascii (33 to 126 inclusive)
 term             = (printable except dot, asterisk or gt)+
 limited-term     = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals)+
-kv_starting-term = limited-term that does not start with _kv
 restricted-term  = (A-Z, a-z, 0-9, dash, underscore)+
 prefix           = (printable except dot, asterisk, gt or dollar)+
 filename-safe    = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand)
@@ -59,6 +58,13 @@ durable-name       = term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters
-kv-key-name        = kv_starting-term (dot limited-term)* 
+kv-key-name        = limited-term (dot limited-term)* 
 kv-bucket-name     = restricted-term
 ```
+
+
+## Notes
+
+### kv-key-name
+
+Keys starting with `_kv` are limited to internal use.
