@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2021-06-30|
 |Author  |@ripienaar|
-|Status  |Partially Implemented|
+|Status  |Implemented|
 |Tags    |jetstream, client, kv|
 
 ## Context
@@ -14,35 +14,53 @@ is available in the CLI as `nats kv` with the reference client implementation be
 
 This document aims to guide client developers in implementing this feature in the language clients we maintain.
 
-## Overview
+## Status and Roadmap
 
-We intend to hit a basic initial feature set as below, with some future facing goals as indicated:
+The API is now stable and considered version 1.0, we have several NATS maintained client libraries with this feature supported
+and a few community efforts are under way.
 
-Initial feature list:
+A roadmap is included below, but note this is subject to change. The API as is will not have breaking changes until 2.0, but
+additional behaviors will come during the 1.x cycle.
 
- * Multiple named buckets full of keys with n historical values kept per value
+### 1.0
+
+ * Multiple named buckets hosting a hierarchy of keys with n historical values kept per key. History set per bucket and capped at 64.
  * Put and Get of `string(k)=[]byte(v)` values
  * Put only if the revision of the last value for a key matches an expected revision
- * Historic values can be kept per key, setable on creation of the bucket. Limited to 64 entries per key.
+ * Put only if the key does not currently exist, or if when the latest historical operation is a delete operation.
  * Key deletes preserves history
- * Keys can be expired from the bucket based on a TTL
+ * Keys can be expired from the bucket based on a TTL, TTL is set for the entire bucket
  * Watching a specific key, ranges based on NATS wildcards, or the entire bucket for live updates
- * Encoders and Decoders that transforms both keys and values
- * A read-cache that builds an in-memory cache for fast reads
- * read-after-write safety unless read replicas used
- * Valid keys are `\A[-/_=\.a-zA-Z0-9]+\z`, additionally they may not start or end in `.`, after encoding
+ * Read-after-write safety
+ * Valid keys are `\A[-/_=\.a-zA-Z0-9]+\z`, additionally they may not start or end in `.`
  * Valid buckets are `\A[a-zA-Z0-9_-]+\z`
  * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
  * Key starting with `_kv` is reserved for internal use
  * CLI tool to manage the system as part of `nats`, compatible with client implementations
- * Read-Only and Read-Write interfaces
 
-Planned features:
+### 1.1
 
- * Ability to read from regional read replicas maintained by JS Mirroring (planned)
- * A read-only client can talk directly, and only, to a regional read replica
- * Discoverability of read replicas per cluster based on in-bucket configuration values
- * Standard encoders/decoders to deliver zero-trust end-to-end encryption, perhaps using nkeys
+ * Encoders and Decoders for keys and values
+ * Additional Operation that indicates server limits management deleted messages
+
+### 1.2
+
+ * Read replicas facilitated by Stream Mirrors
+ * Read-only operation mode
+ * Replica auto discovery
+ * Read cache against with replica support
+ * Ranged operations
+
+### 1.3
+
+ * Standard Codecs that support zero-trust data storage with language interop
+
+### 2.0
+
+ * Formalise leader election against keys
+ * Set management against key ranges to enable service discovery and membership management
+ * Per value TTLs
+ * Distributed locks against a key
  * Pluggable storage backends
 
 ## Data Types
@@ -99,7 +117,7 @@ type Status interface {
 }
 ```
 
-The BackingStore describes the type of backend and for now returns `JetStream` for this implementation.
+The `BackingStore` describes the type of backend and for now returns `JetStream` for this implementation.
 
 Languages can choose to expose additional information about the bucket along with this interface, in the Go implementation
 the `Status` interface is above but the `JetStream` specific implementation can be cast to gain access to `StreamInfo()`
@@ -108,6 +126,8 @@ for full access to JetStream state.
 Other languages do not have a clear 1:1 match of the above idea so maintainers are free to do something idiomatic.
 
 ## RoKV
+
+**NOTE:** Out of scope for version 1.0
 
 This is a read-only KV store handle, I call this out here to demonstrate that we need to be sure to support a read-only 
 variant of the client. One that will only function against a read replica and cannot support `Put()` etc. 
@@ -164,10 +184,6 @@ type KV interface {
 	// Purge removes all data for a key including history, leaving 1 historical entry being the purge
 	Purge(key string) error
 
-	// Completely remove all keys that are in the deleted or purged state, leaving no entries behind for those keys.
-	// This API is OPTIONAL
-	PurgeDeletes() error
-
 	// Destroy removes the entire bucket and all data, KV cannot be used after
 	Destroy() error
 
@@ -188,7 +204,7 @@ later.
 
 ### JetStream interactions
 
-The features to support KV is in NATS Server 2.7.0.
+The features to support KV is in NATS Server 2.6.0.
 
 #### Buckets
 
@@ -196,7 +212,7 @@ A bucket is a Stream with these properties:
 
  * The main write bucket must be called `KV_<Bucket Name>`
  * The ingest subjects must be `$KV.<Bucket Name>.>`
- * The bucket history is achieved by setting `max_msgs_per_subject` to the desired history level
+ * The bucket history is achieved by setting `max_msgs_per_subject` to the desired history level. The maximum allowed size is 64.
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Key TTL is managed using the `max_age` key
@@ -224,7 +240,8 @@ Here is a full example of the `CONFIGURATION` bucket:
   "discard": "old",
   "num_replicas": 1,
   "duplicate_window": 120000000000,
-  "rollup_hdrs": true
+  "rollup_hdrs": true,
+  "deny_delete": true
 }
 ```
 
@@ -240,7 +257,7 @@ should only be accepted if it's the first message on a subject. This is purge aw
 again a `0` value will be accepted.
 
 This can be implemented as a `PutOption` ie. `Put("x.y", val, UpdatesRevision(10))`, `Put("x.y", val, MustCreate())` or 
-by adding the `Create()` and `Update()` helpers, or both. Other options might be `UpdatesEntry(e)`, language implimentations
+by adding the `Create()` and `Update()` helpers, or both. Other options might be `UpdatesEntry(e)`, language implementations
 can add what makes sense in addition.
 
 To use this header correctly with KV when a value of `0` is given, on failure that indicates it's not the first message we
@@ -276,9 +293,12 @@ When constructing historic values, dumping all values etc we ensure to only retu
 A watch, like History, is based on ephemeral consumers reading values using Ordered Consumers, but now we start with the new 
 `last_per_subject` initial start, this means we will get all matching latest values for all keys.
 
+Watch can take options to allow including history, sending only new updates or sending headers only. Using a Watch end users
+should be able to implement at minimum history retrieval, data dumping, key traversal or updates notification behaviors.
+
 #### Deleting Values
 
-Since the store supports history - via the `max_age` for messages - we should preserve history when deleting keys. To do this we
+Since the store support history - via the `max_age` for messages - we should preserve history when deleting keys. To do this we
 place a new message in the subject for the key with a nil body and the header `KV-Operation: DEL`.
 
 This preserves history and communicate to watchers, caches and gets that a delete operation should be handled - clear cache,
@@ -302,58 +322,30 @@ Any received messages that isn't a Delete/Purge operation gets added to the list
 
 Remove the stream entirely.
 
-#### Watchers
+#### Watchers Implementation Detail
 
 Watchers support sending received `PUT`, `DEL` and `PURGE` operations across a channel or language specific equivalent.
 
 Watchers support accepting simple keys or ranges, for example watching on `auth.username` will get just operations on that key,
-but watching `auth.>` will get operations for everything below `auth.`, the entire bucket can be watched using a empty key or a 
+but watching `auth.>` will get operations for everything below `auth.`, the entire bucket can be watched using an empty key or a 
 key with wildcard `>`.
 
-We set up the watchers using the `last_per_subject` deliver policy, this means historical values will not be sent - only the 
-latest values will. In the case of wildcards we cannot provide the delta on a per key basis. But the delta will represent 
-the remainder for the entire set of matching keys, this allows Watcher clients like the memory cache to set themselves ready
-once the full history was read.
+We need to signal when we reach the end of the initial data set to facilitate use cases such as dumping a bucket, iterating keys etc.
+Languages can implement an End Of Initial Data signal in a language idiomatic manner. Internal to the watcher you reach this state the
+first time any message has a `Pending==0`. This signal must also be sent if no data is present - either by checking for messages using 
+`GetLastMsg()` on the watcher range or by inspecting the Pending+Delivered after creating the consumer. The signal must always be sent.
 
-When a stream is empty at create time - `NumPending+Delivered.Consumer==0` - a nil is sent across the channel to signal to the
-caller that they should not expect any values. A nil is also sent once `delta=0` is reached. Instead of the info trick above you
-can first do a last message get using the keys given to the watch and if that finds nothing, send the nil then start the watch
-Ordered Consumer.
+Whatchers should support at least the following options. Languages can choose to support more models if they wish, as long as that
+is clearly indicated as a language specific extension. Names should be language idiomatic but close to these below.
 
-### Codec support
+|Name|Description|
+|----|-----------|
+|`IncludeHistory`|Send all available history rather than just the latest entries|
+|`IgnoreDeletes`|Only sends `PUT` operation entries|
+|`MetaOnly`|Does not send any values, only metadata about those values|
+|`UpdatesOnly`|Only sends new updates made, no current or historical values are sent. The End Of Initial Data marker is sent as soon as the watch starts.|
 
-We support client-side encoding and decoding, the basic interface is `func([]byte) ([]byte, error)`. Users can supply a encode, a decoder 
-or a codec.
-
-Read only clients would only need a decoder - and so by extension, not need a private key.
-
-All keys and values should be encoded/decoded. If users wish to encrypt their buckets both the keys and the values will be encrypted.
-The valid keys after encryption should still match the pattern for acceptable keys. Base64 encoding encrypted keys is a good option.
-
-Encoding keys is done on a per token basis, the key `hello.world` would be encoded in parts, for example a Base64 encoding of this would
-be `aGVsbG8=.d29ybGQ=` wildcards are not encoded. This means if one watch the key `hello.>` it would encode to `aGVsbG8=.>` and still
-do the right thing with regard to watches and ranges.
-
-### Local Read Caches
-
-In a super-cluster the Bucket can be far away and have some latency, a read-cache is implemented that wraps the JetStream backend.
-
-The cache is warmed up using a Bucket Watch, the cache is ready when it's reached the `pending=0` message from the watch or when the
-nil message indicating no data is received.
-
-While the cache is still warming up it's a pass through to the underlying backend for any reads.
-
-Most operations are pass-through, except:
-
- * `Get()` will read local cache if ready (fully warmed), and a key is there
- * `Delete()` and `Purge()` will evict the key from local cache and pass through
- * `Put()` will evict the key from local cache and pass through
- * `Destroy()` will delete all messages from local cache and pass through
- * `Keys()` can be served immediately out of the local cache map
-
-We specifically do not place the `Put()` value into local cache since an Entry must know the JetStream sequence.
-
-This design preserves the read-after-write promises.
+The default behavior with no options set is to send all the `last_per_subject` values, including delete/purge operations.
 
 #### API Design notes
 
