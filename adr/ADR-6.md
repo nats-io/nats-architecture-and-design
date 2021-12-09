@@ -58,7 +58,7 @@ durable-name       = term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters
-kv-key-name        = limited-term (dot limited-term)* 
+kv-key-name        = limited-term (dot limited-term)*
 kv-bucket-name     = restricted-term
 ```
 
