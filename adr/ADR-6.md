@@ -61,3 +61,10 @@ account-name       = (filename-safe)+ maximum 255 characters
 kv-key-name        = limited-term (dot limited-term)*
 kv-bucket-name     = restricted-term
 ```
+
+
+## Notes
+
+### kv-key-name
+
+Keys starting with `_kv` are limited to internal use.
