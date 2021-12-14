@@ -13,7 +13,7 @@ This document attempts to describe the workflow of a JetStream subscription in t
 
 ## Design
 
-### Creation
+#### Creation
 
 The library should have API(s) that allows creation of a JetStream subscription. Depending on the language, there may be various type of subscriptions (like Channel based in Go), or with various options such as Queue subscriptions, etc... There can be different APIs or one with a set of options.
 
@@ -129,7 +129,7 @@ If the result indicates that the consumer already exists, then it means that the
 
 When the consumer already exists, for push consumers, the NATS queue subscription that was created prior to the "AddConsumer" call needs to be destroyed and replaced with the new NATS queue subscription on the consumer info's `DeliverSubject`.
 
-#### JS Ack
+### JSAck 
 
 When the server sends a message to a subscriber, the message will have a reply-to value called the "ACK Reply Subject" aka JSAck.
 
@@ -176,6 +176,22 @@ Having the domain always present simplifies the library code which does not have
 Why not append those new tokens at the end? This is to simplify the export/import subject, ie `$JS.ACK.<domain>.<account>.>`. Otherwise, you would need to possibly have something like `$JS.ACK.*.*.*.*.*.*.*.<domain>.<account>.>`
 
 The account hash is not used by the client at this time, only used for routing, same for the last (12th) token.
+
+### Ack Handling
+
+An ack is accomplished by publishing a message using the JSAck as a subject 
+with the payload consisting of the bytes of the Ack Type
+
+Clients must support 3 terminal Ack Types, `+ACK`, `-NAK` and `+TERM` and the progress Ack Type `+WPI`.
+
+Once a terminal Ack Type has been published for a message, the client should ignore all other 
+user requests to send any type of ack. 
+
+> A suggested implementation is to mark the message as having sent a terminal Ack Type in some way _after_ successful publish of the ack, and to rely on that state for subsequent acks.
+
+If the consumer is configured with Ack Policy of `none`, the client should ignore all requests to send any type of ack.
+
+The client should not return, throw or escalate an error unless the publishing of an ack has an error from the server or for instance due to connectivity.  
 
 ### Automatic Status Management
 
