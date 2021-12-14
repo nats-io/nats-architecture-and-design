@@ -36,6 +36,7 @@ Possible future features
 - Overriding digest algorithm 
 - Capturing Content-Type (mime type)
 - Per chunk Content-Encoding (i.e. gzip)
+- Read an individual chunk. 
 
 ## Naming Specification
 
