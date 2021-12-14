@@ -24,7 +24,8 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 |[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
-|[ADR-19](adr/ADR-19.md)|jetstream, client, objectstore|JetStream based Object Stores|
+|[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
 
 ## Jetstream
 
@@ -40,19 +41,22 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
 |[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
-|[ADR-19](adr/ADR-19.md)|jetstream, client, objectstore|JetStream based Object Stores|
+|[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
 
 ## Kv
 
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv|JetStream based Key-Value Stores|
+|[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 
 ## Objectstore
 
 |Index|Tags|Description|
 |-----|----|-----------|
-|[ADR-19](adr/ADR-19.md)|jetstream, client, objectstore|JetStream based Object Stores|
+|[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
+|[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
 
 ## Observability
 
@@ -97,13 +101,13 @@ After editing / adding a ADR please run `go run main.go > README.md` to update t
 
 ## Related Repositories
 
- * Server [nats-server](https://github.com/nats-io/nats-server)
- * Reference implementation [nats.go](https://github.com/nats-io/nats.go)
- * Java Client [nats.java](https://github.com/nats-io/nats..java)
- * .NET / C# client [nats.net](https://github.com/nats-io/nats.net)
- * JavaScript [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
- * C Client [nats.c](https://github.com/nats-io/nats.c)
- * Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
+* Server [nats-server](https://github.com/nats-io/nats-server)
+* Reference implementation [nats.go](https://github.com/nats-io/nats.go)
+* Java Client [nats.java](https://github.com/nats-io/nats..java)
+* .NET / C# client [nats.net](https://github.com/nats-io/nats.net)
+* JavaScript [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
+* C Client [nats.c](https://github.com/nats-io/nats.c)
+* Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
 
 ### Client Tracking
 

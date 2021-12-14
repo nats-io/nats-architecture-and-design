@@ -64,3 +64,9 @@ kv-bucket-name     = restricted-term
 os-bucket-name     = restricted-term
 os-object-name     = (any-character)+
 ```
+
+## Notes
+
+### kv-key-name
+
+Keys starting with `_kv` are limited to internal use.
