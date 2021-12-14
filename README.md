@@ -101,13 +101,13 @@ After editing / adding a ADR please run `go run main.go > README.md` to update t
 
 ## Related Repositories
 
-* Server [nats-server](https://github.com/nats-io/nats-server)
-* Reference implementation [nats.go](https://github.com/nats-io/nats.go)
-* Java Client [nats.java](https://github.com/nats-io/nats..java)
-* .NET / C# client [nats.net](https://github.com/nats-io/nats.net)
-* JavaScript [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
-* C Client [nats.c](https://github.com/nats-io/nats.c)
-* Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
+ * Server [nats-server](https://github.com/nats-io/nats-server)
+ * Reference implementation [nats.go](https://github.com/nats-io/nats.go)
+ * Java Client [nats.java](https://github.com/nats-io/nats..java)
+ * .NET / C# client [nats.net](https://github.com/nats-io/nats.net)
+ * JavaScript [nats.ws](https://github.com/nats-io/nats.ws) [nats.deno](https://github.com/nats-io/nats.deno)
+ * C Client [nats.c](https://github.com/nats-io/nats.c)
+ * Python3 Client for Asyncio [nats.py](https://github.com/nats-io/nats.py)
 
 ### Client Tracking
 
