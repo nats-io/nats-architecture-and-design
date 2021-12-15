@@ -37,6 +37,7 @@ additional behaviors will come during the 1.x cycle.
  * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
  * Key starting with `_kv` is reserved for internal use
  * CLI tool to manage the system as part of `nats`, compatible with client implementations
+ * Accept arbitrary application prefixes, as outlined in [ADR-19](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-19.md)
 
 ### 1.1
 
