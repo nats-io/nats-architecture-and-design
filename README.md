@@ -26,6 +26,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
+|[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
 
 ## Jetstream
 
