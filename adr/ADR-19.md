@@ -49,6 +49,9 @@ To access an API in the same account but different domain, the `nats-server` mai
 
 Assume the API prefix for JetStream has been set to `JS.from-acc1`.
 For JetStream specific API calls, the local API prefix `$JS.API` has to be replaced with `JS.from-acc1`.
+
+Because the JetStream specified API prefix differs from `$JS.API`, the KV API uses the same prefix as is specififed for JetStream API.
+
 For the KV API we prefix `$KV` with `JS.from-acc1`, resulting in `JS.from-acc1.$KV`. 
 Thus, in order to put `key` in the bin `bin`, we send to `JS.from-acc1.$KV.bin.key` 
 
