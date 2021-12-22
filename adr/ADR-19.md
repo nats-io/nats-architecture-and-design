@@ -76,3 +76,39 @@ This is a side effect of JetStream having a two token API prefix and the materia
 This problem can be avoided by unifying the API name spaces to alway be two tokens with the second token being `API`, resulting in `$JS.API`, `$KV.API` and `$OBJ.API`.
 This however will not be backwards compatible.
 
+## Testing
+
+Here is a server config to test your changes. The prefix fo use is" `fromA`
+
+```
+jetstream: enabled
+accounts: {
+    A: {
+        users: [ {user: a, password: a} ]
+        jetstream: enabled
+        exports: [
+            {service: '$JS.API.>' }
+            {service: '$KV.>'}
+        ]
+    },
+    I: {
+        users: [ {user: i, password: i} ]
+        imports: [
+            {service: {account: A, subject: '$JS.API.>'}, to: 'fromA.>' }
+            {service: {account: A, subject: '$KV.>'}, to: 'fromA.$KV.>' }
+        ]
+    }
+}
+```
+
+Test JetStream connected to account `I` talking to JetStream in account `A`: `nats account info -s "nats://i:i@localhost:4222" --js-api-prefix fromA`
+
+KV publishes and subscribes need to support the prefix as well.
+Absent an actual implementation this is simulated with pub/sub.
+Your implementation needs to be able to connect to account I and access map ojbjects in Account A.
+
+```
+nats -s "nats://a:a@localhost:4222" sub '$KV.map.>'  &
+sleep 1
+nats -s "nats://i:i@localhost:4222" pub 'fromA.$KV.map.put' "hello world"
+```
