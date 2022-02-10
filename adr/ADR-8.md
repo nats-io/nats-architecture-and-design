@@ -143,7 +143,7 @@ The interface here is a guide of what should function in read-only mode.
 type RoKV interface {
 	// Get gets a key from the store
 	Get(key string) (Entry, error)
-
+	
 	// History retrieves historic values for a key
 	History(ctx context.Context, key string) ([]Entry, error)
 
@@ -350,7 +350,7 @@ The default behavior with no options set is to send all the `last_per_subject` v
 
 #### API Design notes
 
-The API here represents a minimum, languages can add local flavour to the API - for example one can add `PutUint64()` and `GetUint64()`
+The API here represents a minimum, languages can add local flavour to the API - for example one can add `PutUint64()` and `GetUint64()`, or `GetRevision()` that would return a specific revision value for the key,
 in addition to the `Get()` and `Put()` defined here, but it's important that as far as possible all implementations strive to match
 the core API calls - `Get()`, `Put()` and to a lesser extent `Delete()` and `Purge()` and `Entry` - the rest, admin APIs, and supporting
 calls can be adjusted to be a natural fit in the language and design.  This is in line with existing efforts to harmonize
