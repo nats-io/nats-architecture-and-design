@@ -18,7 +18,7 @@ This mechanism needs to be supported for materialized JS views as well.
 ## Overview 
 
 Each JetStream only listens to default API subjects with the prefix `$JS.API`.
-Thus, when the client uses `$JS.API`, it communicates with the JetStream, local to it's account and domain.
+Thus, when the client uses `$JS.API`, it communicates with the JetStream, local to its account and domain.
 
 To avoid traffic going to some other JetStream the following mechanisms are in place:
 1. Account: Since the API has to be imported with an altered prefix, the request will not cross account boundaries. 
@@ -78,7 +78,9 @@ This however will not be backwards compatible.
 
 ## Testing
 
-Here is a server config to test your changes. The prefix fo use is" `fromA`
+Here is a server config to test your changes. 
+* The JetStream prefix to use is `fromA`
+* The inbox prefix to use is `forI`
 
 ```
 jetstream: enabled
@@ -89,6 +91,7 @@ accounts: {
         exports: [
             {service: '$JS.API.>' }
             {service: '$KV.>'}
+            {stream: 'forI.>' }
         ]
     },
     I: {
@@ -96,6 +99,7 @@ accounts: {
         imports: [
             {service: {account: A, subject: '$JS.API.>'}, to: 'fromA.>' }
             {service: {account: A, subject: '$KV.>'}, to: 'fromA.$KV.>' }
+            {stream: { subject: 'forI.>', account: 'A' } }
         ]
     }
 }
