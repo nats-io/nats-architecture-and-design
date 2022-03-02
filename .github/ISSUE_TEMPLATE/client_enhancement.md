@@ -2,7 +2,7 @@
 name: Client Enhancement
 about: Request a new feature to be added to NATS clients
 labels: enhancement, client
-assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, derekcollison, matthiashanel, Jarema
+assignees: ripienaar, wallyqs, scottf, aricart, kozlovic, derekcollison, matthiashanel, Jarema
 ---
 
 ## Overview
@@ -20,7 +20,7 @@ The behavior is documented in ADR-X.
  - [ ] Go @wallyqs
  - [ ] Java @scottf
  - [ ] JavaScript @aricart
- - [ ] .Net @ColinSullivan1 @scottf
+ - [ ] .Net @scottf
  - [ ] C @kozlovic
  - [ ] Python @wallyqs
  - [ ] Ruby @wallyqs
