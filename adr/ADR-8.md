@@ -221,6 +221,9 @@ A bucket is a Stream with these properties:
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
  * Overall bucket size can be limited using `max_bytes`
+ * Discard Policy is always set to `new`
+ * Rollup Headers is always set to `true`
+ * Deny Delete is always set to `true`
 
 Here is a full example of the `CONFIGURATION` bucket:
 
@@ -238,7 +241,7 @@ Here is a full example of the `CONFIGURATION` bucket:
   "max_age": 0,
   "max_msg_size": -1,
   "storage": "file",
-  "discard": "old",
+  "discard": "new",
   "num_replicas": 1,
   "duplicate_window": 120000000000,
   "rollup_hdrs": true,
