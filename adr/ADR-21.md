@@ -5,7 +5,7 @@
 |Date    |2021-12-14|
 |Author  |@ripienaar|
 |Status  |Partially Implemented|
-|Tags    |client|
+|Tags    |client, config|
 
 ## Background
 

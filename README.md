@@ -26,7 +26,15 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
-|[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
+|[ADR-21](adr/ADR-21.md)|client, config|NATS Configuration Contexts|
+|[ADR-22](adr/ADR-22.md)|client, config|Client File Locations|
+
+## Config
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-21](adr/ADR-21.md)|client, config|NATS Configuration Contexts|
+|[ADR-22](adr/ADR-22.md)|client, config|Client File Locations|
 
 ## Jetstream
 
@@ -99,6 +107,8 @@ Michael Nygard
 Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However the initial Table of metadata and header format is required to match.
 
 After editing / adding a ADR please run `go run main.go > README.md` to update the embedded index. This will also validate the header part of your ADR.
+
+Note that new ADRs are written with an initial state of `Accepted`, not `Proposed`, on the basis that once merged to `main` it is immediately Accepted.
 
 ## Related Repositories
 
