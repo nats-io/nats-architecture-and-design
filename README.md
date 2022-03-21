@@ -27,6 +27,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
 |[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
+|[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 
 ## Jetstream
 
@@ -44,6 +45,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views:|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
+|[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 
 ## Kv
 
