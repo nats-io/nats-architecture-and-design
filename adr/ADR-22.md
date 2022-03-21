@@ -10,7 +10,7 @@
 ## Motivation
 
 When the NATS Server is running with JetStream on cluster mode, there
-can be occasional blips in leadership due which can result in a number
+can be occasional blips in leadership which can result in a number
 of `no responders available` errors during the election.  In order to
 try to mitigate these failures, retries can be added into JetStream
 enabled clients to attempt to publish the message to JetStream once it
