@@ -85,16 +85,24 @@ if err != nil {
 }
 ```
 
-### Make Publish retry as needed until context deadline
+### Make Publish retry as needed until deadline
 
-In Go when using the context package, it can be possible to set the maximum deadline of the retries
-so that the client can retry as needed.  In the example below a client will attempt to publish for 10 seconds
-backing off `250ms` as needed until the service is available again:
+It can be possible to set the maximum deadline of the retries so that the client can retry as needed.
+In the example below a client will attempt to publish up to 10 seconds to wait for an ack response
+from the server, backing off `250ms` as needed until the service is available again:
 
 ```go
+// Using Go context package
 ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 defer cancel()
 _, err := js.Publish("foo", []byte("bar"), nats.Context(ctx), nats.RetryWait(250*time.Millisecond), nats.RetryAttempts(-1))
+if err != nil {
+	log.Println("Pub Error", err)
+
+}
+
+// Custom AckWait
+_, err := js.Publish("foo", []byte("bar"), nats.AckWait(10*time.Second), nats.RetryWait(250*time.Millisecond), nats.RetryAttempts(-1))
 if err != nil {
 	log.Println("Pub Error", err)
 }
