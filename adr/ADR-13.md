@@ -34,7 +34,7 @@ If there is no body presented (as in the example above, all defaults are assumed
 
 #### batch
 The number of messages that the server should send. Minimum is 1.
-There is not have a limit on the batch size at the level of the library.
+There is not a limit on the batch size at the level of the library.
 The account and then server may have some limits. 
 
 #### no_wait
