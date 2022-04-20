@@ -33,7 +33,9 @@ There are 3 possible fields that can be presented in the json body of the reques
 If there is no body presented (as in the example above, all defaults are assumed.)
 
 #### batch
-The number of messages that the server should send. Default is 1, max is 256.
+The number of messages that the server should send. Minimum is 1.
+There is not have a limit on the batch size at the level of the library.
+The account and then server may have some limits. 
 
 #### no_wait
 
