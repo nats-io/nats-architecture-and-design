@@ -24,7 +24,7 @@ The behavior is documented in ADR-X.
  - [ ] C @kozlovic
  - [ ] Python @wallyqs
  - [ ] Ruby @wallyqs
- - [ ] Rust @matthiashanel @derekcollison @Jarema @caspervonb
+ - [ ] Rust @derekcollison @Jarema @caspervonb
    
 ## Other Tasks
 
