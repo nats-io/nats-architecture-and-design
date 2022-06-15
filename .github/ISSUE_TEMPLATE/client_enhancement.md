@@ -2,7 +2,7 @@
 name: Client Enhancement
 about: Request a new feature to be added to NATS clients
 labels: enhancement, client
-assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, derekcollison, matthiashanel, Jarema, piotrpio
+assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, derekcollison, matthiashanel, Jarema, piotrpio, jnmoyne
 ---
 
 ## Overview
@@ -28,7 +28,7 @@ The behavior is documented in ADR-X.
    
 ## Other Tasks
 
- - [ ] docs.nats.io updated
+ - [ ] docs.nats.io updated @jnmoyne
  - [ ] Update ADR to `Implemented`
  - [ ] Update client features spreadsheet
 
