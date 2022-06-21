@@ -37,12 +37,13 @@ additional behaviors will come during the 1.x cycle.
  * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
  * Key starting with `_kv` is reserved for internal use
  * CLI tool to manage the system as part of `nats`, compatible with client implementations
- * Accept arbitrary application prefixes, as outlined in [ADR-19](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-19.md)
+ * Support multiple accounts by accepting arbitrary prefixes allowing the `$KV.BUCKET.` part to be replaced with any other subject
 
 ### 1.1
 
  * Encoders and Decoders for keys and values
  * Additional Operation that indicates server limits management deleted messages
+ * ADR-19 conventional subject mappings once the server supports them
 
 ### 1.2
 
