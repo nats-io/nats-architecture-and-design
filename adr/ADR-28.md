@@ -20,4 +20,34 @@ Such use cases include (but are not limited to):
 
 ## Design
 
+{
+...
+    "republish": {
+        "src": "",
+        "dest": "",
+        "headers_only": ""
+    },
+...
+}
+		Name:     "RPC",
+		Storage:  MemoryStorage,
+		Subjects: []string{"foo", "bar", "baz"},
+		RePublish: &RePublish{
+			Destination: "RP.>",
+			HeadersOnly: true,
+		},
 
+	cfg.RePublish = &RePublish{
+		Source:      "foo.>",
+		Destination: "foo.>",
+	}
+
+	// Allow republish of the message after being sequenced and stored.
+	RePublish *RePublish `json:"republish,omitempty"`
+
+// RePublish is for republishing messages once committed to a stream.
+type RePublish struct {
+Source      string `json:"src,omitempty"`
+Destination string `json:"dest"`
+HeadersOnly bool   `json:"headers_only,omitempty"`
+}
