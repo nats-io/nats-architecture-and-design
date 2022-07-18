@@ -2,7 +2,7 @@
 
 | Metadata | Value                   |
 |----------|-------------------------|
-| Date     | 2022-17-07              |
+| Date     | 2022-07-17              |
 | Author   | @derekcollison, @tbeets |
 | Status   | `Implemented`           |
 | Tags     | server                  |
