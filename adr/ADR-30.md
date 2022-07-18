@@ -4,7 +4,7 @@
 |----------|-------------------------|
 | Date     | 2022-07-17              |
 | Author   | @derekcollison, @tbeets |
-| Status   | `Implemented`           |
+| Status   | Implemented             |
 | Tags     | server                  |
 
 ## Context and Problem Statement
