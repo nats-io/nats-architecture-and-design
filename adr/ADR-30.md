@@ -58,4 +58,4 @@ For a valid input subject:
 | `one.two.three.four.five` | `one.*.three.*.five`  | `uno.{{wildcard(2)}}.{{wildcard(1)}}` | `uno.four.two`                      |
 | `one.two.three.four.five` | `*.two.three.>`        | `uno.$1.>`                             | `uno.one.four.five`                 |
 
-
+> Note: The NATS CLI provides a utility, `server mappings` for experimenting with different transforms and input subjects.
