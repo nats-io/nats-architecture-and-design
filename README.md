@@ -86,6 +86,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
+|[ADR-30](adr/ADR-30.md)|server|Subject Transform|
 
 ## When to write an ADR
 
