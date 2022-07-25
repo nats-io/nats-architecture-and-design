@@ -4,8 +4,8 @@
 |----------|-------------------------|
 | Date     | 2022-07-08              |
 | Author   | @derekcollison, @tbeets |
-| Status   | `Implemented`           |
-| Tags     | server                  |
+| Status   | Implemented             |
+| Tags     | jetstream, server       |
 
 ## Context and Problem Statement
 
@@ -21,8 +21,8 @@ Such use cases include (but are not limited to):
 ## Design
 
 If stream _RePublish_ option is configured, a stream will evaluate each published message (that it ingests) against
-a `RePublish Source` subject filter. Upon match, the stream will re-publish the message (with special message headers 
-as below) to a new `RePublish Subject` derived through a destination subject transformation.
+a _RePublish Source_ subject filter. Upon match, the stream will re-publish the message (with special message headers 
+as below) to a new _RePublish Destination_ subject derived through a subject transformation.
 
 > Re-publish occurs only after the original published message is ingested in the stream (with quorum for R>1 streams) and is
 _At-Most-Once_ QoS.
@@ -39,12 +39,11 @@ The RePublish option "republish" consists of three configuration fields:
 
 The following validation rules for RePublish option apply:
 
-* Source and Destination MUST be in valid subscription format and MAY have the `>` wildcard as last token 
 * Source MUST be a valid subset of the stream's subject space (aggregate of stream's subject filters). A single token
-as `>` wildcard matches any stream-ingested subject
+as `>` wildcard is allowed with meaning taken as any stream-ingested subject.
 * Destination MUST have at least 1 non-wildcard token
-* If Source has at least 1 non-wildcard token, Destination must have an identical number of non-wildcard tokens as Source
-* If Source includes a `>` wildcard, Destination must also include a `>` wildcard
+* Destination MAY not match or subset the subject filter(s) of the stream 
+* Source and Destination must otherwise comply with requirements specified in [ADR-30 Subject Transform](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-30.md). 
 
 Here is an example of a stream configuration with the RePublish option specified:
 ```text
@@ -63,34 +62,19 @@ Here is an example of a stream configuration with the RePublish option specified
 	... omitted ...
 }
 ```
+In the configuration above, a published message at `one.foo.bar` will be ingested into `Stream1` as `one.foo.bar` and
+re-published as `uno.foo.bar`.  Published messages at `four.foo.bar` will be ingested into `Stream1` but not re-published.
 
 > RePublish option configuration MAY be edited after stream creation.
 
 ### RePublish Transform
 
-RePublish Destination, taken together with RePublish Source, form a valid subject token transform (positional) 
-rule. The resulting transform is applied to each ingested message (that matches Source configuration) to determine the 
-the concrete RePublish Subject.
+RePublish Destination, taken together with RePublish Source, form a valid subject token transform rule. The resulting 
+transform is applied to each ingested message (that matches Source configuration) to determine the the concrete 
+RePublish Subject.
 
-If the RePublish Source contains a single token that is the `>` wildcard (which is the default if no RePublish Source
-specified), then the RePublish Destination essentially forms a "prefix token(s)" transform. The RePublished Subject will
-be the same as Published Subject with one (or more) prefix tokens added to the subject hierarchy. 
-
-| Stream Subject Scope | RePublish Source | RePublish Destination | Published Subject | RePublished Subject   |
-|:---------------------|------------------|-----------------------|:------------------|-----------------------|
-| one.>, four.>        | \>               | uno.>                 | one.two.three     | uno.one.two.three     |
-|                      |                  |                       | four.five.six     | uno.four.five.six     | 
-|                      |                  | uno.dos.>             | one.two.three     | uno.dos.one.two.three | 
-|                      |                  |                       | four.five.six     | uno.dos.four.five.six | 
-| one.>, four.>        | one.>            | uno.>                 | one.two.three     | uno.two.three         |
-|                      |                  |                       | four.five.six     | _no msg_              | 
-| one.>, four.>        | one.two.>        | uno.dos.>             | one.two.three     | uno.dos.three         |
-|                      |                  |                       | four.five.six     | _no msg_              | 
-| one, four            | one              | uno                   | one               | uno                   |
-|                      |                  |                       | four              | _no msg_              | 
-
-> The RePublish option MAY NOT be configured such that a RePublished Subject matches the stream's subject scope.
-> This is to avoid a publish loop.
+See [ADR-30 Subject Transform](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-30.md) for
+description of subject transformation as used by RePublish.
  
 ### RePublish Headers
 
@@ -103,10 +87,18 @@ Each RePublished Message will have the following message headers:
 | Nats-Sequence      | This message's stream sequence id                                                                          |
 | Nats-Last-Sequence | The stream sequence id of the last message ingested to the same original subject (or 0 if none or deleted) |
 
-If headers-only RePublished Message, also:
+If headers-only is "true", also:
 
 | Header        | Value Description                       |
 |---------------|-----------------------------------------|
 | Nats-Msg-Size | The size in bytes of the message's body |
 
-> Any application headers on the original Published Message will be preserved in the RePublished message.
+> Application-added headers in the original published message will be preserved in the re-published message.
+
+### Loop Prevention
+
+Valid Destination configuration checks insures that re-published messages are not immediately ingested into the original
+stream (causing a loop). The scope of loop-detection is to the immediate stream only.  
+
+> Caution: It is possible to create a loop condition between two streams sharing an overlap in republish destinations and subject filters
+> within a single account.
