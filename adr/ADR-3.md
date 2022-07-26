@@ -13,7 +13,7 @@
 The goal is to enable the NATS internal latencies to be exported to distributed tracing systems, here we see a small
 architecture using Traefik, a Go microservice and a NATS hosted service all being observed in Jaeger.
 
-![Jaeger](0003-jaeger-trace.png)
+![Jaeger](images/0003-jaeger-trace.png)
 
 The lowest 3 spans were created from a NATS latency Advisory.
 
