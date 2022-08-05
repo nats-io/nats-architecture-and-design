@@ -226,6 +226,7 @@ A bucket is a Stream with these properties:
  * Discard Policy is always set to `new`
  * Rollup Headers is always set to `true`
  * Deny Delete is always set to `true`
+ * Allow Direct is always set to `true`
 
 Here is a full example of the `CONFIGURATION` bucket:
 
