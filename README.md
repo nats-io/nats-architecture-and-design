@@ -28,6 +28,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
 |[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 
 ## Jetstream
 
@@ -47,6 +48,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore|JetStream based Object Stores|
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 
 ## Kv
 
@@ -89,6 +91,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-30](adr/ADR-30.md)|server|Subject Transform|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 
 ## When to write an ADR
 
