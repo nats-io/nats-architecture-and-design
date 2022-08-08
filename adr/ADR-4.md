@@ -1,11 +1,11 @@
 # NATS Message Headers
 
-|Metadata| Value                           |
-|--------|---------------------------------|
-|Date    | 2021-05-12 (updates 2022-08-08) |
-|Author  | @aricart, @scottf, @tbeets      |
-|Status  | Implemented                     |
-|Tags    | server, client                  |
+| Metadata | Value                      |
+|----------|----------------------------|
+| Date     | 2021-05-12                 |
+| Author   | @aricart, @scottf, @tbeets |
+| Status   | Implemented                |
+| Tags     | server, client             |
 
 ## Context
 
