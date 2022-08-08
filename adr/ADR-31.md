@@ -99,14 +99,15 @@ Direct Get may return an error code:
 - `404` if the request is valid but no matching message found in stream 
 - `408` if the request is empty or invalid
 
+> Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
+
 Otherwise, Direct Get reply contains the message along with the following message headers:
 - `Nats-Stream`: stream name
 - `Nats-Sequence`: message sequence number 
 - `Nats-Time-Stamp`: message publish timestamp
 - `Nats-Subject`: message subject
-- `Nats-Last-Sequence`: sequence number of previous message for the given subject (if any)
 
-A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
+> A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
 
 ## Example calls
 
