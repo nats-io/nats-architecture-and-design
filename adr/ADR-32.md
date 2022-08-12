@@ -23,7 +23,7 @@ With the introduction of JetStream, APIs such as `add-stream`, `delete-stream`, 
 
 The question is, why does a developer need to know about these verbose subjects when defining permissions?
 
-[1]: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/authorization#permissions-configuration-map)
+[1]: https://docs.nats.io/running-a-nats-service/configuration/securing_nats/authorization#permissions-configuration-map
 
 ## Design
 
@@ -34,69 +34,69 @@ There are two potential layers to defining user permissions. First, a logical na
 Category | Name    | Subject | Pub/Sub | Notes
 ---------|---------| ------- | ------- | -----
 General  | `pub(subject)` | `{subject}` | pub | Potential alternative to a bare subject string.
-         | `sub(subject)` | `{subject}` | sub | Same as above.
-         | `inbox` | `_INBOX.>` | sub
-         | `inbox(id)` | `_INBOX_{id}.>` | sub | *Convention for custom inboxes, so be used with `--inbox-prefix` for private access.*
+\* | `sub(subject)` | `{subject}` | sub | Same as above.
+\* | `inbox` | `_INBOX.>` | sub
+\* | `inbox(id)` | `_INBOX_{id}.>` | sub | *Convention for custom inboxes, so be used with `--inbox-prefix` for private access.*
 JetStream | `js-all` | `$JS.API.>` | pub
-         | `js-info` | `$JS.API.INFO` | pub
-         | `js-create-stream` | `$JS.API.STREAM.CREATE.*` | pub
-         | `js-create-stream(name)` | `$JS.API.STREAM.CREATE.{name}` | pub
-         | `js-update-stream` | `$JS.API.STREAM.UPDATE.*` | pub
-         | `js-update-stream(name)` | `$JS.API.STREAM.UPDATE.{name}` | pub
-         | `js-delete-stream` | `$JS.API.STREAM.DELETE.*` | pub
-         | `js-delete-stream(name)` | `$JS.API.STREAM.DELETE.{name}` | pub
-         | `js-purge-stream` | `$JS.API.STREAM.PURGE.*` | pub
-         | `js-purge-stream(name)` | `$JS.API.STREAM.PURGE.{name}` | pub
-         | `js-snapshot-stream` | `$JS.API.STREAM.SNAPSHOT.*` | pub
-         | `js-snapshot-stream(name)` | `$JS.API.STREAM.SNAPSHOT.{name}` | pub
-         | `js-snapshot-stream-ack` | `$JS.API.SNAPSHOT.ACK.*.>` | pub
-         | `js-snapshot-stream-ack(name)` | `$JS.API.SNAPSHOT.ACK.{name}.>` | pub
-         | `js-restore-stream` | `$JS.API.STREAM.RESTORE.*` | pub
-         | `js-restore-stream(name)` | `$JS.API.STREAM.RESTORE.{name}` | pub
-         | `js-snapshot-restore` | `$JS.API.SNAPSHOT.RESTORE.*.>` | pub
-         | `js-snapshot-restore(name)` | `$JS.API.SNAPSHOT.RESTORE.{name}.>` | pub
-         | `js-stream-names` | `$JS.API.STREAM.NAMES` | pub
-         | `js-stream-list` | `$JS.API.STREAM.LIST` | pub
-         | `js-stream-info` | `$JS.API.STREAM.INFO.*` | pub
-         | `js-stream-info(name)` | `$JS.API.STREAM.INFO.{name}` | pub
-         | `js-stream-delete-msg` | `$JS.API.STREAM.MSG.DELETE.*` | pub
-         | `js-stream-delete-msg(name)` | `$JS.API.STREAM.MSG.DELETE.{name}` | pub
-         | `js-stream-get-msg` | `$JS.API.DIRECT.GET.*` | pub
-         | `js-stream-get-msg(name)` | `$JS.API.DIRECT.GET.{name}` | pub
-         | `js-stream-get-last-subject-msg` | `$JS.API.DIRECT.GET.*.>` | pub
-         | `js-stream-get-last-subject-msg(stream)` | `$JS.API.DIRECT.GET.{stream}.>` | pub
-         | `js-stream-get-last-subject-msg(stream, subject)` | `$JS.API.DIRECT.GET.{stream}.{subject}` | pub
-         | `js-stream-get-last-subject-msg(*, subject)` | `$JS.API.DIRECT.GET.*.{subject}` | pub
-         | `js-create-ephemeral-consumer` | `$JS.API.CONSUMER.CREATE.*` | pub
-         | `js-create-ephemeral-consumer(stream)` | `$JS.API.CONSUMER.CREATE.{stream}` | pub
-         | `js-create-durable-consumer` | `$JS.API.CONSUMER.DURABLE.CREATE.*.*` | pub
-         | `js-create-durable-consumer(stream)` | `$JS.API.CONSUMER.DURABLE.CREATE.{stream}.*` | pub
-         | `js-create-durable-consumer(stream, name)` | `$JS.API.CONSUMER.DURABLE.CREATE.{stream}.{name}` | pub |
-         | `js-create-durable-consumer(*, name)` | `$JS.API.CONSUMER.DURABLE.CREATE.*.{name}` | pub |
-         | `js-delete-consumer` | `$JS.API.CONSUMER.DELETE.*.*` | pub |
-         | `js-delete-consumer(stream)` | `$JS.API.CONSUMER.DELETE.{stream}.*` | pub |
-         | `js-delete-consumer(stream, name)` | `$JS.API.CONSUMER.DELETE.{stream}.{name}` | pub |
-         | `js-delete-consumer(*, name)` | `$JS.API.CONSUMER.DELETE.*.{name}` | pub |
-         | `js-consumer-names` | `$JS.API.CONSUMER.NAMES.*` | pub |
-         | `js-consumer-names(stream)` | `$JS.API.CONSUMER.NAMES.{stream}` | pub |
-         | `js-consumer-list` | `$JS.API.CONSUMER.LIST.*` | pub |
-         | `js-consumer-list(stream)` | `$JS.API.CONSUMER.LIST.{stream}` | pub |
-         | `js-consumer-info` | `$JS.API.CONSUMER.INFO.*.*` | pub |
-         | `js-consumer-info(stream)` | `$JS.API.CONSUMER.INFO.{stream}.*` | pub |
-         | `js-consumer-info(stream, name)` | `$JS.API.CONSUMER.INFO.{stream}.{name}` | pub |
-         | `js-consumer-info(*, name)` | `$JS.API.CONSUMER.INFO.*.{name}` | pub |
-         | `js-consumer-next-msg` | `$JS.API.CONSUMER.MSG.NEXT.*.*` | pub |
-         | `js-consumer-next-msg(stream)` | `$JS.API.CONSUMER.MSG.NEXT.{stream}.*` | pub |
-         | `js-consumer-next-msg(stream, name)` | `$JS.API.CONSUMER.MSG.NEXT.{stream}.{name}` | pub |
-         | `js-consumer-next-msg(*, name)` | `$JS.API.CONSUMER.MSG.NEXT.*.{name}` | pub |
-         | `js-consumer-ack-reply` | `$JS.ACK.*.*.>` | pub |
-         | `js-consumer-ack-reply(stream)` | `$JS.ACK.{stream}.*.>` | pub |
-         | `js-consumer-ack-reply(stream, name)` | `$JS.ACK.{stream}.{name}.>` | pub |
-         | `js-consumer-ack-reply(*, name)` | `$JS.ACK.*.{name}.>` | pub |
+\* | `js-info` | `$JS.API.INFO` | pub
+\* | `js-create-stream` | `$JS.API.STREAM.CREATE.*` | pub
+\* | `js-create-stream(name)` | `$JS.API.STREAM.CREATE.{name}` | pub
+\* | `js-update-stream` | `$JS.API.STREAM.UPDATE.*` | pub
+\* | `js-update-stream(name)` | `$JS.API.STREAM.UPDATE.{name}` | pub
+\* | `js-delete-stream` | `$JS.API.STREAM.DELETE.*` | pub
+\* | `js-delete-stream(name)` | `$JS.API.STREAM.DELETE.{name}` | pub
+\* | `js-purge-stream` | `$JS.API.STREAM.PURGE.*` | pub
+\* | `js-purge-stream(name)` | `$JS.API.STREAM.PURGE.{name}` | pub
+\* | `js-snapshot-stream` | `$JS.API.STREAM.SNAPSHOT.*` | pub
+\* | `js-snapshot-stream(name)` | `$JS.API.STREAM.SNAPSHOT.{name}` | pub
+\* | `js-snapshot-stream-ack` | `$JS.API.SNAPSHOT.ACK.*.>` | pub
+\* | `js-snapshot-stream-ack(name)` | `$JS.API.SNAPSHOT.ACK.{name}.>` | pub
+\* | `js-restore-stream` | `$JS.API.STREAM.RESTORE.*` | pub
+\* | `js-restore-stream(name)` | `$JS.API.STREAM.RESTORE.{name}` | pub
+\* | `js-snapshot-restore` | `$JS.API.SNAPSHOT.RESTORE.*.>` | pub
+\* | `js-snapshot-restore(name)` | `$JS.API.SNAPSHOT.RESTORE.{name}.>` | pub
+\* | `js-stream-names` | `$JS.API.STREAM.NAMES` | pub
+\* | `js-stream-list` | `$JS.API.STREAM.LIST` | pub
+\* | `js-stream-info` | `$JS.API.STREAM.INFO.*` | pub
+\* | `js-stream-info(name)` | `$JS.API.STREAM.INFO.{name}` | pub
+\* | `js-stream-delete-msg` | `$JS.API.STREAM.MSG.DELETE.*` | pub
+\* | `js-stream-delete-msg(name)` | `$JS.API.STREAM.MSG.DELETE.{name}` | pub
+\* | `js-stream-get-msg` | `$JS.API.DIRECT.GET.*` | pub
+\* | `js-stream-get-msg(name)` | `$JS.API.DIRECT.GET.{name}` | pub
+\* | `js-stream-get-last-subject-msg` | `$JS.API.DIRECT.GET.*.>` | pub
+\* | `js-stream-get-last-subject-msg(stream)` | `$JS.API.DIRECT.GET.{stream}.>` | pub
+\* | `js-stream-get-last-subject-msg(stream, subject)` | `$JS.API.DIRECT.GET.{stream}.{subject}` | pub
+\* | `js-stream-get-last-subject-msg(*, subject)` | `$JS.API.DIRECT.GET.*.{subject}` | pub
+\* | `js-create-ephemeral-consumer` | `$JS.API.CONSUMER.CREATE.*` | pub
+\* | `js-create-ephemeral-consumer(stream)` | `$JS.API.CONSUMER.CREATE.{stream}` | pub
+\* | `js-create-durable-consumer` | `$JS.API.CONSUMER.DURABLE.CREATE.*.*` | pub
+\* | `js-create-durable-consumer(stream)` | `$JS.API.CONSUMER.DURABLE.CREATE.{stream}.*` | pub
+\* | `js-create-durable-consumer(stream, name)` | `$JS.API.CONSUMER.DURABLE.CREATE.{stream}.{name}` | pub |
+\* | `js-create-durable-consumer(*, name)` | `$JS.API.CONSUMER.DURABLE.CREATE.*.{name}` | pub |
+\* | `js-delete-consumer` | `$JS.API.CONSUMER.DELETE.*.*` | pub |
+\* | `js-delete-consumer(stream)` | `$JS.API.CONSUMER.DELETE.{stream}.*` | pub |
+\* | `js-delete-consumer(stream, name)` | `$JS.API.CONSUMER.DELETE.{stream}.{name}` | pub |
+\* | `js-delete-consumer(*, name)` | `$JS.API.CONSUMER.DELETE.*.{name}` | pub |
+\* | `js-consumer-names` | `$JS.API.CONSUMER.NAMES.*` | pub |
+\* | `js-consumer-names(stream)` | `$JS.API.CONSUMER.NAMES.{stream}` | pub |
+\* | `js-consumer-list` | `$JS.API.CONSUMER.LIST.*` | pub |
+\* | `js-consumer-list(stream)` | `$JS.API.CONSUMER.LIST.{stream}` | pub |
+\* | `js-consumer-info` | `$JS.API.CONSUMER.INFO.*.*` | pub |
+\* | `js-consumer-info(stream)` | `$JS.API.CONSUMER.INFO.{stream}.*` | pub |
+\* | `js-consumer-info(stream, name)` | `$JS.API.CONSUMER.INFO.{stream}.{name}` | pub |
+\* | `js-consumer-info(*, name)` | `$JS.API.CONSUMER.INFO.*.{name}` | pub |
+\* | `js-consumer-next-msg` | `$JS.API.CONSUMER.MSG.NEXT.*.*` | pub |
+\* | `js-consumer-next-msg(stream)` | `$JS.API.CONSUMER.MSG.NEXT.{stream}.*` | pub |
+\* | `js-consumer-next-msg(stream, name)` | `$JS.API.CONSUMER.MSG.NEXT.{stream}.{name}` | pub |
+\* | `js-consumer-next-msg(*, name)` | `$JS.API.CONSUMER.MSG.NEXT.*.{name}` | pub |
+\* | `js-consumer-ack-reply` | `$JS.ACK.*.*.>` | pub |
+\* | `js-consumer-ack-reply(stream)` | `$JS.ACK.{stream}.*.>` | pub |
+\* | `js-consumer-ack-reply(stream, name)` | `$JS.ACK.{stream}.{name}.>` | pub |
+\* | `js-consumer-ack-reply(*, name)` | `$JS.ACK.*.{name}.>` | pub |
 KeyValue | `kv-put` | `$KV.*.>` | pub
-         | `kv-put(bucket)` | `$KV.{bucket}.>` | pub
-         | `kv-put(bucket, key)` | `$KV.{bucket}.{key}` | pub
-         | etc..
+\* | `kv-put(bucket)` | `$KV.{bucket}.>` | pub
+\* | `kv-put(bucket, key)` | `$KV.{bucket}.{key}` | pub
+\* | etc..
 
 *TODO: add remaining subjects, leader, peer, advisories, etc.*
 
