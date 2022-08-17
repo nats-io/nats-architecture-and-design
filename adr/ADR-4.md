@@ -1,22 +1,22 @@
 # NATS Message Headers
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2021-05-12|
-|Author  |@aricart, @scottf|
-|Status  |Partially Implemented|
-|Tags    |server, client|
+| Metadata | Value                      |
+|----------|----------------------------|
+| Date     | 2021-05-12                 |
+| Author   | @aricart, @scottf, @tbeets |
+| Status   | Implemented                |
+| Tags     | server, client             |
 
 ## Context
 
 This document describes NATS Headers from the perspective of clients. NATS
 headers allow clients to specify additional meta-data in the form of headers.
-The headers are effectively
-[HTTP Headers](https://tools.ietf.org/html/rfc7230#section-3.2).
+NATS headers are similar to 
+[HTTP Headers](https://tools.ietf.org/html/rfc7230#section-3.2) with some important differences.
 
-The salient points of the HTTP header specification are:
+As with HTTP headers:
 
-- Each header field consists of a case-insensitive field name followed by a
+- Each header field consists of a field name followed by a
   colon (`:`), optional leading whitespace, the field value, and optional
   trailing whitespace.
 - No spaces are allowed between the header field name and colon.
@@ -36,12 +36,23 @@ More specifically from [rfc822](https://www.ietf.org/rfc/rfc822.txt) Section
 > characters, except CR or LF. (While CR and/or LF may be present in the actual
 > text, they are removed by the action of unfolding the field.)
 
-The only difference between a NATS header and HTTP is the first line. Instead of
-an HTTP method followed by a resource, and the HTTP version (`GET / HTTP/1.1`),
-NATS will provide a string identifying the header version (`NATS/X.x`),
+### Unique to NATS Headers
+
+###### Version header
+Instead of an HTTP method followed by a resource, and the HTTP version (`GET / HTTP/1.1`),
+NATS provides a string identifying the header version (`NATS/X.x`),
 currently 1.0, so it is rendered as `NATS/1.0␍␊`.
 
-Please refer to the
+###### Case preserving
+NATS treats application headers as a part of the message _payload_ and is agnostic to the 
+application use-case between publishers and subscribers; therefore, NATS headers are _case preserving_.
+The server will not change the case in message conveyance, the publisher's case will be preserved.
+
+Any case sensitivity in header interpretation is the responsibility of the application and client participants.
+
+> Note: This is _different_ from HTTP headers which declare/define that web server and user-agent participants should ignore case.
+
+With above caveats, please refer to the
 [specification](https://tools.ietf.org/html/rfc7230#section-3.2) for information
 on how to encode/decode HTTP headers.
 
@@ -118,7 +129,7 @@ names are serialized.
 ### Case-sensitive Operations
 
 In order to promote compatibility across clients, this section describes how
-clients should behave. All operations are _case-sensitive_. Implementations
+clients should behave. All operations are _case-sensitive_.  Application implementations
 should provide an option(s) to enable clients to work in a case-insensitive or
 format header names canonically.
 
@@ -158,7 +169,7 @@ This functionality is constrained as follows:
 - `APPEND` will use the first matching key found and add values. If no key is
   found, values are added to a key preserving the specified case.
 
-Note that case-insensitive operations are only suggested, and not required to be
+> Note that case-insensitive operations are only suggested, and not required to be
 implemented by clients, specially if the implementation allows the user code to
 easily iterate over keys and values.
 
