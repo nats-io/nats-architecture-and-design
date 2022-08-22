@@ -245,7 +245,8 @@ Here is a full example of the `CONFIGURATION` bucket:
   "num_replicas": 1,
   "duplicate_window": 120000000000,
   "rollup_hdrs": true,
-  "deny_delete": true
+  "deny_delete": true,
+  "allow_direct": true
 }
 ```
 

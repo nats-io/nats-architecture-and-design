@@ -38,59 +38,93 @@ Possible future features
 - Per chunk Content-Encoding (i.e. gzip)
 - Read an individual chunk. 
 
+## Basic Design
+
+- Object store or bucket is backed by a stream
+- Multiple objects can be placed in each bucket
+- Object Info is stored as json in the payload of the message on the Object Info message subject.
+- The Object Info subject is always rolled up (per subject)
+- Object chunks are stored as the payload of messages on the Chunk message subject
+
 ## Naming Specification
 
 Protocol Naming Conventions are fully defined in [ADR-6](ADR-6.md)
 
 ### Object Store
-The object store name or bucket name (`os-bucket-name`) will be used to formulate a stream name and is specified as: `restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`
+The object store name or bucket name (`bucket`) will be used to formulate a stream name 
+and is specified as: `restricted-term` (1 or more of `A-Z, a-z, 0-9, dash, underscore`)
 
-### Objects
-An individual object name is not restricted. It is base64 encoded to form the (`os-object-name`).
+### Object Id
+Object ids (`object-nuid`) is a nuid.
 
-### Chunk Ids
-Chunk ids (`chunk-id`) should be a nuid.
+### Object Name
+An individual object name is not restricted. It is base64 encoded to form `name-encoded`.
 
-### Component Templates
-
-| Component | Template |
-| --- | --- |
-| Stream Name | `OBJ_<os-bucket-name>` |
-| Object Info Stream subject | `$O.<os-bucket-name>.M.>` |
-| Chunk Stream subject | `$O.<os-bucket-name>.C.>` |
-| Object Info message subject | `$O.<os-bucket-name>.M.<os-object-name>` |
-| Chunk message subject | `$O.<os-bucket-name>.C.<chunk-id>` |
+### Digest
+Currently `SHA-256` is the only supported digest. Please use the uppercase form as in [RFC-6234](https://www.rfc-editor.org/rfc/rfc6234)
+when specifying the digest as in `SHA-256=3F9239B0272558CE6E3E98731C43A654AC6882C5050D5F352B2A5BFBB8DE0058`.
 
 ### Default Settings
 
-Default settings can be overridden on a per object basis. 
+Default settings can be overridden on a per object basis.
 
 | Setting | Value | Notes |
 | --- | --- | --- |
 | Chunk Size | 128k (128 * 1024) | Clients may tune this as appropriate. |
 
-## Basic Design
+## ObjectStore / Stream Config
 
-- Object store or bucket is backed by a stream
-- Multiple objects can be placed in each bucket
-- Object Info is stored as json in the payload of the message on the Object Info message subject. 
-- The Object Info subject is always rolled up (per subject)
-- Object chunks are stored as the payload of messages on the Chunk message subject
+The object store config is the basis for the stream configuration and maps to fields
+in the stream config like in KV.
+
+```go
+type ObjectStoreConfig struct {
+	Bucket      string        // used in stream name template
+	Description string        // stream description
+	TTL         time.Duration // stream max_age
+	MaxBytes    int64         // stream max_bytes
+	Storage     StorageType   // stream storate_type
+	Replicas    int           // stream replicas
+	Placement   *Placement    // stream placement
+}
+```
+
+### Stream Configuration and Subject Templates
+
+| Component | Template |
+| --- | --- |
+| Stream Name | `OBJ_<bucket>` |
+| Chunk Stream subject | `$O.<bucket>.C.>` |
+| Meta Stream subject | `$O.<bucket>.M.>` |
+| Chunk message subject | `$O.<bucket>.C.<object-nuid>` |
+| Meta message subject | `$O.<bucket>.M.<name-encoded>` |
+
+
+### Example Stream Config
+```json
+{
+  "name": "OBJ_MY-STORE",
+  "description" : "description",
+  "subjects": [
+    "$O.MY-STORE.C.>",
+    "$O.MY-STORE.M.>"
+  ],
+  "max_age": 0,
+  "max_bytes": -1,
+  "storage": "file",
+  "num_replicas": 1,
+  "rollup_hdrs": true,
+  "allow_direct": true,
+  "discard": "new",
+  "placement": {
+    "cluster": "clstr",
+    "tags": ["tag1", "tag2"]
+  }
+}
+```
 
 ## Structures
 
-### ObjectStoreConfig
-
-The object store config is the basis for the stream configuration.
-```go
-type ObjectStoreConfig struct {
-    Bucket      string
-    Description string
-    TTL         time.Duration
-    Storage     StorageType
-    Replicas    int
-}
-```
 
 ### ObjectLink is used to embed links to other buckets and objects.
 
@@ -131,7 +165,9 @@ type ObjectMeta struct {
 
 ### ObjectInfo 
 
-Object Info is meta plus instance information.
+Object Info is meta plus instance information. 
+The fields in ObjectMeta are serialized in line as if they were 
+direct fields of ObjectInfo 
 
 ```go
 type ObjectInfo struct {
@@ -155,6 +191,41 @@ type ObjectInfo struct {
     Deleted bool      `json:"deleted,omitempty"`
 }
 ```
+
+### ObjectInfo Storage
+
+The ObjectInfo is stored as json as the payload of the message under the Meta message subject.
+The `ModTime` (`mtime`) is never written as part of what is being stored.
+
+When the ObjectInfo message is retrieved from the server, use the message metadata timestamp as the
+`ModTime`
+
+#### Example ObjectInfo Json
+
+```json
+{
+	"name": "object-name",
+	"description": "object-desc",
+	"headers": {
+		"h1": "foo",
+		"h2": "bar"
+	}
+	"options": {
+		"link": {
+			"bucket": "link-to-bucket",
+			"name": "link-to-name"
+		},
+		"max_chunk_size": 1024
+	},
+	"bucket": "object-bucket",
+	"nuid": "CkuyLEX4z2hbyjj1aWCfiH",
+	"size": 9999,
+	"chunks": 42,
+	"digest": "SHA-256=abcdefghijklmnopqrstuvwxyz=",
+	"deleted": true
+}
+```
+
 
 ### ObjectStoreStatus
 
@@ -243,15 +314,23 @@ type ObjectStore interface {
     GetInfo(name string) (*ObjectInfo, error)
     
     // UpdateMeta will update the meta data for the object.
+    // It is an error to update meta data for a deleted object.
+    // It is an error to change the name to that of an existing object. 
     UpdateMeta(name string, meta *ObjectMeta) error
     
     // Delete will delete the named object.
     Delete(name string) error
     
     // AddLink will add a link to another object into this object store.
+    // It is an error to link to a deleted object.
+    // It is an error to link to a link.
+    // It is an error to name the link to that of an existing object. 
+    // Use UpdateMeta to change the name of a link. 
     AddLink(name string, obj *ObjectInfo) (*ObjectInfo, error)
     
     // AddBucketLink will add a link to another object store.
+    // It is an error to name the link to that of an existing object. 
+    // Use UpdateMeta to change the name of a link. 
     AddBucketLink(name string, bucket ObjectStore) (*ObjectInfo, error)
     
     // Seal will seal the object store, no further modifications will be allowed.
