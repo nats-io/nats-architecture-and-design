@@ -55,7 +55,7 @@ The object store name or bucket name (`bucket`) will be used to formulate a stre
 and is specified as: `restricted-term` (1 or more of `A-Z, a-z, 0-9, dash, underscore`)
 
 ### Object Id
-Object ids (`object-nuid`) is a nuid.
+Object ids (`object-nuid`) are a nuid.
 
 ### Object Name
 An individual object name is not restricted. It is base64 encoded to form `name-encoded`.
@@ -206,10 +206,10 @@ When the ObjectInfo message is retrieved from the server, use the message metada
 {
 	"name": "object-name",
 	"description": "object-desc",
-	"headers": {
-		"h1": "foo",
-		"h2": "bar"
-	}
+    "headers": {
+        "key1": ["foo"],
+        "key2": ["bar", "baz"]
+    },
 	"options": {
 		"link": {
 			"bucket": "link-to-bucket",
@@ -225,7 +225,6 @@ When the ObjectInfo message is retrieved from the server, use the message metada
 	"deleted": true
 }
 ```
-
 
 ### ObjectStoreStatus
 
@@ -324,12 +323,14 @@ type ObjectStore interface {
     // AddLink will add a link to another object into this object store.
     // It is an error to link to a deleted object.
     // It is an error to link to a link.
-    // It is an error to name the link to that of an existing object. 
+    // It is an error to name the link to that of an existing [non-link] object. 
+    // It's okay to overwrite a link - name a link the name of an existing link.
     // Use UpdateMeta to change the name of a link. 
     AddLink(name string, obj *ObjectInfo) (*ObjectInfo, error)
     
     // AddBucketLink will add a link to another object store.
-    // It is an error to name the link to that of an existing object. 
+    // It is an error to name the link to that of an existing [non-link] object. 
+    // It's okay to overwrite a link - name a link the name of an existing link.
     // Use UpdateMeta to change the name of a link. 
     AddBucketLink(name string, bucket ObjectStore) (*ObjectInfo, error)
     
