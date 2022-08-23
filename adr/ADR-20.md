@@ -206,10 +206,10 @@ When the ObjectInfo message is retrieved from the server, use the message metada
 {
 	"name": "object-name",
 	"description": "object-desc",
-    "headers": {
-        "key1": ["foo"],
-        "key2": ["bar", "baz"]
-    },
+	"headers": {
+		"key1": ["foo"],
+		"key2": ["bar", "baz"]
+	},
 	"options": {
 		"link": {
 			"bucket": "link-to-bucket",
