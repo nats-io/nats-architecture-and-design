@@ -2,7 +2,7 @@
 name: Client Enhancement
 about: Request a new feature to be added to NATS clients
 labels: enhancement, client
-assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, derekcollison, matthiashanel, Jarema, piotrpio, jnmoyne
+assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, derekcollison, matthiashanel, Jarema, piotrpio, jnmoyne, marthacp
 ---
 
 ## Overview
@@ -17,7 +17,7 @@ The behavior is documented in ADR-X.
  - [ ] CLI @ripienaar
  - [ ] Terraform @ripienaar
  - [ ] Github Actions @ripienaar
- - [ ] Go @wallyqs, @piotrpio
+ - [ ] Go @piotrpio
  - [ ] Java @scottf
  - [ ] JavaScript @aricart
  - [ ] .Net @scottf
