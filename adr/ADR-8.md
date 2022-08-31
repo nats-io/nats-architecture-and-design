@@ -225,7 +225,7 @@ A bucket is a Stream with these properties:
  * Rollup Headers is always set to `true`
  * Deny Delete is always set to `true`
  * Placement is allowed
- * Republish is allowd
+ * Republish is allowed
 
 Here is a full example of the `CONFIGURATION` bucket:
 
