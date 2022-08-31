@@ -332,12 +332,14 @@ type ObjectStore interface {
     // It is an error to name the link to that of an existing [non-link] object. 
     // It's okay to overwrite a link - name a link the name of an existing link.
     // Use UpdateMeta to change the name of a link. 
+    // It's possible that ObjectInfo is stale. Options are being discussed.
     AddLink(name string, obj ObjectInfo) -> ObjectInfo
     
     // AddBucketLink will add a link to another object store.
     // It is an error to name the link to that of an existing [non-link] object. 
     // It's okay to overwrite a link - name a link the name of an existing link.
     // Use UpdateMeta to change the name of a link. 
+    // It's possible that ObjectStore is stale. Options are being discussed.
     AddBucketLink(name string, bucket ObjectStore) -> ObjectInfo
     
     // Seal will seal the object store, no further modifications will be allowed.
