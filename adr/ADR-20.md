@@ -64,6 +64,11 @@ An individual object name is not restricted. It is base64 encoded to form `name-
 Currently `SHA-256` is the only supported digest. Please use the uppercase form as in [RFC-6234](https://www.rfc-editor.org/rfc/rfc6234)
 when specifying the digest as in `SHA-256=3F9239B0272558CE6E3E98731C43A654AC6882C5050D5F352B2A5BFBB8DE0058`.
 
+### Modified Time
+Modified time is never stored. 
+* When putting an object or link into the store, the client should populate the ModTime with the current UTC time before returning it to the user.
+* When getting an object or getting an object or link's info, the client should populate the ModTime with message time from the server. 
+
 ### Default Settings
 
 Default settings can be overridden on a per object basis.
@@ -124,7 +129,6 @@ type ObjectStoreConfig struct {
 ```
 
 ## Structures
-
 
 ### ObjectLink is used to embed links to other buckets and objects.
 
