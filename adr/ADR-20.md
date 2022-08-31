@@ -85,7 +85,7 @@ type ObjectStoreConfig struct {
 	MaxBytes    int64         // stream max_bytes
 	Storage     StorageType   // stream storate_type
 	Replicas    int           // stream replicas
-	Placement   *Placement    // stream placement
+	Placement   Placement    // stream placement
 }
 ```
 
@@ -143,7 +143,7 @@ type ObjectLink struct {
 
 ```go
 type ObjectMetaOptions struct {
-    Link      *ObjectLink `json:"link,omitempty"`
+    Link      ObjectLink `json:"link,omitempty"`
     ChunkSize uint32      `json:"max_chunk_size,omitempty"`
 }
 ```
@@ -159,7 +159,7 @@ type ObjectMeta struct {
     Headers     Header `json:"headers,omitempty"`
 
     // Optional options.
-    Opts *ObjectMetaOptions `json:"options,omitempty"`
+    Opts ObjectMetaOptions `json:"options,omitempty"`
 }
 ```
 
@@ -215,11 +215,11 @@ When the ObjectInfo message is retrieved from the server, use the message metada
 			"bucket": "link-to-bucket",
 			"name": "link-to-name"
 		},
-		"max_chunk_size": 1024
+		"max_chunk_size": 8196
 	},
 	"bucket": "object-bucket",
 	"nuid": "CkuyLEX4z2hbyjj1aWCfiH",
-	"size": 9999,
+	"size": 344000,
 	"chunks": 42,
 	"digest": "SHA-256=abcdefghijklmnopqrstuvwxyz=",
 	"deleted": true
@@ -268,13 +268,13 @@ Object Store manger creates, loads and deletes Object Stores
 ```go
 type ObjectStoreManager interface {
     // ObjectStore will lookup and bind to an existing object store instance.
-    ObjectStore(bucket string) (ObjectStore, error)
+    ObjectStore(bucket string) -> ObjectStore
     
     // CreateObjectStore will create an object store.
-    CreateObjectStore(cfg *ObjectStoreConfig) (ObjectStore, error)
+    CreateObjectStore(cfg ObjectStoreConfig) -> ObjectStore
     
     // DeleteObjectStore will delete the underlying stream for the named object.
-    DeleteObjectStore(bucket string) error
+    DeleteObjectStore(bucket string)
 }
 ```
 
@@ -286,39 +286,45 @@ is recommended but optional if it does not make sense for the client language.
 ```go
 type ObjectStore interface {
     // Put will place the contents from the reader into a new object.
-    Put(obj *ObjectMeta, reader io.Reader, opts ...ObjectOpt) (*ObjectInfo, error)
+    // It is an error to Put when ObjectMeta contains a Link. Use AddLink or AddBucketLink
+    Put(ObjectMeta, reader io.Reader) -> ObjectInfo
 
     // Get will pull the named object from the object store.
-    Get(name string, opts ...ObjectOpt) (ObjectResult, error)
+    // Deleted objects should be treated the same as objects that don't exist. 
+    Get(name string) -> [Language specific handling]
 
     // PutBytes is convenience function to put a byte slice into this object store.
-    PutBytes(name string, data []byte, opts ...ObjectOpt) (*ObjectInfo, error)
+    PutBytes(name string, data []byte) -> ObjectInfo
     
     // GetBytes is a convenience function to pull an object from this object store and return it as a byte slice.
-    GetBytes(name string, opts ...ObjectOpt) ([]byte, error)
+    // Deleted objects should be treated the same as objects that don't exist. 
+    GetBytes(name string) -> []byte
     
     // PutBytes is convenience function to put a string into this object store.
-    PutString(name string, data string, opts ...ObjectOpt) (*ObjectInfo, error)
+    PutString(name string, data string) -> ObjectInfo
     
     // GetString is a convenience function to pull an object from this object store and return it as a string.
-    GetString(name string, opts ...ObjectOpt) (string, error)
+    // Deleted objects should be treated the same as objects that don't exist. 
+    GetString(name string) -> string
     
     // PutFile is convenience function to put a file into this object store.
-    PutFile(file string, opts ...ObjectOpt) (*ObjectInfo, error)
+    PutFile(file string) -> ObjectInfo
     
     // GetFile is a convenience function to pull an object from this object store and place it in a file.
-    GetFile(name, file string, opts ...ObjectOpt) error
+    // Deleted objects should be treated the same as objects that don't exist. 
+    GetFile(name, file string)
     
-    // GetInfo will retrieve the current information for the object.
-    GetInfo(name string) (*ObjectInfo, error)
+    // GetInfo will retrieve the current information for the object,
+    // including the info of a Deleted object. 
+    GetInfo(name string) -> ObjectInfo
     
     // UpdateMeta will update the meta data for the object.
     // It is an error to update meta data for a deleted object.
     // It is an error to change the name to that of an existing object. 
-    UpdateMeta(name string, meta *ObjectMeta) error
+    UpdateMeta(name string, meta ObjectMeta)
     
     // Delete will delete the named object.
-    Delete(name string) error
+    Delete(name string)
     
     // AddLink will add a link to another object into this object store.
     // It is an error to link to a deleted object.
@@ -326,24 +332,25 @@ type ObjectStore interface {
     // It is an error to name the link to that of an existing [non-link] object. 
     // It's okay to overwrite a link - name a link the name of an existing link.
     // Use UpdateMeta to change the name of a link. 
-    AddLink(name string, obj *ObjectInfo) (*ObjectInfo, error)
+    AddLink(name string, obj ObjectInfo) -> ObjectInfo
     
     // AddBucketLink will add a link to another object store.
     // It is an error to name the link to that of an existing [non-link] object. 
     // It's okay to overwrite a link - name a link the name of an existing link.
     // Use UpdateMeta to change the name of a link. 
-    AddBucketLink(name string, bucket ObjectStore) (*ObjectInfo, error)
+    AddBucketLink(name string, bucket ObjectStore) -> ObjectInfo
     
     // Seal will seal the object store, no further modifications will be allowed.
-    Seal() error
+    Seal()
     
     // Watch for changes in the underlying store and receive meta information updates.
-    Watch(opts ...WatchOpt) (ObjectWatcher, error)
+    Watch(opts ...WatchOpt) -> ObjectWatcher
     
-    // List will list all the objects in this store.
-    List(opts ...WatchOpt) ([]*ObjectInfo, error)
+    // List will list all the objects in this store. 
+    // Should not include deleted objects. 
+    List(opts ...WatchOpt) -> List or array of ObjectInfo
     
     // Status retrieves run-time status about the backing store of the bucket.
-    Status() (ObjectStoreStatus, error)
+    Status() -> ObjectStoreStatus
 }
 ```
