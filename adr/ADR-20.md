@@ -9,7 +9,7 @@
 
 ## Context
 
-This document describes a design of a JetStream backed object store.
+This document describes a design of a JetStream backed object store. This ADR is still considered Beta/Experimental and may be subject to change.
 
 ## Overview
 
