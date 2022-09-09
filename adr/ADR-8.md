@@ -224,6 +224,7 @@ A bucket is a Stream with these properties:
  * Discard Policy is always set to `new`
  * Rollup Headers is always set to `true`
  * Deny Delete is always set to `true`
+ * Allow Direct is allowed to be set by the user.
  * Placement is allowed
  * Republish is allowed
 
@@ -248,7 +249,7 @@ Here is a full example of the `CONFIGURATION` bucket:
   "duplicate_window": 120000000000,
   "rollup_hdrs": true,
   "deny_delete": true,
-  "allow_direct": false, // this may change in the future
+  "allow_direct": false,
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
