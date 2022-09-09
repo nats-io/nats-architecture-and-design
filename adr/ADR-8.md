@@ -248,7 +248,7 @@ Here is a full example of the `CONFIGURATION` bucket:
   "duplicate_window": 120000000000,
   "rollup_hdrs": true,
   "deny_delete": true,
-  "allow_direct": true,
+  "allow_direct": false, // this may change in the future
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
