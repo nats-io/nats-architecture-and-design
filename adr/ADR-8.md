@@ -212,7 +212,7 @@ The features to support KV is in NATS Server 2.6.0.
 A bucket is a Stream with these properties:
 
  * The main write bucket must be called `KV_<Bucket Name>`
- * The 'ingest' subjects must be `$KV.<Bucket Name>.>`
+ * The ingest subjects must be `$KV.<Bucket Name>.>`
  * The bucket history is achieved by setting `max_msgs_per_subject` to the desired history level. The maximum allowed size is 64.
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
@@ -224,8 +224,6 @@ A bucket is a Stream with these properties:
  * Discard Policy is always set to `new`
  * Rollup Headers is always set to `true`
  * Deny Delete is always set to `true`
- * Placement is allowed
- * Republish is allowed
 
 Here is a full example of the `CONFIGURATION` bucket:
 
@@ -247,17 +245,7 @@ Here is a full example of the `CONFIGURATION` bucket:
   "num_replicas": 1,
   "duplicate_window": 120000000000,
   "rollup_hdrs": true,
-  "deny_delete": true,
-  "allow_direct": true,
-  "placement": {
-    "cluster": "clstr",
-    "tags": ["tag1", "tag2"]
-  },
-  "republish": {
-    "src": "repub.>",
-    "dest": "dest.>",
-    "headers_only": true
-  }
+  "deny_delete": true
 }
 ```
 
