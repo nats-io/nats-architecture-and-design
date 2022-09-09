@@ -267,96 +267,172 @@ type ObjectStoreStatus interface {
 
 ### ObjectStoreManager 
 
-Object Store manger creates, loads and deletes Object Stores
+Object Store Manager creates, loads and deletes Object Stores
 
-```go
-type ObjectStoreManager interface {
-    // ObjectStore will lookup and bind to an existing object store instance.
-    ObjectStore(bucket string) -> ObjectStore
-    
-    // CreateObjectStore will create an object store.
-    CreateObjectStore(cfg ObjectStoreConfig) -> ObjectStore
-    
-    // DeleteObjectStore will delete the underlying stream for the named object.
-    DeleteObjectStore(bucket string)
-}
+API:
+
+```
+// ObjectStore will lookup and bind to an existing object store instance.
+ObjectStore(bucket string) -> ObjectStore
+
+// CreateObjectStore will create an object store.
+CreateObjectStore(cfg ObjectStoreConfig) -> ObjectStore
+
+// DeleteObjectStore will delete the underlying stream for the named object.
+DeleteObjectStore(bucket string)
 ```
 
 ### ObjectStore 
 
-Storing large objects efficiently. Please note that anything that is commented as a "convenience function"
-is recommended but optional if it does not make sense for the client language.
+Storing large objects efficiently. API are required unless noted as "Optional/Convenience".
 
-```go
-type ObjectStore interface {
-    // Put will place the contents from the reader into a new object.
-    // It is an error to Put when ObjectMeta contains a Link. Use AddLink or AddBucketLink
-    Put(ObjectMeta, reader io.Reader) -> ObjectInfo
+**Put**
+* Put will place the contents from the reader into a new object.
+* It is an error to Put when ObjectMeta contains a Link. Use AddLink or AddBucketLink
 
-    // Get will pull the named object from the object store.
-    // Deleted objects should be treated the same as objects that don't exist. 
-    Get(name string) -> [Language specific handling]
+```
+Put(ObjectMeta, [input/stream/reader]) -> ObjectInfo
+```
 
-    // PutBytes is convenience function to put a byte slice into this object store.
-    PutBytes(name string, data []byte) -> ObjectInfo
-    
-    // GetBytes is a convenience function to pull an object from this object store and return it as a byte slice.
-    // Deleted objects should be treated the same as objects that don't exist. 
-    GetBytes(name string) -> []byte
-    
-    // PutBytes is convenience function to put a string into this object store.
-    PutString(name string, data string) -> ObjectInfo
-    
-    // GetString is a convenience function to pull an object from this object store and return it as a string.
-    // Deleted objects should be treated the same as objects that don't exist. 
-    GetString(name string) -> string
-    
-    // PutFile is convenience function to put a file into this object store.
-    PutFile(file string) -> ObjectInfo
-    
-    // GetFile is a convenience function to pull an object from this object store and place it in a file.
-    // Deleted objects should be treated the same as objects that don't exist. 
-    GetFile(name, file string)
-    
-    // GetInfo will retrieve the current information for the object,
-    // including the info of a Deleted object. 
-    GetInfo(name string) -> ObjectInfo
-    
-    // UpdateMeta will update the meta data for the object.
-    // It is an error to update meta data for a deleted object.
-    // It is an error to change the name to that of an existing object. 
-    UpdateMeta(name string, meta ObjectMeta)
-    
-    // Delete will delete the named object.
-    Delete(name string)
-    
-    // AddLink will add a link to another object into this object store.
-    // It is an error to link to a deleted object.
-    // It is an error to link to a link.
-    // It is an error to name the link to that of an existing [non-link] object. 
-    // It's okay to overwrite a link - name a link the name of an existing link.
-    // Use UpdateMeta to change the name of a link. 
-    // It's possible that ObjectInfo is stale. Options are being discussed.
-    AddLink(name string, obj ObjectInfo) -> ObjectInfo
-    
-    // AddBucketLink will add a link to another object store.
-    // It is an error to name the link to that of an existing [non-link] object. 
-    // It's okay to overwrite a link - name a link the name of an existing link.
-    // Use UpdateMeta to change the name of a link. 
-    // It's possible that ObjectStore is stale. Options are being discussed.
-    AddBucketLink(name string, bucket ObjectStore) -> ObjectInfo
-    
-    // Seal will seal the object store, no further modifications will be allowed.
-    Seal()
-    
-    // Watch for changes in the underlying store and receive meta information updates.
-    Watch(opts ...WatchOpt) -> ObjectWatcher
-    
-    // List will list all the objects in this store. 
-    // Should not include deleted objects. 
-    List(opts ...WatchOpt) -> List or array of ObjectInfo
-    
-    // Status retrieves run-time status about the backing store of the bucket.
-    Status() -> ObjectStoreStatus
-}
+_Optional/Convenience Examples_
+
+```
+Put(name string, [input/stream/reader]) -> ObjectInfo
+PutBytes(name string, data []byte) -> ObjectInfo
+PutString(name string, data string) -> ObjectInfo
+PutFile(name string, file [string/file reference]) -> ObjectInfo
+PutFile(file [string/file reference]) -> ObjectInfo
+```
+
+_Notes_
+
+On convenience methods accepting file information only, consider that the reference could have
+operating specific path information that is not transferable. One solution would be to only 
+use the actual file name as the object name and discard any path information.
+
+**Get**
+
+Get will retrieve the named object from the object store.
+
+* Deleted objects should be treated the same as objects that don't exist.
+
+At least one variant of:
+
+```
+Get(name string) -> [Language specific handling, output/stream/writer]
+Get(name string, [output/stream/writer]) -> ObjectInfo
+```
+
+Optional/Convenience examples:
+
+```
+GetBytes(name string) -> []byte
+GetString(name string) -> string
+GetFile(name string, file string)
+```
+
+**GetInfo**
+
+GetInfo will retrieve the current information for the object, including the info of a Deleted object.
+
+```
+GetInfo(name string) -> ObjectInfo
+```
+
+**UpdateMeta**
+
+UpdateMeta will update **some** metadata for the object.
+* Only the name, description and headers can be updated.
+* Objects, Links and Bucket Links are all allowed to be updated.
+* It is okay to change the name if the name does not exist.
+* It is okay to change the name to that of an existing but deleted object.
+* It is an error to change the name to that of an existing but not deleted object.
+* It is an error to update metadata for a deleted object.
+
+```
+UpdateMeta(name string, meta ObjectMeta)
+```
+
+**Delete**
+
+Delete will delete the named object.
+* It's acceptable to no-op for an object that is already deleted.
+* It's an error to delete an object that does not exist.
+
+At least one variant of:
+
+```
+Delete(name string) -> void
+Delete(name string) -> ObjectInfo
+```
+
+**Seal**
+
+Seal will seal the object store, no further modifications will be allowed.
+
+At least one variant of:
+
+```
+Seal() -> void
+Seal() -> ObjectStoreStatus
+```
+
+**Watch**
+
+Watch for changes in the underlying store and receive meta information updates.
+
+```
+Watch(opts ...WatchOpt) -> ObjectWatcher
+```
+
+**List**
+
+List will list all the objects in this store.
+ 
+* Should not include deleted objects.
+
+```
+List(opts ...WatchOpt) -> List or array of ObjectInfo
+```
+
+**Status**
+
+Status retrieves run-time status about the backing store of the bucket.
+
+```
+Status() -> ObjectStoreStatus
+```
+
+### ObjectStore Links
+
+Links are currently under discussion whether they are necessary. 
+Here is the required API as proposed.
+Please note that in this version of the api, it is possible that 
+`obj ObjectInfo` or `bucket ObjectStore` could be stale, meaning their state
+has changed since they were read, i.e. the object was deleted after it's info was read. 
+
+**AddLink**
+
+AddLink will add a link to another object into this object store.
+* It is an error to link to a deleted object.
+* It is an error to link to a link.
+* It is okay to name the link if the name does not exist.
+* It is okay to name the link to that of an existing but deleted object.
+* It is okay to name the link to that of another link or bucket link (overwrite).
+* It is an error to name the link to that of an existing but not deleted regular object.
+
+```
+AddLink(name string, obj ObjectInfo) -> ObjectInfo
+```
+
+**AddBucketLink**
+
+AddBucketLink will add a link to another object store.
+* It is okay to name the link if the name does not exist.
+* It is okay to name the link to that of an existing but deleted object.
+* It is okay to name the link to that of another link or bucket link (overwrite).
+* It is an error to name the link to that of an existing but not deleted regular object.
+
+```
+AddBucketLink(name string, bucket ObjectStore) -> ObjectInfo
 ```
