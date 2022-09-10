@@ -62,7 +62,7 @@ An individual object name is not restricted. It is base64 encoded to form `name-
 
 ### Digest
 Currently `SHA-256` is the only supported digest. Please use the uppercase form as in [RFC-6234](https://www.rfc-editor.org/rfc/rfc6234)
-when specifying the digest as in `SHA-256=3F9239B0272558CE6E3E98731C43A654AC6882C5050D5F352B2A5BFBB8DE0058`.
+when specifying the digest as in `SHA-256=IdgP4UYMGt47rgecOqFoLrd24AXukHf5-SVzqQ5Psg8=`.
 
 ### Modified Time
 Modified time is never stored. 
