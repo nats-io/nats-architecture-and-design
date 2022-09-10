@@ -56,6 +56,7 @@ reply-to           = term (dot term)*
 stream-name        = term
 queue-name         = term
 durable-name       = term
+consumer-name      = term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters
