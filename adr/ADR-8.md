@@ -213,7 +213,9 @@ A bucket is a Stream with these properties:
 
  * The main write bucket must be called `KV_<Bucket Name>`
  * The ingest subjects must be `$KV.<Bucket Name>.>`
- * The bucket history is achieved by setting `max_msgs_per_subject` to the desired history level. The maximum allowed size is 64.
+ * The bucket history or 'max history per key' is achieved by setting `max_msgs_per_subject` to the desired history level. 
+   * The maximum allowed size is 64.
+   * The minimum allowed size is 1. When creating a stream, 1 should be used when the user does not supply a value. 
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Key TTL is managed using the `max_age` key
@@ -224,6 +226,7 @@ A bucket is a Stream with these properties:
  * Discard Policy is always set to `new`
  * Rollup Headers is always set to `true`
  * Deny Delete is always set to `true`
+ * Allow Direct is always set to `true`
 
 Here is a full example of the `CONFIGURATION` bucket:
 
