@@ -9,7 +9,7 @@
 
 ## Context
 
-This document describes a design of a JetStream backed object store.
+This document describes a design of a JetStream backed object store. This ADR is still considered Beta/Experimental and may be subject to change.
 
 ## Overview
 
@@ -38,59 +38,97 @@ Possible future features
 - Per chunk Content-Encoding (i.e. gzip)
 - Read an individual chunk. 
 
+## Basic Design
+
+- Object store or bucket is backed by a stream
+- Multiple objects can be placed in each bucket
+- Object Info is stored as json in the payload of the message on the Object Info message subject.
+- The Object Info subject is always rolled up (per subject)
+- Object chunks are stored as the payload of messages on the Chunk message subject
+
 ## Naming Specification
 
 Protocol Naming Conventions are fully defined in [ADR-6](ADR-6.md)
 
 ### Object Store
-The object store name or bucket name (`os-bucket-name`) will be used to formulate a stream name and is specified as: `restricted-term` or 1 or more of `A-Z, a-z, 0-9, dash, underscore`
+The object store name or bucket name (`bucket`) will be used to formulate a stream name 
+and is specified as: `restricted-term` (1 or more of `A-Z, a-z, 0-9, dash, underscore`)
 
-### Objects
-An individual object name is not restricted. It is base64 encoded to form the (`os-object-name`).
+### Object Id
+Object ids (`object-nuid`) are a nuid.
 
-### Chunk Ids
-Chunk ids (`chunk-id`) should be a nuid.
+### Object Name
+An individual object name is not restricted. It is base64 encoded to form `name-encoded`.
 
-### Component Templates
+### Digest
+Currently `SHA-256` is the only supported digest. Please use the uppercase form as in [RFC-6234](https://www.rfc-editor.org/rfc/rfc6234)
+when specifying the digest as in `SHA-256=IdgP4UYMGt47rgecOqFoLrd24AXukHf5-SVzqQ5Psg8=`.
 
-| Component | Template |
-| --- | --- |
-| Stream Name | `OBJ_<os-bucket-name>` |
-| Object Info Stream subject | `$O.<os-bucket-name>.M.>` |
-| Chunk Stream subject | `$O.<os-bucket-name>.C.>` |
-| Object Info message subject | `$O.<os-bucket-name>.M.<os-object-name>` |
-| Chunk message subject | `$O.<os-bucket-name>.C.<chunk-id>` |
+### Modified Time
+Modified time is never stored. 
+* When putting an object or link into the store, the client should populate the ModTime with the current UTC time before returning it to the user.
+* When getting an object or getting an object or link's info, the client should populate the ModTime with message time from the server. 
 
 ### Default Settings
 
-Default settings can be overridden on a per object basis. 
+Default settings can be overridden on a per object basis.
 
 | Setting | Value | Notes |
 | --- | --- | --- |
 | Chunk Size | 128k (128 * 1024) | Clients may tune this as appropriate. |
 
-## Basic Design
+## ObjectStore / Stream Config
 
-- Object store or bucket is backed by a stream
-- Multiple objects can be placed in each bucket
-- Object Info is stored as json in the payload of the message on the Object Info message subject. 
-- The Object Info subject is always rolled up (per subject)
-- Object chunks are stored as the payload of messages on the Chunk message subject
+The object store config is the basis for the stream configuration and maps to fields
+in the stream config like in KV.
 
-## Structures
-
-### ObjectStoreConfig
-
-The object store config is the basis for the stream configuration.
 ```go
 type ObjectStoreConfig struct {
-    Bucket      string
-    Description string
-    TTL         time.Duration
-    Storage     StorageType
-    Replicas    int
+	Bucket      string        // used in stream name template
+	Description string        // stream description
+	TTL         time.Duration // stream max_age
+	MaxBytes    int64         // stream max_bytes
+	Storage     StorageType   // stream storate_type
+	Replicas    int           // stream replicas
+	Placement   Placement    // stream placement
 }
 ```
+
+### Stream Configuration and Subject Templates
+
+| Component | Template |
+| --- | --- |
+| Stream Name | `OBJ_<bucket>` |
+| Chunk Stream subject | `$O.<bucket>.C.>` |
+| Meta Stream subject | `$O.<bucket>.M.>` |
+| Chunk message subject | `$O.<bucket>.C.<object-nuid>` |
+| Meta message subject | `$O.<bucket>.M.<name-encoded>` |
+
+
+### Example Stream Config
+```json
+{
+  "name": "OBJ_MY-STORE",
+  "description" : "description",
+  "subjects": [
+    "$O.MY-STORE.C.>",
+    "$O.MY-STORE.M.>"
+  ],
+  "max_age": 0,
+  "max_bytes": -1,
+  "storage": "file",
+  "num_replicas": 1,
+  "rollup_hdrs": true,
+  "allow_direct": true,
+  "discard": "new",
+  "placement": {
+    "cluster": "clstr",
+    "tags": ["tag1", "tag2"]
+  }
+}
+```
+
+## Structures
 
 ### ObjectLink is used to embed links to other buckets and objects.
 
@@ -109,7 +147,7 @@ type ObjectLink struct {
 
 ```go
 type ObjectMetaOptions struct {
-    Link      *ObjectLink `json:"link,omitempty"`
+    Link      ObjectLink `json:"link,omitempty"`
     ChunkSize uint32      `json:"max_chunk_size,omitempty"`
 }
 ```
@@ -125,13 +163,15 @@ type ObjectMeta struct {
     Headers     Header `json:"headers,omitempty"`
 
     // Optional options.
-    Opts *ObjectMetaOptions `json:"options,omitempty"`
+    Opts ObjectMetaOptions `json:"options,omitempty"`
 }
 ```
 
 ### ObjectInfo 
 
-Object Info is meta plus instance information.
+Object Info is meta plus instance information. 
+The fields in ObjectMeta are serialized in line as if they were 
+direct fields of ObjectInfo 
 
 ```go
 type ObjectInfo struct {
@@ -153,6 +193,40 @@ type ObjectInfo struct {
     Digest  string    `json:"digest,omitempty"`
     
     Deleted bool      `json:"deleted,omitempty"`
+}
+```
+
+### ObjectInfo Storage
+
+The ObjectInfo is stored as json as the payload of the message under the Meta message subject.
+The `ModTime` (`mtime`) is never written as part of what is being stored.
+
+When the ObjectInfo message is retrieved from the server, use the message metadata timestamp as the
+`ModTime`
+
+#### Example ObjectInfo Json
+
+```json
+{
+	"name": "object-name",
+	"description": "object-desc",
+	"headers": {
+		"key1": ["foo"],
+		"key2": ["bar", "baz"]
+	},
+	"options": {
+		"link": {
+			"bucket": "link-to-bucket",
+			"name": "link-to-name"
+		},
+		"max_chunk_size": 8196
+	},
+	"bucket": "object-bucket",
+	"nuid": "CkuyLEX4z2hbyjj1aWCfiH",
+	"size": 344000,
+	"chunks": 42,
+	"digest": "SHA-256=abcdefghijklmnopqrstuvwxyz=",
+	"deleted": true
 }
 ```
 
@@ -193,77 +267,172 @@ type ObjectStoreStatus interface {
 
 ### ObjectStoreManager 
 
-Object Store manger creates, loads and deletes Object Stores
+Object Store Manager creates, loads and deletes Object Stores
 
-```go
-type ObjectStoreManager interface {
-    // ObjectStore will lookup and bind to an existing object store instance.
-    ObjectStore(bucket string) (ObjectStore, error)
-    
-    // CreateObjectStore will create an object store.
-    CreateObjectStore(cfg *ObjectStoreConfig) (ObjectStore, error)
-    
-    // DeleteObjectStore will delete the underlying stream for the named object.
-    DeleteObjectStore(bucket string) error
-}
+API:
+
+```
+// ObjectStore will lookup and bind to an existing object store instance.
+ObjectStore(bucket string) -> ObjectStore
+
+// CreateObjectStore will create an object store.
+CreateObjectStore(cfg ObjectStoreConfig) -> ObjectStore
+
+// DeleteObjectStore will delete the underlying stream for the named object.
+DeleteObjectStore(bucket string)
 ```
 
 ### ObjectStore 
 
-Storing large objects efficiently. Please note that anything that is commented as a "convenience function"
-is recommended but optional if it does not make sense for the client language.
+Storing large objects efficiently. API are required unless noted as "Optional/Convenience".
 
-```go
-type ObjectStore interface {
-    // Put will place the contents from the reader into a new object.
-    Put(obj *ObjectMeta, reader io.Reader, opts ...ObjectOpt) (*ObjectInfo, error)
+**Put**
+* Put will place the contents from the reader into a new object.
+* It is an error to Put when ObjectMeta contains a Link. Use AddLink or AddBucketLink
 
-    // Get will pull the named object from the object store.
-    Get(name string, opts ...ObjectOpt) (ObjectResult, error)
+```
+Put(ObjectMeta, [input/stream/reader]) -> ObjectInfo
+```
 
-    // PutBytes is convenience function to put a byte slice into this object store.
-    PutBytes(name string, data []byte, opts ...ObjectOpt) (*ObjectInfo, error)
-    
-    // GetBytes is a convenience function to pull an object from this object store and return it as a byte slice.
-    GetBytes(name string, opts ...ObjectOpt) ([]byte, error)
-    
-    // PutBytes is convenience function to put a string into this object store.
-    PutString(name string, data string, opts ...ObjectOpt) (*ObjectInfo, error)
-    
-    // GetString is a convenience function to pull an object from this object store and return it as a string.
-    GetString(name string, opts ...ObjectOpt) (string, error)
-    
-    // PutFile is convenience function to put a file into this object store.
-    PutFile(file string, opts ...ObjectOpt) (*ObjectInfo, error)
-    
-    // GetFile is a convenience function to pull an object from this object store and place it in a file.
-    GetFile(name, file string, opts ...ObjectOpt) error
-    
-    // GetInfo will retrieve the current information for the object.
-    GetInfo(name string) (*ObjectInfo, error)
-    
-    // UpdateMeta will update the meta data for the object.
-    UpdateMeta(name string, meta *ObjectMeta) error
-    
-    // Delete will delete the named object.
-    Delete(name string) error
-    
-    // AddLink will add a link to another object into this object store.
-    AddLink(name string, obj *ObjectInfo) (*ObjectInfo, error)
-    
-    // AddBucketLink will add a link to another object store.
-    AddBucketLink(name string, bucket ObjectStore) (*ObjectInfo, error)
-    
-    // Seal will seal the object store, no further modifications will be allowed.
-    Seal() error
-    
-    // Watch for changes in the underlying store and receive meta information updates.
-    Watch(opts ...WatchOpt) (ObjectWatcher, error)
-    
-    // List will list all the objects in this store.
-    List(opts ...WatchOpt) ([]*ObjectInfo, error)
-    
-    // Status retrieves run-time status about the backing store of the bucket.
-    Status() (ObjectStoreStatus, error)
-}
+_Optional/Convenience Examples_
+
+```
+Put(name string, [input/stream/reader]) -> ObjectInfo
+PutBytes(name string, data []byte) -> ObjectInfo
+PutString(name string, data string) -> ObjectInfo
+PutFile(name string, file [string/file reference]) -> ObjectInfo
+PutFile(file [string/file reference]) -> ObjectInfo
+```
+
+_Notes_
+
+On convenience methods accepting file information only, consider that the reference could have
+operating specific path information that is not transferable. One solution would be to only 
+use the actual file name as the object name and discard any path information.
+
+**Get**
+
+Get will retrieve the named object from the object store.
+
+* Deleted objects should be treated the same as objects that don't exist.
+
+At least one variant of:
+
+```
+Get(name string) -> [Language specific handling, output/stream/writer]
+Get(name string, [output/stream/writer]) -> ObjectInfo
+```
+
+Optional/Convenience examples:
+
+```
+GetBytes(name string) -> []byte
+GetString(name string) -> string
+GetFile(name string, file string)
+```
+
+**GetInfo**
+
+GetInfo will retrieve the current information for the object, including the info of a Deleted object.
+
+```
+GetInfo(name string) -> ObjectInfo
+```
+
+**UpdateMeta**
+
+UpdateMeta will update **some** metadata for the object.
+* Only the name, description and headers can be updated.
+* Objects, Links and Bucket Links are all allowed to be updated.
+* It is okay to change the name if the name does not exist.
+* It is okay to change the name to that of an existing but deleted object.
+* It is an error to change the name to that of an existing but not deleted object.
+* It is an error to update metadata for a deleted object.
+
+```
+UpdateMeta(name string, meta ObjectMeta)
+```
+
+**Delete**
+
+Delete will delete the named object.
+* It's acceptable to no-op for an object that is already deleted.
+* It's an error to delete an object that does not exist.
+
+At least one variant of:
+
+```
+Delete(name string) -> void
+Delete(name string) -> ObjectInfo
+```
+
+**Seal**
+
+Seal will seal the object store, no further modifications will be allowed.
+
+At least one variant of:
+
+```
+Seal() -> void
+Seal() -> ObjectStoreStatus
+```
+
+**Watch**
+
+Watch for changes in the underlying store and receive meta information updates.
+
+```
+Watch(opts ...WatchOpt) -> ObjectWatcher
+```
+
+**List**
+
+List will list all the objects in this store.
+ 
+* Should not include deleted objects.
+
+```
+List(opts ...WatchOpt) -> List or array of ObjectInfo
+```
+
+**Status**
+
+Status retrieves run-time status about the backing store of the bucket.
+
+```
+Status() -> ObjectStoreStatus
+```
+
+### ObjectStore Links
+
+Links are currently under discussion whether they are necessary. 
+Here is the required API as proposed.
+Please note that in this version of the api, it is possible that 
+`obj ObjectInfo` or `bucket ObjectStore` could be stale, meaning their state
+has changed since they were read, i.e. the object was deleted after it's info was read. 
+
+**AddLink**
+
+AddLink will add a link to another object into this object store.
+* It is an error to link to a deleted object.
+* It is an error to link to a link.
+* It is okay to name the link if the name does not exist.
+* It is okay to name the link to that of an existing but deleted object.
+* It is okay to name the link to that of another link or bucket link (overwrite).
+* It is an error to name the link to that of an existing but not deleted regular object.
+
+```
+AddLink(name string, obj ObjectInfo) -> ObjectInfo
+```
+
+**AddBucketLink**
+
+AddBucketLink will add a link to another object store.
+* It is okay to name the link if the name does not exist.
+* It is okay to name the link to that of an existing but deleted object.
+* It is okay to name the link to that of another link or bucket link (overwrite).
+* It is an error to name the link to that of an existing but not deleted regular object.
+
+```
+AddBucketLink(name string, bucket ObjectStore) -> ObjectInfo
 ```
