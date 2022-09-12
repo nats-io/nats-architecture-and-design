@@ -53,10 +53,10 @@ filename-safe      = (printable except dot, asterisk, lt, gt, colon, double-quot
 
 message-subject    = term (dot term | asterisk)* (dot gt)?
 reply-to           = term (dot term)*
-stream-name        = term
+stream-name        = filename-safe
 queue-name         = term
-durable-name       = term
-consumer-name      = term
+durable-name       = filename-safe
+consumer-name      = filename-safe
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters
