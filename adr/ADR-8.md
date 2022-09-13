@@ -226,7 +226,7 @@ A bucket is a Stream with these properties:
  * Discard Policy is always set to `new`
  * Rollup Headers is always set to `true`
  * Deny Delete is always set to `true`
- * Allow Direct is allowed to be set by the user.
+ * Allow Direct is always set to `true`. (It can be modified out-of-band only if desired, but not through KV bucket update.)
  * Placement is allowed
  * Republish is allowed
 
@@ -251,7 +251,7 @@ Here is a full example of the `CONFIGURATION` bucket:
   "duplicate_window": 120000000000,
   "rollup_hdrs": true,
   "deny_delete": true,
-  "allow_direct": false,
+  "allow_direct": true,
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
