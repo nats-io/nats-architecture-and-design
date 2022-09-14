@@ -50,14 +50,13 @@ limited-term-w-sp  = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, space)
 restricted-term    = (A-Z, a-z, 0-9, dash, underscore)+
 prefix             = (printable except dot, asterisk, gt or dollar)+
 name-term          = (printable except dot, asterisk, gt, fwd-slash, backslash)+
-name-term-win      = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark, ampersand)
 
 message-subject    = term (dot term | asterisk)* (dot gt)?
 reply-to           = term (dot term)*
 stream-name        = name-term
 durable-name       = name-term
 consumer-name      = name-term
-account-name       = (name-term)+ maximum 255 characters
+account-name       = name-term maximum 255 characters
 queue-name         = term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
@@ -68,6 +67,17 @@ os-object-name     = (any-character)+
 ```
 
 ## Notes
+
+### name-term
+
+The `name-term` is designed with unix operating systems in mind. 
+If the server is running on Windows, the `name-term` is too lenient and will operate more like so:  
+
+```
+name-term = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark)
+```
+
+The server will reject names (return an API error) when it cannot build a valid path.
 
 ### kv-key-name
 
