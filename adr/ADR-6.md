@@ -1,4 +1,4 @@
-# Protocol Naming Conventions
+# Naming Rules
 
 |Metadata|Value|
 |--------|-----|
@@ -45,6 +45,7 @@ underscore         = "_"
 equals             = "="
 printable          = all printable ascii (33 to 126 inclusive)
 term               = (printable except dot, asterisk or gt)+
+name-term          = (printable except dot, asterisk, gt, fwd-slash, backslash)+
 limited-term       = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals)+
 limited-term-w-sp  = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, space)+
 restricted-term    = (A-Z, a-z, 0-9, dash, underscore)+
@@ -53,10 +54,10 @@ filename-safe      = (printable except dot, asterisk, lt, gt, colon, double-quot
 
 message-subject    = term (dot term | asterisk)* (dot gt)?
 reply-to           = term (dot term)*
-stream-name        = filename-safe
+stream-name        = name-term
 queue-name         = term
-durable-name       = filename-safe
-consumer-name      = filename-safe
+durable-name       = name-term
+consumer-name      = name-term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters

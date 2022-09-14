@@ -13,7 +13,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-2](adr/ADR-2.md)|jetstream, server, client|NATS Typed Messages|
 |[ADR-4](adr/ADR-4.md)|server, client|NATS Message Headers|
 |[ADR-5](adr/ADR-5.md)|server, client|Lame Duck Notification|
-|[ADR-6](adr/ADR-6.md)|server, client|Protocol Naming Conventions|
+|[ADR-6](adr/ADR-6.md)|server, client|Naming Rules|
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv|JetStream based Key-Value Stores|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
@@ -85,7 +85,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
 |[ADR-4](adr/ADR-4.md)|server, client|NATS Message Headers|
 |[ADR-5](adr/ADR-5.md)|server, client|Lame Duck Notification|
-|[ADR-6](adr/ADR-6.md)|server, client|Protocol Naming Conventions|
+|[ADR-6](adr/ADR-6.md)|server, client|Naming Rules|
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
