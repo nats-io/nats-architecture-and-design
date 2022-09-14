@@ -18,7 +18,7 @@ This document describes naming conventions for these protocol components:
 
 ## Prior Work
 
-Currently the NATS Docs regarding [protocol convention](https://docs.nats.io/nats-protocol/nats-protocol#protocol-conventions) says this:
+Currently, the NATS Docs regarding [protocol convention](https://docs.nats.io/nats-protocol/nats-protocol#protocol-conventions) says this:
 
 > Subject names, including reply subject (INBOX) names, are case-sensitive and must be non-empty alphanumeric strings with no embedded whitespace. All ascii alphanumeric characters except spaces/tabs and separators which are "." and ">" are allowed. Subject names can be optionally token-delimited using the dot character (.), e.g.:
 A subject is comprised of 1 or more tokens. Tokens are separated by "." and can be any non space ascii alphanumeric character. The full wildcard token ">" is only valid as the last token and matches all tokens past that point. A token wildcard, "*" matches any token in the position it was listed. Wildcard tokens should only be used in a wildcard capacity and not part of a literal token.
@@ -55,9 +55,9 @@ filename-safe      = (printable except dot, asterisk, lt, gt, colon, double-quot
 message-subject    = term (dot term | asterisk)* (dot gt)?
 reply-to           = term (dot term)*
 stream-name        = name-term
-queue-name         = term
 durable-name       = name-term
 consumer-name      = name-term
+queue-name         = term
 js-internal-prefix = dollar (prefix dot)+
 js-user-prefix     = (prefix dot)+
 account-name       = (filename-safe)+ maximum 255 characters
