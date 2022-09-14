@@ -71,7 +71,7 @@ os-object-name     = (any-character)+
 ### filename-safe
 
 The `filename-safe` is designed with unix operating systems in mind. 
-If the server is running on Windows, the `filename-safe` is too lenient and will operate more like so:  
+If the server is running on Windows, the `filename-safe` is too lenient and will operate like:  
 
 ```
 filename-safe = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark)+ maximum 255 characters
