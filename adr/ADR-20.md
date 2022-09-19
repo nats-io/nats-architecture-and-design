@@ -353,7 +353,7 @@ UpdateMeta will update **some** metadata for the object.
 * Only the name, description and headers can be updated.
 * Objects, Links and Bucket Links are all allowed to be updated.
 * It is an error to update metadata for a deleted object.
-* It is an error to change the name to that of an existing deleted object.
+* It is an error to change the name to that of an existing object.
 * It is okay to change the name if the name does not exist (or is deleted.)
 
 ```
