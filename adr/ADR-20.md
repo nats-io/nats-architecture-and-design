@@ -395,7 +395,7 @@ Watch(opts ...WatchOpt) -> ObjectWatcher
 **List**
 
 List will list all the objects in this store.
-* List should not include deleted objects, except with optional convenience methods.
+* Do not include deleted objects, except with optional convenience methods.
 
 ```
 List() -> List or array of ObjectInfo
