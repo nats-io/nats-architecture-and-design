@@ -353,8 +353,7 @@ UpdateMeta will update **some** metadata for the object.
 * Only the name, description and headers can be updated.
 * Objects, Links and Bucket Links are all allowed to be updated.
 * It is an error to update metadata for a deleted object.
-* It is an error to change the name to that of an existing object.
-* It is okay to change the name if the name does not exist (or is deleted.)
+* It is an error to rename an object to the name of an existing object
 
 ```
 UpdateMeta(name string, meta ObjectMeta)
@@ -395,19 +394,11 @@ Watch(opts ...WatchOpt) -> ObjectWatcher
 **List**
 
 List will list all the objects in this store.
-* Do not include deleted objects, except with optional convenience methods.
+* When listing objects, filter those objects that have been deleted. If necessary or requested, provide convenience methods or optional arguments to include them if the API user desires them.
 
 ```
 List() -> List or array of ObjectInfo
 ```
-
-Optional/Convenience examples:
-
-```
-List(includingDeleted bool) -> List or array of ObjectInfo
-List(opts ...WatchOpt) -> List or array of ObjectInfo
-```
-
 
 **Status**
 
