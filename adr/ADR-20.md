@@ -316,11 +316,12 @@ Get will retrieve the named object from the object store.
 
 * Deleted objects should be treated the same as objects that don't exist.
 
-At least one variant of:
+At least one \[language specific] variant of:
 
 ```
-Get(name string) -> [Language specific handling, output/stream/writer]
+Get(name string) -> [Language specific handling output/stream/writer]
 Get(name string, [output/stream/writer]) -> ObjectInfo
+Get(name string) -> ObjectResult, error
 ```
 
 Optional/Convenience examples:
