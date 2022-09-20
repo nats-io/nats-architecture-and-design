@@ -20,7 +20,7 @@ Initial feature list:
 - Represent an object store.
 - Store a large quantity of related bytes in chunks as a single object.
 - Retrieve all the bytes from a single object
-- Store meta data regarding each object
+- Store metadata regarding each object
 - Store multiple objects in a single store  
 - Ability to specify chunk size
 - Ability to delete an object
@@ -316,11 +316,12 @@ Get will retrieve the named object from the object store.
 
 * Deleted objects should be treated the same as objects that don't exist.
 
-At least one variant of:
+At least one \[language specific] variant of:
 
 ```
-Get(name string) -> [Language specific handling, output/stream/writer]
+Get(name string) -> [Language specific handling output/stream/writer]
 Get(name string, [output/stream/writer]) -> ObjectInfo
+Get(name string) -> ObjectResult, error
 ```
 
 Optional/Convenience examples:
@@ -333,10 +334,18 @@ GetFile(name string, file string)
 
 **GetInfo**
 
-GetInfo will retrieve the current information for the object, including the info of a Deleted object.
+GetInfo will retrieve the current information for the object. 
+* Do not return info for deleted objects, except with optional convenience methods. 
 
 ```
 GetInfo(name string) -> ObjectInfo
+```
+
+Optional/Convenience examples:
+
+```
+GetInfo(name string, includingDeleted bool) -> ObjectInfo
+GetInfo(name string, opts ...WatchOpt) -> ObjectInfo
 ```
 
 **UpdateMeta**
@@ -344,10 +353,8 @@ GetInfo(name string) -> ObjectInfo
 UpdateMeta will update **some** metadata for the object.
 * Only the name, description and headers can be updated.
 * Objects, Links and Bucket Links are all allowed to be updated.
-* It is okay to change the name if the name does not exist.
-* It is okay to change the name to that of an existing but deleted object.
-* It is an error to change the name to that of an existing but not deleted object.
 * It is an error to update metadata for a deleted object.
+* It is an error to rename an object to the name of an existing object
 
 ```
 UpdateMeta(name string, meta ObjectMeta)
@@ -388,11 +395,10 @@ Watch(opts ...WatchOpt) -> ObjectWatcher
 **List**
 
 List will list all the objects in this store.
- 
-* Should not include deleted objects.
+* When listing objects, filter those objects that have been deleted. If necessary or requested, provide convenience methods or optional arguments to include them if the API user desires them.
 
 ```
-List(opts ...WatchOpt) -> List or array of ObjectInfo
+List() -> List or array of ObjectInfo
 ```
 
 **Status**
