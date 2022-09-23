@@ -115,6 +115,9 @@ type Status interface {
 
 	// BackingStore is a name indicating the kind of backend
 	BackingStore() string
+
+    // Bytes returns the size in bytes of the bucket
+    Bytes() uint64
 }
 ```
 
