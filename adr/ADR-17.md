@@ -20,6 +20,8 @@ The subscription must track the last good stream and consumer sequences.
 When a gap is observed, the subscription closes its current subscription,
 releases its consumer and creates a new one starting at the proper stream sequence.
 
+If hearbeats are missed, consumer might be gone (deleted, lost after reconnect, node restart, etc.), and it should be recreated from last known stream sequence.
+
 You can optionally make the "state" available to the user.
 
 ### Subscription Limitations
