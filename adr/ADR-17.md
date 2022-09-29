@@ -20,6 +20,8 @@ The subscription must track the last good stream and consumer sequences.
 When a gap is observed, the subscription closes its current subscription,
 releases its consumer and creates a new one starting at the proper stream sequence.
 
+If hearbeats are missed, consumer might be gone (deleted, lost after reconnect, node restart, etc.), and it should be recreated from last known stream sequence.
+
 You can optionally make the "state" available to the user.
 
 ### Subscription Limitations
@@ -40,8 +42,10 @@ Checks:
 - durable_name: must not be provided
 - deliver_subject: must not be provided
 - ack policy: must not be provided or set to none. Set it to none if it is not provided.
-- max_deliver: must be not be provided or set to 1. Set it to 1 if it is not provided.
+- max_deliver: must not be provided or set to 1. Set it to 1 if it is not provided.
 - flow_control: must not be provided or set true. Set it to true if it is not provided.
+- mem_storage: must not be provided or set to true. Set to true if it is not provided.
+- num_replicas: must not be provided. Set to 1.
  
 Check and set these settings without an error:  
 
