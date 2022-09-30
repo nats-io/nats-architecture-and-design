@@ -52,6 +52,9 @@ Any case sensitivity in header interpretation is the responsibility of the appli
 
 > Note: This is _different_ from HTTP headers which declare/define that web server and user-agent participants should ignore case.
 
+###### Character Encoding
+NATS Clients _may_ offer alternate header key and value encodings that are backward-compatible with ASCII.  NATS Clients _should_ use a default header key and value encoding of either UTF-8 (preferred) or ASCII.
+
 With above caveats, please refer to the
 [specification](https://tools.ietf.org/html/rfc7230#section-3.2) for information
 on how to encode/decode HTTP headers.
