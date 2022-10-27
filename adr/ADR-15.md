@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2021-08-11|
 |Author  |@kozlovic|
-|Status  |Partially Implemented|
+|Status  | Implemented|
 |Tags    |jetstream, client|
 
 ## Context
