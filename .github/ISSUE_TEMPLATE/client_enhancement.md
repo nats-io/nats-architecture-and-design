@@ -21,7 +21,7 @@ The behavior is documented in ADR-X.
  - [ ] Java @scottf
  - [ ] JavaScript @aricart
  - [ ] .Net @scottf
- - [ ] C @kozlovic
+ - [ ] C @derek, @colin, @caspervonb
  - [ ] Python @wallyqs
  - [ ] Ruby @wallyqs
  - [ ] Rust @Jarema @caspervonb
