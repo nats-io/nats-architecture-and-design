@@ -1,11 +1,11 @@
 # Title
 
-| Metadata | Value                          |
-| -------- | ------------------------------ |
-| Date     | YYYY-MM-DD                     |
-| Author   | @<github user>, @<github user> |
-| Status   | `Proposed`                     |
-| Tags     | jetstream, client              |
+| Metadata | Value                                                          |
+| -------- |----------------------------------------------------------------|
+| Date     | 2022-11-23                                                     |
+| Author   | @aricart, @derekcollison, @tbeets, @scottf, @Jarema, @piotrpio |
+| Status   | Approved                                                    |
+| Tags     | jetstream, client                                              |
 
 ## Context and Problem Statement
 
