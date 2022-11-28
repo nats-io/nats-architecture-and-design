@@ -53,6 +53,7 @@ instantiate a consumer:
 - `add(streamName, consumerOptions)`
 - `create(streamName, consumerOptions)`
 - `get(streamName, consumerName)`
+- `delete(streamName, consumerName)`
 
 Some of the libraries can provide this functionality by chaining if that is
 appropriate, and makes sense given their current JetStreamManager implementation
@@ -78,6 +79,7 @@ Consumers will have the following operations:
 - `Fetch`
 - `Consume`
 - `Info` - An optional operation that returns the consumer info of the consumer
+- `Delete` - An optional operation to delete the referenced consumer
 
 Both the fetch/consume can provide hints on the batch of messages/data they want
 to process, and perhaps how long to keep a request for messages open.
@@ -110,6 +112,19 @@ call.
 Client may want some way to drain the buffer or iterator without pulling
 messages, so that the client can cleanly stop without leaving many messages
 un-acked.
+
+
+#### Info
+
+An optional operation that returns the consumer info. Note that depending on
+the context (a consumer that is exported across account) the JS API to retrieve
+the info on the consumer may not be available.
+
+#### Delete
+
+An optional operation that allows deleting the consumer. Note that depending
+on the context (a consumer that is exported across account) the JS API to
+delete the consumer may not be available.
 
 ## Consequences
 
