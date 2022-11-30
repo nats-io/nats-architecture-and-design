@@ -1,10 +1,10 @@
 # Title
 
 | Metadata | Value                                                          |
-| -------- |----------------------------------------------------------------|
+| -------- | -------------------------------------------------------------- |
 | Date     | 2022-11-23                                                     |
 | Author   | @aricart, @derekcollison, @tbeets, @scottf, @Jarema, @piotrpio |
-| Status   | Approved                                                    |
+| Status   | Approved                                                       |
 | Tags     | jetstream, client                                              |
 
 ## Context and Problem Statement
@@ -102,6 +102,22 @@ or via some iterator functionality where getting the next message will block
 until a message is yielded or the operation or the operation finishes, which
 terminates the iterator.
 
+##### Options
+
+- `max_messages?: number` - max number of messages to return
+- `expires: number` - amount of time to wait for the request to expire
+  (required)
+- `max_bytes?: number` - max number of bytes to return
+- `idle_heartbeat?: number` - amount idle time the server should wait before
+  sending a heartbeat
+
+Note that while `batch` and `max_bytes` are described as optional at least one
+of them is required.
+
+Note that when specifying both `batch` and `max_bytes`, `max_bytes` will take
+precedence. This means that if all messages exceed the specified `max_bytes` no
+message will be yielded by the server
+
 #### Consume
 
 Retrieve messages from the server while maintaining a buffer that will refill at
@@ -109,22 +125,43 @@ some point during the message processing maintaining a buffer that will allow
 the processing to go as fast as the client has selected by options on the read
 call.
 
-Client may want some way to drain the buffer or iterator without pulling
+Client may want some way to `drain()` the buffer or iterator without pulling
 messages, so that the client can cleanly stop without leaving many messages
 un-acked.
 
+##### Options
+
+- `max_messages?: number` - max number of messages to return
+- `expires: number` - amount of time to wait for the request to expire
+  (required)
+- `max_bytes?: number` - max number of bytes to return
+- `idle_heartbeat?: number` - amount idle time the server should wait before
+  sending a heartbeat
+- `threshold_messages?: number` - hint for the number of messages that should
+  trigger a low watermark on the client, and influence it to request more
+  messages. Default 20% of `max_messages`.
+- `threshold_bytes?: number` - hint for the number of messages that should
+  trigger a low watermark on the client, and influence it to request more data.
+  Default 20% of `max_bytes`.
+
+Note that while `max_messages` and `max_bytes` are described as optional at
+least one of them is required.
+
+Note that when specifying both `batch` and `max_bytes`, `max_bytes` will take
+precedence. This means that if all messages exceed the specified `max_bytes` no
+message will be yielded by the server
 
 #### Info
 
-An optional operation that returns the consumer info. Note that depending on
-the context (a consumer that is exported across account) the JS API to retrieve
-the info on the consumer may not be available.
+An optional operation that returns the consumer info. Note that depending on the
+context (a consumer that is exported across account) the JS API to retrieve the
+info on the consumer may not be available.
 
 #### Delete
 
-An optional operation that allows deleting the consumer. Note that depending
-on the context (a consumer that is exported across account) the JS API to
-delete the consumer may not be available.
+An optional operation that allows deleting the consumer. Note that depending on
+the context (a consumer that is exported across account) the JS API to delete
+the consumer may not be available.
 
 ## Consequences
 
