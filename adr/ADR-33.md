@@ -58,7 +58,9 @@ Using the specified `name` and automatically generated `id` the service will
 automatically create a subscription to handle discovery and monitoring requests.
 
 The subject for discovery and requests is always composed of all capital
-letters. Prefixed by `$SRV`.
+letters. Prefixed by `$SRV`. Note that this prefix needs to be overridable much
+in the way as we do for `$JS`, in order to enable targetting tools to work across
+accounts.
 
 The initial _verbs_ supported by the service include:
 
@@ -220,15 +222,15 @@ EndpointStats looks like:
 ## Error Handling
 
 Services may communicate request errors back to the client as they see fit, but
-to help standardization they also must include the header: `Nats-Service-Error`,
-the format of the string is expected to be:
+to help standardization they also must include the headers: `Nats-Service-Error`
+and `Nats-Service-Error-Code`.
 
-- A number that is significant for the client to figure out the error reason
-- Followed by a space
-- Followed by a string that could be shown to the user
+`Nats-Service-Error-Code` should be a value that is always safe to parse as a number.
+`Nats-Service-Error` should be a string describing the error that could be shown to the user.
+
 
 This means that clients making request from the service _must_ check if the
-response is an error by looking for this header. This allows client code to be
+response is an error by looking for these headers. This allows client code to be
 fairly standard in terms of handling regardless of additional error handling
 conventions.
 
