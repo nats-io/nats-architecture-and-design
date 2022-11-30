@@ -21,12 +21,12 @@ discovery and observability.
 Service configuration relies on the following:
 
 - `name` - really the _kind_ of the service. Shared by all the services that
-  have the same name. This `name` cannot have any spaces or periods.
-- `version` - an opaque string identifying the version
-- `description` - a human-readable description about the service
-- `schema`:
-  - `request` - a string/url describing the format of the request payload
-  - `response` - a string/url describing the format of the response payload
+have the same name. This `name` can only have `A-Z, a-z, 0-9, dash, underscore`.
+- `version` - a SemVer string
+- `description` - a human-readable description about the service (optional)
+- `schema`: (optional)
+  - `request` - a string/url describing the format of the request payload can be JSON schema etc.
+  - `response` - a string/url describing the format of the response payload can be JSON schema etc.
 - `statusHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
@@ -116,8 +116,21 @@ requests on.
 
 ### PING
 
-Is an alias for `INFO`. On receiving a `PING` request, the service should
-respond by sending an info response.
+Returns the following schema:
+
+```typescript
+{
+    /**
+    * The kind of the service reporting the status
+    */
+    name: string,
+    /**
+    * The unique ID of the service reporting the status
+    */
+    id: string,
+}
+```
+The intention of `PING` is for clients to calculate RTT to a service.
 
 ### SCHEMA
 
