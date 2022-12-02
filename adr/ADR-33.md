@@ -27,7 +27,7 @@ have the same name. This `name` can only have `A-Z, a-z, 0-9, dash, underscore`.
 - `schema`: (optional)
   - `request` - a string/url describing the format of the request payload can be JSON schema etc.
   - `response` - a string/url describing the format of the response payload can be JSON schema etc.
-- `statusHandler` - an optional function that returns unknown data that can be
+- `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
 - `endpoint` - a subject and a handler (effectively equivalent to a NATS
@@ -65,16 +65,16 @@ accounts.
 The initial _verbs_ supported by the service include:
 
 - `PING`
-- `STATUS`
+- `STATS`
 - `INFO`
 - `SCHEMA`
 
 Using the above verbs, it becomes possible to build a service subject hierarchy
 like:
 
-`$SRV.PING|STATUS|INFO|SCHEMA` - pings and retrieves status for all services
-`$SRV.PING|STATUS|INFO|SCHEMA.<name>` - pings or retrieves status for all
-services having the specified name `$SRV.PING|STATUS|INFO|SCHEMA.<name>.<id>` -
+`$SRV.PING|STATS|INFO|SCHEMA` - pings and retrieves status for all services
+`$SRV.PING|STATS|INFO|SCHEMA.<name>` - pings or retrieves status for all
+services having the specified name `$SRV.PING|STATS|INFO|SCHEMA.<name>.<id>` -
 pings or retrieves status of a particular service instance
 
 Services should respond to:
@@ -169,9 +169,9 @@ only returned if the `schema` was specified when created.
 }
 ```
 
-### STATUS
+### STATS
 
-The STATUS request can have an optional JSON payload `{ internal: boolean }`. If
+The STATS request can have an optional JSON payload `{ internal: boolean }`. If
 specified and `true` the service should report all its internal endpoints, thus
 the reson the stats returns an array of EndpointStats:
 
@@ -211,11 +211,11 @@ EndpointStats looks like:
     /**
      * Total latency for the service (in nanos)
      */
-    total_latency: number;
+    total_processing_time: number;
     /**
      * Average latency is the total latency divided by the num_requests (in nanos)
      */
-    average_latency: number;
+    average_processing_time: number;
 }
 ```
 
