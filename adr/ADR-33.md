@@ -42,7 +42,7 @@ allow:
   Optionally this function should allow for an optional error. Stop should
   always drain its service subscriptions.
 - `reset()` to reset any tracked metrics
-- `stats()` to return the status of the service
+- `stats()` to return the stats of the service
 - `done` a callback handler or promise where the framework can notify when its
   subscriptions have stopped. Note that this is independent of the NATS
   connection, and it should be possible to run multiple services under a single
