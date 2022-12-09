@@ -132,20 +132,34 @@ un-acked.
 ##### Options
 
 - `max_messages?: number` - max number of messages to return
-- `expires: number` - amount of time to wait for the request to expire - defaults to 30s, has to be > 1s
+- `expires: number` - amount of time to wait for the request to expire.
 - `max_bytes?: number` - max number of bytes to return
 - `idle_heartbeat?: number` - amount idle time the server should wait before
   sending a heartbeat
 - `threshold_messages?: number` - hint for the number of messages that should
   trigger a low watermark on the client, and influence it to request more
-  messages. Default 25% of `max_messages`.
+  messages.
 - `threshold_bytes?: number` - hint for the number of messages that should
   trigger a low watermark on the client, and influence it to request more data.
-  Default 25% of `max_bytes`.
 
 Note that `max_messages` and `max_bytes` are exclusive. Clients should not allow depending on both constraints.
-If no options is provided, clients should use a default value for `max_messages` (1000) and not set `max_bytes`.
+If no options is provided, clients should use a default value for `max_messages` and not set `max_bytes`.
 For each constraint, a corresponding threshold can be set.
+
+###### Defaults and constraints
+
+> Values used as defaults if options are not provided are subject to further discussion.
+> The values presented below are not definite.
+
+- `max_messages` - 1000, [1-???]
+- `expires` - 60s, [4s-10m]?
+- `max_bytes` - not set, use `max_messages` if not provided
+- `idle_heartbeat` - 30s, [2s-60s]?
+- `threshold_messages` - 25% of `max_messages`, rounded up (to avoi getting stuck for low max_messages values)
+- `threshold_bytes` - 25% of `max_bytes`
+
+The default values and constraints used for `expiry` and `idle_heartbeat` need to be carefully selected,
+as consumer stability has to be taken into account (when those values are very low, e.g. heartbeat == 1s).
 
 ##### Consume specification
 
@@ -161,14 +175,13 @@ The subject on which the subscription is created is used as reply for each `CONS
 
 Users should be able to set either max_messages or max_bytes values, but not both:
 
-- If no option is provided, the default value for `max_messages` (1000) should be used, and
+- If no option is provided, the default value for `max_messages` should be used, and
 `max_bytes` should not be set.
 - If `max_messages` is set by the user, the value should be set for `max_messages` and `max_bytes`
 should not be set.
 - User cannot set both constraint for a single `Consume()` execution.
 - For each constraint, a custom threshold can be set, containing the number of messages/bytes that should be received to
 trigger the next pull request. The value of threshold cannot be higher than the corresponding constraint's value.
-- Default values for threshold should be 25% of `max_messages`/`max_bytes`
 - For each pull request, `batch` or `max_bytes` value should be equal to the threshold value (to fill the buffer)
 
 ###### Buffering messages
@@ -201,11 +214,6 @@ the `Consume()` execution should be stopped and subscription should be drained.
 ###### Idle heartbeats
 
 `Consume()` should always utilize idle heartbeats. Heartbeat values are calculated as follows:
-
-- If no heartbeat value is provided by the user:
-  - if `expiry < 60s`, set the heartbeat value to `expiry / 2`
-  - if `expiry >= 60`, set the heartbeat value to 30s
-- If heartbeat value is provided by the user, validate whether `idle_heartbeat > 500ms && idle_heartbeat <= expires / 2`
 
 An error is triggered if the timer reaches 2 * request's idle_heartbeat value.
 The timer is reset on each received message (this can be either user message, error message or heartbeat message).
