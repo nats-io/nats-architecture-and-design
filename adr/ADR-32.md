@@ -132,24 +132,129 @@ un-acked.
 ##### Options
 
 - `max_messages?: number` - max number of messages to return
-- `expires: number` - amount of time to wait for the request to expire
-  (required)
+- `expires: number` - amount of time to wait for the request to expire - defaults to 30s, has to be > 1s
 - `max_bytes?: number` - max number of bytes to return
 - `idle_heartbeat?: number` - amount idle time the server should wait before
   sending a heartbeat
 - `threshold_messages?: number` - hint for the number of messages that should
   trigger a low watermark on the client, and influence it to request more
-  messages. Default 20% of `max_messages`.
+  messages. Default 25% of `max_messages`.
 - `threshold_bytes?: number` - hint for the number of messages that should
   trigger a low watermark on the client, and influence it to request more data.
-  Default 20% of `max_bytes`.
+  Default 25% of `max_bytes`.
 
-Note that while `max_messages` and `max_bytes` are described as optional at
-least one of them is required.
+Note that `max_messages` and `max_bytes` are exclusive. Clients should not allow depending on both constraints.
+If no options is provided, clients should use a default value for `max_messages` (1000) and not set `max_bytes`.
+For each constraint, a corresponding threshold can be set.
 
-Note that when specifying both `batch` and `max_bytes`, `max_bytes` will take
-precedence. This means that if all messages exceed the specified `max_bytes` no
-message will be yielded by the server
+##### Consume specification
+
+An algorithm for continuously fetching messages should be implemented in clients,
+taking into account language constructs.
+
+###### NATS subscription
+
+Consume should create a single subscription to handle responses for all pull requests.
+The subject on which the subscription is created is used as reply for each `CONSUMER.MSG.NEXT` request.
+
+###### Max messages and max bytes options
+
+Users should be able to set either max_messages or max_bytes values, but not both:
+
+- If no option is provided, the default value for `max_messages` (1000) should be used, and
+`max_bytes` should not be set.
+- If `max_messages` is set by the user, the value should be set for `max_messages` and `max_bytes`
+should not be set.
+- User cannot set both constraint for a single `Consume()` execution.
+- For each constraint, a custom threshold can be set, containing the number of messages/bytes that should be received to
+trigger the next pull request. The value of threshold cannot be higher than the corresponding constraint's value.
+- Default values for threshold should be 25% of `max_messages`/`max_bytes`
+- For each pull request, `batch` or `max_bytes` value should be equal to the threshold value (to fill the buffer)
+
+###### Buffering messages
+
+`Consume()` should pre-buffer messages up to a limit set by `max_messages` or `max_bytes` options (whichever is provided).
+Clients should track the total amount of messages pending in a buffer. Whenever a threshold is reached,
+a new request to `CONSUMER.MSG.NEXT` should be published.
+
+There is no need to track specific pull request's status - as long as the aggregate message and byte count is
+maintained, `Consume()` should be able to fill the buffer appropriately.
+
+Pending messages and bytes count should be updated when:
+
+- A new pull request is published - add a value of `request.batch_size` to the pending messages count and
+the value of `request.max_bytes` to the pending byte count.
+- A new user message is processed - subtract 1 from pending messages count and subtract message size from penging byte count.
+The message size (in bytes) is defined as: `len(msg.data) + len(msg.subject) + len(msg.reply)`
+- A pull request termination error is received - subtract the value of `Nats-Pending-Messages` header
+from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count.
+
+###### JetStream error handling
+
+There are 2 kinds of errors which can be received as a response to a pull request:
+
+- Pull request termination error is any error containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
+These should not be treated as errors by the application, but rather used to calculate the pending messages/bytes count.
+- Every other pull request error should be treated as terminal error - it should be telegraphed to the user (in langie-specific way),
+the `Consume()` execution should be stopped and subscription should be drained.
+
+###### Idle heartbeats
+
+`Consume()` should always utilize idle heartbeats. Heartbeat values are calculated as follows:
+
+- If no heartbeat value is provided by the user:
+  - if `expiry < 60s`, set the heartbeat value to `expiry / 2`
+  - if `expiry >= 60`, set the heartbeat value to 30s
+- If heartbeat value is provided by the user, validate whether `idle_heartbeat > 500ms && idle_heartbeat <= expires / 2`
+
+An error is triggered if the timer reaches 2 * request's idle_heartbeat value.
+The timer is reset on each received message (this can be either user message, error message or heartbeat message).
+
+Heartbeat timer should be reset and paused in the event of client disconnect and resumed on reconnect.
+
+On heartbeat error, the consumer subscription should be drained and the message processing should be terminated.
+
+###### Server reconnects
+
+Clients should detect server disconnections and reconnections.
+
+When a disconnect event is received, client should:
+
+- Reset the heartbeat timer.
+- Pause the heartbeat timer.
+
+When a reconnect event is received, client should:
+
+- Resume the heartbeat timer.
+- Check if consumer exists (fetch consumer info). If consumer is not available, terminate `Consume()` execution.
+- Publish a new pull request.
+
+###### Message processing algorithm
+
+Below is the algorithm for receiving and processing messages.
+It does not take into account server reconnects and heartbeat checks - those should be
+handled asynchronously in a separate thread / routine.
+
+1. Verify whether a new pull request needs to be sent:
+   - pending messages count reaches threshold
+   - pending byte count reaches threshold
+2. If yes, publish a new pull request and add request's `batch` and
+`max_bytes` to pending messages and bytes counters.
+3. Check if new message is availabe.
+   - if yes, go to #4
+   - if not, go to #1
+4. Reset the heartbeat timer.
+5. Verify the type of message:
+   - if message is a hearbeat message, go to #1
+   - if message is a user message, handle it and subtract 1 message from pending message count
+    and message size from pending bytes count and go to #1
+   - if message is an error, go to #6
+6. Verify error type:
+   - if message contains `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, go to #7
+   - else terminate the subscription and exit
+7. Read the values of `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
+8. Subtract the values from pending messages count and pending bytes count respectively.
+9. Go to #1.
 
 #### Info
 
