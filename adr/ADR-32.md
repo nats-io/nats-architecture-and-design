@@ -105,8 +105,7 @@ terminates the iterator.
 ##### Options
 
 - `max_messages?: number` - max number of messages to return
-- `expires: number` - amount of time to wait for the request to expire
-  (required)
+- `expires: number` - amount of time to wait for the request to expire (in nanoseconds)
 - `max_bytes?: number` - max number of bytes to return
 - `idle_heartbeat?: number` - amount idle time the server should wait before
   sending a heartbeat
