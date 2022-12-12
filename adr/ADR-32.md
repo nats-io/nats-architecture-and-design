@@ -1,4 +1,4 @@
-# Title
+# JetStream Simplification
 
 | Metadata | Value                                                          |
 | -------- | -------------------------------------------------------------- |
