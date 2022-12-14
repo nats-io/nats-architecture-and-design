@@ -209,7 +209,7 @@ only returned if the `schema` was specified when created.
     /**
     * ISO Date string when the service started
     */
-    stared: string
+    started: string
 }
 ```
 
