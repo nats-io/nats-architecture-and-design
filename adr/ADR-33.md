@@ -21,12 +21,15 @@ discovery and observability.
 Service configuration relies on the following:
 
 - `name` - really the _kind_ of the service. Shared by all the services that
-have the same name. This `name` can only have `A-Z, a-z, 0-9, dash, underscore`.
-- `version` - a SemVer string
+  have the same name. This `name` can only have
+  `A-Z, a-z, 0-9, dash, underscore`.
+- `version` - a SemVer string - impl should validate that this is SemVer
 - `description` - a human-readable description about the service (optional)
 - `schema`: (optional)
-  - `request` - a string/url describing the format of the request payload can be JSON schema etc.
-  - `response` - a string/url describing the format of the response payload can be JSON schema etc.
+  - `request` - a string/url describing the format of the request payload can be
+    JSON schema etc.
+  - `response` - a string/url describing the format of the response payload can
+    be JSON schema etc.
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
@@ -42,11 +45,11 @@ allow:
   Optionally this function should allow for an optional error. Stop should
   always drain its service subscriptions.
 - `reset()` to reset any tracked metrics
+- `info()` returns the [`ServiceInfo`](#INFO)
 - `stats()` to return the stats of the service
-- `done` a callback handler or promise where the framework can notify when its
-  subscriptions have stopped. Note that this is independent of the NATS
-  connection, and it should be possible to run multiple services under a single
-  connection.
+- A callback handler or promise where the framework can notify when the service
+  has stopped. Note that this is independent of the NATS connection, and it
+  should be possible to run multiple services under a single connection.
 
 On startup a service is assigned an unique `id`. This `id` is used to
 distinguish different instances of the service and allow for a specific instance
@@ -59,8 +62,8 @@ automatically create a subscription to handle discovery and monitoring requests.
 
 The subject for discovery and requests is always composed of all capital
 letters. Prefixed by `$SRV`. Note that this prefix needs to be overridable much
-in the way as we do for `$JS`, in order to enable targetting tools to work across
-accounts.
+in the way as we do for `$JS`, in order to enable targetting tools to work
+across accounts.
 
 The initial _verbs_ supported by the service include:
 
@@ -83,23 +86,38 @@ Services should respond to:
 - All service requests that match their `name`
 - All services requests that match their `name` and `id`
 
+### Standard Field
+
+All discovery and status responses contain the following fields:
+
+```typescript
+    /**
+    * The kind of the service reporting the status
+    */
+    name: string,
+    /**
+    * The unique ID of the service reporting the status
+    */
+    id: string,
+    /**
+    * The version of the service
+    */
+    version: string
+}
+```
+
 ### INFO
 
 Returns a JSON having the following structure:
 
 ```typescript
 {
-    /**
-     * The kind of the service reporting the status
-     */
     name: string,
-    /**
-     * The unique ID of the service reporting the status
-     */
     id: string,
+    version: string,
     /**
-     * Description for the service
-     */
+    * Description for the service
+    */
     description: string,
     /**
      * Version of the service
@@ -118,21 +136,18 @@ requests on.
 
 ### PING
 
-Returns the following schema:
+Returns the following schema (the standard response fields)
 
 ```typescript
 {
-    /**
-    * The kind of the service reporting the status
-    */
     name: string,
-    /**
-    * The unique ID of the service reporting the status
-    */
     id: string,
+    version: string,
 }
 ```
-The intention of `PING` is for clients to calculate RTT to a service.
+
+The intention of `PING` is for clients to calculate RTT to a service and discover
+services.
 
 ### SCHEMA
 
@@ -141,17 +156,8 @@ only returned if the `schema` was specified when created.
 
 ```typescript
 {
-    /**
-     * The kind of the service reporting the status
-     */
     name: string,
-    /**
-     * The unique ID of the service reporting the status
-     */
     id: string,
-    /**
-     * Version of the service
-     */
     version: string,
     /**
      * The schema specified when the service was created
@@ -177,45 +183,37 @@ the reson the stats returns an array of EndpointStats:
 
 ```typescript
 {
-  name: string;
-  id: string;
-  version: string;
-  stats: EndpointStats[];
-}
-```
-
-EndpointStats looks like:
-
-```typescript
-{
+    name: string,
+    id: string,
+    version: string,
     /**
-     * Name of the endpoint
-     */
-    name: string;
-    /**
-     * The number of requests received by the endpoint
-     */
+    * The number of requests received by the endpoint
+    */
     num_requests: number;
     /**
-     * Number of errors that the endpoint has raised
-     */
+    * Number of errors that the endpoint has raised
+    */
     num_errors: number;
     /**
-     * If set, the last error triggered by the endpoint
-     */
-    last_error ? : Error;
+    * If set, the last error triggered by the endpoint
+    */
+    last_error?: Error;
     /**
-     * A field that can be customized with any data as returned by status handler see {@link ServiceConfig}
-     */
-    data ? : unknown;
+    * A field that can be customized with any data as returned by stats handler see {@link ServiceConfig}
+    */
+    data?: unknown;
     /**
-     * Total latency for the service (in nanos)
-     */
-    total_processing_time: number;
+    * Total processing_time for the service
+    */
+    processing_time: Nanos;
     /**
-     * Average latency is the total latency divided by the num_requests (in nanos)
-     */
-    average_processing_time: number;
+    * Average processing_time is the total processing_time divided by the num_requests
+    */
+    average_processing_time: Nanos;
+    /**
+    * ISO Date string when the service started
+    */
+    stared: string
 }
 ```
 
@@ -225,9 +223,9 @@ Services may communicate request errors back to the client as they see fit, but
 to help standardization they also must include the headers: `Nats-Service-Error`
 and `Nats-Service-Error-Code`.
 
-`Nats-Service-Error-Code` should be a value that is always safe to parse as a number.
-`Nats-Service-Error` should be a string describing the error that could be shown to the user.
-
+`Nats-Service-Error-Code` should be a value that is always safe to parse as a
+number. `Nats-Service-Error` should be a string describing the error that could
+be shown to the user.
 
 This means that clients making request from the service _must_ check if the
 response is an error by looking for these headers. This allows client code to be
