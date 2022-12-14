@@ -177,10 +177,6 @@ only returned if the `schema` was specified when created.
 
 ### STATS
 
-The STATS request can have an optional JSON payload `{ internal: boolean }`. If
-specified and `true` the service should report all its internal endpoints, thus
-the reson the stats returns an array of EndpointStats:
-
 ```typescript
 {
     name: string,
