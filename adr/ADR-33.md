@@ -146,8 +146,8 @@ Returns the following schema (the standard response fields)
 }
 ```
 
-The intention of `PING` is for clients to calculate RTT to a service and discover
-services.
+The intention of `PING` is for clients to calculate RTT to a service and
+discover services.
 
 ### SCHEMA
 
@@ -230,6 +230,18 @@ conventions.
 
 Service API libraries _must_ provide an error formatting function that users can
 use to produce the properly formatted response headers.
+
+### Service Msg
+
+Clients may optionally implement a Service Msg, which adds additional respond
+functionality such as:
+
+`respondError(code: number, description: string, data?: Uint8Array, opts?: PublishOptions): boolean`
+
+This enables a service to easily on-board the service error without requiring
+users to create their own shims. The above adds two required arguments: the
+error code, and description, the rest should match the client's implementation
+of `respond()`.
 
 ## Request Handling
 
