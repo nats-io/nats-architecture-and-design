@@ -25,6 +25,7 @@ Service configuration relies on the following:
   `A-Z, a-z, 0-9, dash, underscore`.
 - `version` - a SemVer string - impl should validate that this is SemVer
 - `description` - a human-readable description about the service (optional)
+- `meta` - meta data about the service (optional)
 - `schema`: (optional)
   - `request` - a string/url describing the format of the request payload can be
     JSON schema etc.
@@ -106,6 +107,10 @@ All discovery and status responses contain the following fields:
     * The version of the service
     */
     version: string
+    /**
+    * an object containing meta data (optional) ex: {"mac":"aa:bb:cc:dd:ee:ff","count":123}
+    */
+    meta?: Record<string, any>
 }
 ```
 
@@ -127,6 +132,10 @@ Returns a JSON having the following structure:
      */
     version: string,
     /**
+    * an object containing meta data (optional) ex: {"mac":"aa:bb:cc:dd:ee:ff","count":123}
+    */
+    meta?: Record<string, any>
+    /**
      * Subject where the service can be invoked
      */
     subject: string
@@ -146,6 +155,7 @@ Returns the following schema (the standard response fields)
     name: string,
     id: string,
     version: string,
+    meta?: Record<string, any>
 }
 ```
 
@@ -162,6 +172,7 @@ only returned if the `schema` was specified when created.
     name: string,
     id: string,
     version: string,
+    meta?: Record<string, any>
     /**
      * The schema specified when the service was created
      */
@@ -185,6 +196,7 @@ only returned if the `schema` was specified when created.
     name: string,
     id: string,
     version: string,
+    meta?: Record<string, any>
     /**
     * The number of requests received by the endpoint
     */
