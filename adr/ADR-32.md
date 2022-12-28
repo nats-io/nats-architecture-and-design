@@ -95,6 +95,10 @@ All discovery and status responses contain the following fields:
 
 ```typescript
     /**
+     * An identifier of the message type for example io.nats.micro.v1.stats
+     */
+    type: string,
+    /**
     * The kind of the service reporting the status
     */
     name: string,
@@ -115,6 +119,7 @@ Returns a JSON having the following structure:
 
 ```typescript
 {
+    type: string,
     name: string,
     id: string,
     version: string,
@@ -137,12 +142,15 @@ All the fields above map 1-1 to the metadata provided when the service was
 created. Note that `subject` is the subject that the service is listening for
 requests on.
 
+The type for this is `io.nats.micro.v1.info_response`.
+
 ### PING
 
 Returns the following schema (the standard response fields)
 
 ```typescript
 {
+    type: string,
     name: string,
     id: string,
     version: string,
@@ -152,6 +160,8 @@ Returns the following schema (the standard response fields)
 The intention of `PING` is for clients to calculate RTT to a service and
 discover services.
 
+The type for this is `io.nats.micro.v1.ping_response`.
+
 ### SCHEMA
 
 Returns a JSON having the following structure. Note that the `schema` struct is
@@ -159,6 +169,7 @@ only returned if the `schema` was specified when created.
 
 ```typescript
 {
+    type: string,
     name: string,
     id: string,
     version: string,
@@ -177,6 +188,8 @@ only returned if the `schema` was specified when created.
     };
 }
 ```
+
+The type for this is `io.nats.micro.v1.schema_response`.
 
 ### STATS
 
@@ -215,6 +228,8 @@ only returned if the `schema` was specified when created.
     started: string
 }
 ```
+
+The type for this is `io.nats.micro.v1.stats_response`.
 
 ## Error Handling
 
