@@ -195,6 +195,7 @@ The type for this is `io.nats.micro.v1.schema_response`.
 
 ```typescript
 {
+    type: string,
     name: string,
     id: string,
     version: string,
