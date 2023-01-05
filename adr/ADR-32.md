@@ -25,6 +25,7 @@ Service configuration relies on the following:
   `A-Z, a-z, 0-9, dash, underscore`.
 - `version` - a SemVer string - impl should validate that this is SemVer
 - `description` - a human-readable description about the service (optional)
+- `root_subject` - a common NATS subject used as prefix for all service endpoints
 - `schema`: (optional)
   - `request` - a string/url describing the format of the request payload can be
     JSON schema etc.
@@ -33,8 +34,8 @@ Service configuration relies on the following:
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
-- `endpoint` - a subject and a handler (effectively equivalent to a NATS
-  subscription)
+- `endpoints` - a collection of endpoints (name + handler) to be associated with the
+  service. Those can be either passed in configuration, or addded via a method on service.
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
@@ -50,6 +51,8 @@ allow:
 - A callback handler or promise where the framework can notify when the service
   has stopped. Note that this is independent of the NATS connection, and it
   should be possible to run multiple services under a single connection.
+- `addEndpoint()` - OPTIONAL - used to configure new endpoints on a service.
+   Alternatively, endpoints can be passed directly in configuration.
 
 On startup a service is assigned an unique `id`. This `id` is used to
 distinguish different instances of the service and allow for a specific instance
@@ -108,6 +111,8 @@ All discovery and status responses contain the following fields:
     id: string,
     /**
     * The version of the service
+    * Should be validated using official semver regexp: 
+    * https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     */
     version: string
 }
@@ -132,9 +137,9 @@ Returns a JSON having the following structure:
      */
     version: string,
     /**
-     * Subject where the service can be invoked
+     * Root subject of the service
      */
-    subject: string
+    root_subject: string
 }
 ```
 
@@ -200,6 +205,20 @@ The type for this is `io.nats.micro.v1.schema_response`.
     id: string,
     version: string,
     /**
+    * Individual endpoint stats where map key is the endpoint name
+    */
+    endpoints: Map<string, EndpointStats>
+    /**
+    * ISO Date string when the service started in UTC timezone
+    */
+    started: string
+}
+
+/**
+ * EndpointStats
+ */ 
+{
+ /**
     * The number of requests received by the endpoint
     */
     num_requests: number;
@@ -223,10 +242,6 @@ The type for this is `io.nats.micro.v1.schema_response`.
     * Average processing_time is the total processing_time divided by the num_requests
     */
     average_processing_time: Nanos;
-    /**
-    * ISO Date string when the service started in UTC timezone
-    */
-    started: string
 }
 ```
 
@@ -270,7 +285,17 @@ Note the name of the queue group is fixed to `q` and cannot be changed otherwise
 different implementations on different queue groups will respond to the same
 request.
 
-The handler specified by the client to process requests should operate as any
+For each configured endpoint, a queue subscription should be created. Subscription
+subject is composed by concatenating root subject and endpoint name:
+
+```typescript
+{$root_subject}.{$endpoint_name}
+```
+
+> Note: Handler subject does not contain the `$SRV` prefix. This prefix
+is reserved for internal handlers.
+
+The handlers specified by the client to process requests should operate as any
 standard subscription handler. This means that no assumption is made on whether
 returning from the callback signals that the request is completed. The framework
 will dispatch requests as fast as the handler returns.
