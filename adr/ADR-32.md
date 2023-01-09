@@ -224,7 +224,7 @@ The type for this is `io.nats.micro.v1.schema_response`.
     */
     average_processing_time: Nanos;
     /**
-    * ISO Date string when the service started
+    * ISO Date string when the service started in UTC timezone
     */
     started: string
 }
