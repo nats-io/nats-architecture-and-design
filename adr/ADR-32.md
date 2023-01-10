@@ -25,7 +25,6 @@ Service configuration relies on the following:
   `A-Z, a-z, 0-9, dash, underscore`.
 - `version` - a SemVer string - impl should validate that this is SemVer
 - `description` - a human-readable description about the service (optional)
-- `root_subject` - a common NATS subject used as prefix for all service endpoints
 - `schema`: (optional)
   - `request` - a string/url describing the format of the request payload can be
     JSON schema etc.
