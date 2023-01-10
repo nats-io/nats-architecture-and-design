@@ -34,8 +34,7 @@ Service configuration relies on the following:
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
-- `endpoints` - a collection of endpoints (name + handler) to be associated with the
-  service. Those can be either passed in configuration, or addded via a method on service.
+- `endpoint` - an optional base endpoint configuration, consisting of valid NATS subject and handler.
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
@@ -51,8 +50,8 @@ allow:
 - A callback handler or promise where the framework can notify when the service
   has stopped. Note that this is independent of the NATS connection, and it
   should be possible to run multiple services under a single connection.
-- `addEndpoint()` - OPTIONAL - used to configure new endpoints on a service.
-   Alternatively, endpoints can be passed directly in configuration.
+- `addEndpoint(name, subject, handler)` to configure new endpoints on a service. See [Adding groups and endpoints](#Adding-groups-and-endpoints)
+- `addGroup(name)` to set up endpoint group. `addGroup()`. See [Adding groups and endpoints](#Adding-groups-and-endpoints)
 
 On startup a service is assigned an unique `id`. This `id` is used to
 distinguish different instances of the service and allow for a specific instance
@@ -115,7 +114,6 @@ All discovery and status responses contain the following fields:
     * https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     */
     version: string
-}
 ```
 
 ### INFO
@@ -129,23 +127,22 @@ Returns a JSON having the following structure:
     id: string,
     version: string,
     /**
-    * Description for the service
-    */
+     * Description for the service
+     */
     description: string,
     /**
      * Version of the service
      */
     version: string,
     /**
-     * Root subject of the service
+     * An array of all endpoint subjects
      */
-    root_subject: string
+    subjects: string[]
 }
 ```
 
 All the fields above map 1-1 to the metadata provided when the service was
-created. Note that `subject` is the subject that the service is listening for
-requests on.
+created. Note that `subjects` is a list of all subjects on which endpoints were registered.
 
 The type for this is `io.nats.micro.v1.info_response`.
 
@@ -205,9 +202,9 @@ The type for this is `io.nats.micro.v1.schema_response`.
     id: string,
     version: string,
     /**
-    * Individual endpoint stats where map key is the endpoint name
+    * Individual endpoint stats
     */
-    endpoints: Map<string, EndpointStats>
+    endpoints: EndpointStats[]
     /**
     * ISO Date string when the service started in UTC timezone
     */
@@ -218,7 +215,15 @@ The type for this is `io.nats.micro.v1.schema_response`.
  * EndpointStats
  */ 
 {
- /**
+    /**
+    * The name of the endpoint
+    */
+    name: string;
+    /**
+    * The subject on which the endpoint is registered
+    */
+    subject: string;
+    /**
     * The number of requests received by the endpoint
     */
     num_requests: number;
@@ -246,6 +251,39 @@ The type for this is `io.nats.micro.v1.schema_response`.
 ```
 
 The type for this is `io.nats.micro.v1.stats_response`.
+
+## Adding groups and endpoints
+
+A service can be extended by adding additional groups and endpoints.
+
+### Groups
+
+A group serves as a common prefix to all endpoints registered in it.
+A group can be created using `addGroup(name)` method on a Service.
+Group name should be a valid NATS subject, but cannot contain `>`
+wildcard (as group name serves as subject prefix).
+
+Group should expose following methods:
+
+- `addEndpoint(name, subject, handler)` - registers new endpoint for the service.
+The endpoint subject should be registered on subject created by concatenating
+group name and endpoint subject: `{this.group_name}.{subject}`.
+- `addGroup(name)` - creates and returns a new group. The prefix for this group
+is created as follows: `{this.group_name}.{name}`.
+
+### Endpoints
+
+Each service endpoint consists of the following fields:
+
+- `name` - an alphanumeric human-readable string used to describe the endpoint.
+Multiple endpoints can have the same names.
+- `subject` - a NATS subject on which the endpoint will be registered.
+A subject is created by concatenating the subject provided by the user with
+group prefix (if applicable).
+- `handler` - request handler - see [Request Handling](#Request-Handling)
+
+Enpoints can be created either on the service directly (`Service.addEndpoint()`) or
+on a group (`Group.addEndpoint`).
 
 ## Error Handling
 
@@ -285,12 +323,7 @@ Note the name of the queue group is fixed to `q` and cannot be changed otherwise
 different implementations on different queue groups will respond to the same
 request.
 
-For each configured endpoint, a queue subscription should be created. Subscription
-subject is composed by concatenating root subject and endpoint name:
-
-```typescript
-{$root_subject}.{$endpoint_name}
-```
+For each configured endpoint, a queue subscription should be created.
 
 > Note: Handler subject does not contain the `$SRV` prefix. This prefix
 is reserved for internal handlers.
