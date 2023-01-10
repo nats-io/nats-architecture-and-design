@@ -49,7 +49,7 @@ allow:
 - A callback handler or promise where the framework can notify when the service
   has stopped. Note that this is independent of the NATS connection, and it
   should be possible to run multiple services under a single connection.
-- `addEndpoint(name, subject, handler)` to configure new endpoints on a service. See [Adding groups and endpoints](#Adding-groups-and-endpoints)
+- `addEndpoint(name, handler, options?)` to configure new endpoints on a service. See [Adding groups and endpoints](#Adding-groups-and-endpoints)
 - `addGroup(name)` to set up endpoint group. `addGroup()`. See [Adding groups and endpoints](#Adding-groups-and-endpoints)
 
 On startup a service is assigned an unique `id`. This `id` is used to
@@ -259,14 +259,16 @@ A service can be extended by adding additional groups and endpoints.
 
 A group serves as a common prefix to all endpoints registered in it.
 A group can be created using `addGroup(name)` method on a Service.
-Group name should be a valid NATS subject, but cannot contain `>`
+Group name should be a valid NATS subject or an empty string, but cannot contain `>`
 wildcard (as group name serves as subject prefix).
 
 Group should expose following methods:
 
-- `addEndpoint(name, subject, handler)` - registers new endpoint for the service.
-The endpoint subject should be registered on subject created by concatenating
-group name and endpoint subject: `{this.group_name}.{subject}`.
+- `addEndpoint(name, handler, options?)` - registers new endpoint for the service.
+By default, the endpoint should be registered on subject created by concatenating
+group name and endpoint subject: `{this.group_name}.{name}`. Alternatively,
+user may pass `subject` as an option, in which case service will be registered on
+`{this.group_name}.{subject}`
 - `addGroup(name)` - creates and returns a new group. The prefix for this group
 is created as follows: `{this.group_name}.{name}`.
 
@@ -276,10 +278,10 @@ Each service endpoint consists of the following fields:
 
 - `name` - an alphanumeric human-readable string used to describe the endpoint.
 Multiple endpoints can have the same names.
-- `subject` - a NATS subject on which the endpoint will be registered.
-A subject is created by concatenating the subject provided by the user with
-group prefix (if applicable).
 - `handler` - request handler - see [Request Handling](#Request-Handling)
+- `subject` - an optional NATS subject on which the endpoint will be registered.
+A subject is created by concatenating the subject provided by the user with
+group prefix (if applicable). If subject is not provided, use `name` instead.
 
 Enpoints can be created either on the service directly (`Service.addEndpoint()`) or
 on a group (`Group.addEndpoint`).
