@@ -25,15 +25,11 @@ Service configuration relies on the following:
   `A-Z, a-z, 0-9, dash, underscore`.
 - `version` - a SemVer string - impl should validate that this is SemVer
 - `description` - a human-readable description about the service (optional)
-- `schema`: (optional)
-  - `request` - a string/url describing the format of the request payload can be
-    JSON schema etc.
-  - `response` - a string/url describing the format of the response payload can
-    be JSON schema etc.
+- `apiUrl`: (optional) - url pointing to user-defined API specification
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
-- `endpoint` - an optional base endpoint configuration, consisting of valid NATS subject and handler.
+- `endpoint` - an optional base endpoint configuration, consisting of valid NATS subject, handler and optional request/response schema
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
@@ -165,8 +161,8 @@ The type for this is `io.nats.micro.v1.ping_response`.
 
 ### SCHEMA
 
-Returns a JSON having the following structure. Note that the `schema` struct is
-only returned if the `schema` was specified when created.
+Returns a JSON having the following structure.
+Service API does not have any assumptions about API spec or schema formats.
 
 ```typescript
 {
@@ -175,19 +171,38 @@ only returned if the `schema` was specified when created.
     id: string,
     version: string,
     /**
-     * The schema specified when the service was created
+     * A valid URL pointing to API specification (may contain schemas, paths etc.)
+     */    
+    apiUrl?: string,
+    /**
+     * An array contining registered endpoints with their schemas (if available)
      */
+    endpoints: Endpoint[]
+}
+
+/**
+ * Endpoint
+ */ 
+{
+    /**
+     * The name of the endpoint
+     */
+    name: string,
+    /**
+     * The subject on which the endpoint is registered
+     */
+    subject: string,
     schema?: {
         /**
-         * A string or URL
+         * Request schema
          */
         request: string,
         /**
-         * A string or URL
+         * Response schema
          */
         response: string
     };
-}
+};
 ```
 
 The type for this is `io.nats.micro.v1.schema_response`.
@@ -282,6 +297,9 @@ Multiple endpoints can have the same names.
 - `subject` - an optional NATS subject on which the endpoint will be registered.
 A subject is created by concatenating the subject provided by the user with
 group prefix (if applicable). If subject is not provided, use `name` instead.
+- `schema` - an optional schema of the endpoint
+  - `request` - a string describing the format of the request payload
+  - `response` - a string describing the format of the response payload
 
 Enpoints can be created either on the service directly (`Service.addEndpoint()`) or
 on a group (`Group.addEndpoint`).
