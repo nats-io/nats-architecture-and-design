@@ -29,7 +29,9 @@ Service configuration relies on the following:
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
-- `endpoint` - an optional base endpoint configuration, consisting of valid NATS subject, handler and optional request/response schema
+- `endpoint` - an optional base endpoint configuration, consisting of valid NATS subject,
+  handler and optional request/response schema. The `name` of the base endpoint 
+  should be set to `default` by the client libraries.
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
