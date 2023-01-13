@@ -175,7 +175,7 @@ Service API does not have any assumptions about API spec or schema formats.
     /**
      * A valid URL pointing to API specification (may contain schemas, paths etc.)
      */    
-    apiUrl?: string,
+    api_url?: string,
     /**
      * An array contining registered endpoints with their schemas (if available)
      */
