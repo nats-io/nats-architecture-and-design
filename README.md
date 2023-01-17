@@ -76,6 +76,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
+|[ADR-33](adr/ADR-33.md)|server, security|Certificate Store|
 
 ## Server
 
@@ -93,6 +94,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-30](adr/ADR-30.md)|server|Subject Transform|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-33](adr/ADR-33.md)|server, security|Certificate Store|
 
 ## When to write an ADR
 

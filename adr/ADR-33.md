@@ -2,9 +2,9 @@
 
 | Metadata | Value            |
 |----------|------------------|
-| Date     | 2022-11-07       |
+| Date     | 2022-01-17       |
 | Author   | @tbeets          |
-| Status   | `Proposed`       |
+| Status   | Implemented      |
 | Tags     | server, security |
 
 ## Problem Statement
