@@ -70,6 +70,25 @@ specific "store" of credentials (certificates and related private key) that are 
 The Windows-build of NATS Server has been enhanced to directly leverage the Windows Security & Identity library functions. 
 APIs from libraries `ncrypt.dll` and `crypt32.dll` are invoked to find and retrieve public certificates at startup and perform signatures during TLS negotiation.
 
+##### Inclusion of Intermediate CA Certificates
+
+When a leaf certificate is matched (see below Example Configurations), NATS server will attempt to source a valid
+trust chain of certificates from the local Windows machine's trust store, i.e. a valid chain from the leaf to a trusted
+self-signed certificate in the store (typically a CA root).
+
+If at least one valid chain is found, the first valid chain is selected and NATS server will form a final certificate as
+the matched leaf certificate plus non-self signed intermediate certificates that may be present in the valid chain.
+
+If no valid trust chain is found in the local Windows machine's trust store, the NATS server will form the final certificate as the matched leaf
+certificate only, no intermediate chained certs will be included.
+
+##### Validation Policy
+
+Note that CRL, OCSP, explicit role validation (TLS server or TLS client) and other policy features are specifically avoided
+in certificate match (and intermediate population) against the Windows KSP, as these are ultimately provided by the eventual
+trust validator in TLS negotiation, i.e.this provider implements identity lookup and identity signature but is not itself 
+the trust/policy validator of its own identity claims.
+
 #### Identity Lookup Options
 
 `cert_match_by` may be one of the following:
