@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2021-06-30|
 |Author  |@aricart|
-|Status  |Approved|
+|Status  |Implemented|
 |Tags    |server, client, jetstream|
 
 ## Context

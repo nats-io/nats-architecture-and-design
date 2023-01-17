@@ -2,7 +2,7 @@
 name: Client Enhancement
 about: Request a new feature to be added to NATS clients
 labels: enhancement, client
-assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, kozlovic, derekcollison, matthiashanel, Jarema, piotrpio, jnmoyne, marthacp
+assignees: ripienaar, wallyqs, scottf, aricart, ColinSullivan1, derekcollison, Jarema, piotrpio, jnmoyne, bruth, caspervonb, marthacp
 ---
 
 ## Overview
@@ -21,15 +21,16 @@ The behavior is documented in ADR-X.
  - [ ] Java @scottf
  - [ ] JavaScript @aricart
  - [ ] .Net @scottf
- - [ ] C @kozlovic
+ - [ ] C @derek, @colin, @caspervonb
  - [ ] Python @wallyqs
  - [ ] Ruby @wallyqs
  - [ ] Rust @Jarema @caspervonb
-   
+
 ## Other Tasks
 
- - [ ] docs.nats.io updated @jnmoyne
+ - [ ] docs.nats.io updated @bruth
  - [ ] Update ADR to `Implemented`
  - [ ] Update client features spreadsheet
 
 Client authors please update with your progress. If you open issues in your own repositories as a result of this request, please link them to this one by pasting the issue URL in a comment or main issue description.
+
