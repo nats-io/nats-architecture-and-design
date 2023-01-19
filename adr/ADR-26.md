@@ -1,11 +1,11 @@
 # NATS Authorization Callouts
 
-| Metadata | Value                                                         |
-| -------- | ------------------------------------------------------------- |
-| Date     | 2022-11-28                                                    |
-| Author   | @derekcollison                                                |
-| Status   | `Proposed`, `Approved` `Partially Implemented`, `Implemented` |
-| Tags     | server                                     |
+| Metadata | Value          |
+| -------- |----------------|
+| Date     | 2022-11-28     |
+| Author   | @derekcollison |
+| Status   | `Implemented`  |
+| Tags     | server         |
 
 ## Context and Problem Statement
 
