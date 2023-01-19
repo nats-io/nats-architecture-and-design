@@ -93,7 +93,7 @@ This repo is used to capture architectural and design decisions as a reference o
 | [ADR-28](adr/ADR-28.md) |jetstream, server|JetStream RePublish|
 | [ADR-30](adr/ADR-30.md) |server|Subject Transform|
 | [ADR-31](adr/ADR-31.md) |jetstream, client, server|JetStream Direct Get|
-| [ADR-31](adr/ADR-33.md) |server|NATS Authorization Callouts|
+| [ADR-26](adr/ADR-26.md) |server|NATS Authorization Callouts|
 
 ## When to write an ADR
 
