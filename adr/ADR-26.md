@@ -1,10 +1,10 @@
 # NATS Authorization Callouts
 
 | Metadata | Value          |
-| -------- |----------------|
+| -------- | -------------- |
 | Date     | 2022-11-28     |
 | Author   | @derekcollison |
-| Status   | `Implemented`  |
+| Status   | Implemented    |
 | Tags     | server         |
 
 ## Context and Problem Statement
