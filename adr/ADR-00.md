@@ -23,7 +23,7 @@ The `metadata` field would by a map of `string` keys and `string` values.
 The map would be represented in json as object with nested key/value pairs, which is a default
 way to marshal maps/hashmaps in most languages.
 
-To avoid abuse of the metadata, the size of it will be limited to 1MB.
+To avoid abuse of the metadata, the size of it will be limited to 128kB.
 Size will be counter for lenght of keys + values.
 
 ### Example
