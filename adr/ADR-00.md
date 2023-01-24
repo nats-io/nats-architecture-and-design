@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2023-01-23|
 |Author  |@Jarema|
-|Status  |Proposed|
+|Status  |Approved|
 |Tags    |jetstream, client, server|
 
 ## Context and Problem Statement
@@ -25,7 +25,7 @@ The map would be represented in json as object with nested key/value pairs, whic
 way to marshal maps/hashmaps in most languages.
 
 ### Size limit
-To avoid abuse of the metadata, the size of it is limited to 128kB.
+To avoid abuse of the metadata, the size of it is limited to 128KB.
 Size is equal to len of all keys and values summed.
 
 ### Reserved prefix
