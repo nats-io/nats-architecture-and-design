@@ -30,6 +30,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 |[ADR-32](adr/ADR-32.md)|client|Service API|
+|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 
 ## Jetstream
 
@@ -50,6 +51,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 
 ## Kv
 
@@ -79,21 +81,22 @@ This repo is used to capture architectural and design decisions as a reference o
 
 ## Server
 
-| Index                   |Tags|Description|
-|-------------------------|----|-----------|
-| [ADR-1](adr/ADR-1.md)   |jetstream, client, server|JetStream JSON API Design|
-| [ADR-2](adr/ADR-2.md)   |jetstream, server, client|NATS Typed Messages|
-| [ADR-3](adr/ADR-3.md)   |observability, server|NATS Service Latency Distributed Tracing Interoperability|
-| [ADR-4](adr/ADR-4.md)   |server, client|NATS Message Headers|
-| [ADR-5](adr/ADR-5.md)   |server, client|Lame Duck Notification|
-| [ADR-6](adr/ADR-6.md)   |server, client|Naming Rules|
-| [ADR-7](adr/ADR-7.md)   |server, client, jetstream|NATS Server Error Codes|
-| [ADR-9](adr/ADR-9.md)   |server, client, jetstream|JetStream Consumer Idle Heartbeats|
-| [ADR-10](adr/ADR-10.md) |server, client, jetstream|JetStream Extended Purge|
-| [ADR-28](adr/ADR-28.md) |jetstream, server|JetStream RePublish|
-| [ADR-30](adr/ADR-30.md) |server|Subject Transform|
-| [ADR-31](adr/ADR-31.md) |jetstream, client, server|JetStream Direct Get|
-| [ADR-26](adr/ADR-26.md) |server|NATS Authorization Callouts|
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-1](adr/ADR-1.md)|jetstream, client, server|JetStream JSON API Design|
+|[ADR-2](adr/ADR-2.md)|jetstream, server, client|NATS Typed Messages|
+|[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
+|[ADR-4](adr/ADR-4.md)|server, client|NATS Message Headers|
+|[ADR-5](adr/ADR-5.md)|server, client|Lame Duck Notification|
+|[ADR-6](adr/ADR-6.md)|server, client|Naming Rules|
+|[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
+|[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
+|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
+|[ADR-26](adr/ADR-26.md)|server|NATS Authorization Callouts|
+|[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
+|[ADR-30](adr/ADR-30.md)|server|Subject Transform|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 
 ## When to write an ADR
 
