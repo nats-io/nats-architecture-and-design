@@ -82,3 +82,9 @@ The server will reject names (return an API error) when it cannot build a valid 
 ### kv-key-name
 
 Keys starting with `_kv` are limited to internal use.
+
+### Client Validation
+
+This note is simply to capture that currently the Go client simply validates that stream and consumer/durable names are not empty, 
+and do not contain `.`. Any other constraints are left to the server. NATS cli, performs additional validations, `.`, `*`, `>`, `/` and `\`
+are not allowed.
