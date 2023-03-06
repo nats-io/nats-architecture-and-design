@@ -139,14 +139,13 @@ nc, err = nats.Connect(s.ClientURL(), nats.UserInfo("dlc", "zzz")).
         "verbose": false,
         "version": "1.19.0"
     },
-    "user_nkey": “UBO2MQV67TQTVIRV3XFTEZOACM4WLOCMCDMAWN5QVN5PI2N6JHTVDRON”,
+    "user_nkey": "UBO2MQV67TQTVIRV3XFTEZOACM4WLOCMCDMAWN5QVN5PI2N6JHTVDRON",
     "server_id": {
         "host": "127.0.0.1",
         "id": "NB5FCQYBGNXSL27AGZYUX5QZ2KKIFUKVDZCL5R7NIUS4562JT4WEWKQV",
         "name": "A"
     },
     "version": 2
-    }
 }
 ```
 
@@ -214,7 +213,7 @@ optionally include a public XKey.
 
 ```conf
 auth_callout {
-	Issuer: "ABJHLOVMPA4CI6R5KLNGOB4GSLNIY7IOUPAJC4YFNDLQVIOBYQGUWVLA"
+	issuer: "ABJHLOVMPA4CI6R5KLNGOB4GSLNIY7IOUPAJC4YFNDLQVIOBYQGUWVLA"
 	auth_users: [ auth ]
 	xkey: “XAB3NANV3M6N7AHSQP2U5FRWKKUT7EG2ZXXABV4XVXYQRJGM4S2CZGHT”
 }
