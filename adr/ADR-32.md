@@ -26,6 +26,8 @@ Service configuration relies on the following:
 - `version` - a SemVer string - impl should validate that this is SemVer
 - `description` - a human-readable description about the service (optional)
 - `apiUrl`: (optional) - url pointing to user-defined API specification
+- `metadata` - (optional) an object of strings holding free form metadata about 
+   the deployed instance implemented consistently with [ADR-33.md].
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
@@ -111,6 +113,10 @@ All discovery and status responses contain the following fields:
     * https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
     */
     version: string
+    /**
+     *  The supplied service metadata
+     */
+    metadata: Record<string,string>;
 ```
 
 ### INFO
@@ -123,6 +129,7 @@ Returns a JSON having the following structure:
     name: string,
     id: string,
     version: string,
+    metadata: Record<string,string>;
     /**
      * Description for the service
      */
@@ -172,6 +179,7 @@ Service API does not have any assumptions about API spec or schema formats.
     name: string,
     id: string,
     version: string,
+    metadata: Record<string,string>;      
     /**
      * A valid URL pointing to API specification (may contain schemas, paths etc.)
      */    
@@ -194,6 +202,7 @@ Service API does not have any assumptions about API spec or schema formats.
      * The subject on which the endpoint is registered
      */
     subject: string,
+    metadata: Record<string,string>;
     schema?: {
         /**
          * Request schema
@@ -217,6 +226,7 @@ The type for this is `io.nats.micro.v1.schema_response`.
     name: string,
     id: string,
     version: string,
+    metadata: Record<string,string>;
     /**
     * Individual endpoint stats
     */
