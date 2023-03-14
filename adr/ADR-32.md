@@ -135,10 +135,6 @@ Returns a JSON having the following structure:
      */
     description: string,
     /**
-     * Version of the service
-     */
-    version: string,
-    /**
      * An array of all endpoint subjects
      */
     subjects: string[]
@@ -160,6 +156,7 @@ Returns the following schema (the standard response fields)
     name: string,
     id: string,
     version: string,
+    metadata: Record<string,string>;
 }
 ```
 
@@ -249,6 +246,10 @@ The type for this is `io.nats.micro.v1.schema_response`.
     * The subject on which the endpoint is registered
     */
     subject: string;
+    /**
+     * Endpoint specific metadata
+     */
+    metadata: Record<string,string>;
     /**
     * The number of requests received by the endpoint
     */
