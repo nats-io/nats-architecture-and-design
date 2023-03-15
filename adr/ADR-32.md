@@ -27,7 +27,7 @@ Service configuration relies on the following:
 - `description` - a human-readable description about the service (optional)
 - `apiUrl`: (optional) - url pointing to user-defined API specification
 - `metadata` - (optional) an object of strings holding free form metadata about 
-   the deployed instance implemented consistently with [ADR-33.md].
+   the deployed instance implemented consistently with [Metadata for Stream and Consumer ADR-33](ADR-33.md).
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
