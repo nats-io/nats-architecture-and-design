@@ -150,10 +150,10 @@ For each constraint, a corresponding threshold can be set.
 > Values used as defaults if options are not provided are subject to further discussion.
 > The values presented below are not definite.
 
-- `max_messages` - 1000, [1-???]
-- `expires` - 60s, [4s-10m]?
+- `max_messages` - 100, [1-???]
+- `expires` - default 30s, minimum 1s, maximum ???
 - `max_bytes` - not set, use `max_messages` if not provided
-- `idle_heartbeat` - 30s, [2s-60s]?
+- `idle_heartbeat` - 1/2 of expires, minimum 1s, maximum 30s
 - `threshold_messages` - 25% of `max_messages`, rounded up (to avoi getting stuck for low max_messages values)
 - `threshold_bytes` - 25% of `max_bytes`
 
@@ -197,18 +197,40 @@ Pending messages and bytes count should be updated when:
 - A new pull request is published - add a value of `request.batch_size` to the pending messages count and
 the value of `request.max_bytes` to the pending byte count.
 - A new user message is processed - subtract 1 from pending messages count and subtract message size from penging byte count.
-The message size (in bytes) is defined as: `len(msg.data) + len(msg.subject) + len(msg.reply)`
-- A pull request termination error is received - subtract the value of `Nats-Pending-Messages` header
-from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count.
+- A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count.
+  - 408 Request Timeout
+  - 409 Message Size Exceeds MaxBytes 
+- A pull request termination status of 404 No Messages is received, subtract the entire pull's batch size and max bytes from the pending messages / bytes count.
 
-###### JetStream error handling
+###### Message Size Calculation
+The message size (in bytes) should be calculated as the server does it. From consumer.go:
+    ```
+    // Calculate payload size. This can be calculated on client side.
+    // We do not include transport subject here since not generally known on client.
+    sz = len(pmsg.subj) + len(ackReply) + len(pmsg.hdr) + len(pmsg.msg)
+    ```
 
-There are 2 kinds of errors which can be received as a response to a pull request:
+###### Status handling
 
-- Pull request termination error is any error containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
-These should not be treated as errors by the application, but rather used to calculate the pending messages/bytes count.
-- Every other pull request error should be treated as terminal error - it should be telegraphed to the user (in langie-specific way),
-the `Consume()` execution should be stopped and subscription should be drained.
+In addition to possibly providing termination `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, 
+status messages indicate the termination of the pull.
+Statuses that are errors or warnings should be telegraphed to the user in language specific way.
+
+Errors:
+- 400 Bad Request
+- 409 Consumer Deleted
+- 409 Consumer is push based
+
+Warnings:
+- 409 Message Size Exceeds MaxBytes
+- 409 Exceeded MaxRequestBatch of %d
+- 409 Exceeded MaxRequestExpires of %v
+- 409 Exceeded MaxRequestMaxBytes of %v
+- 409 Exceeded MaxWaiting
+
+Not Telegraphed:
+- 404 No Messages
+- 408 Request Timeout
 
 ###### Idle heartbeats
 
