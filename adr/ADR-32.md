@@ -197,10 +197,9 @@ Pending messages and bytes count should be updated when:
 - A new pull request is published - add a value of `request.batch_size` to the pending messages count and
 the value of `request.max_bytes` to the pending byte count.
 - A new user message is processed - subtract 1 from pending messages count and subtract message size from penging byte count.
-- A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count.
+- A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count. Clients could just check all statuses for the headers to future proof.
   - 408 Request Timeout
   - 409 Message Size Exceeds MaxBytes
-  - Others???
 - A pull request termination status of 404 No Messages is received, subtract the entire pull's batch size and max bytes from the pending messages / bytes count.
 
 ###### Message Size Calculation
