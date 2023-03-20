@@ -1,4 +1,4 @@
-# Title JetStream Consumers Multiple Filters
+# JetStream Consumers Multiple Filters
 
 | Metadata | Value                     |
 |----------|---------------------------|
