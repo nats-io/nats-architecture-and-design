@@ -150,10 +150,10 @@ For each constraint, a corresponding threshold can be set.
 > Values used as defaults if options are not provided are subject to further discussion.
 > The values presented below are not definite.
 
-- `max_messages` - 100, [1-???]
-- `expires` - default 30s, minimum 1s, maximum ???
+- `max_messages` - 100??? 1000???, [1-???]???
+- `expires` - default 30s, minimum 1s, maximum??? 60s??? [4s-10m]???
 - `max_bytes` - not set, use `max_messages` if not provided
-- `idle_heartbeat` - 1/2 of expires, minimum 1s, maximum 30s
+- `idle_heartbeat` - 1/2 of expires, minimum 1s, maximum 30s??? 30s??? [2s-60s]???
 - `threshold_messages` - 25% of `max_messages`, rounded up (to avoi getting stuck for low max_messages values)
 - `threshold_bytes` - 25% of `max_bytes`
 
@@ -199,7 +199,8 @@ the value of `request.max_bytes` to the pending byte count.
 - A new user message is processed - subtract 1 from pending messages count and subtract message size from penging byte count.
 - A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count.
   - 408 Request Timeout
-  - 409 Message Size Exceeds MaxBytes 
+  - 409 Message Size Exceeds MaxBytes
+  - Others???
 - A pull request termination status of 404 No Messages is received, subtract the entire pull's batch size and max bytes from the pending messages / bytes count.
 
 ###### Message Size Calculation
@@ -214,7 +215,7 @@ The message size (in bytes) should be calculated as the server does it. From con
 
 In addition to possibly providing termination `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, 
 status messages indicate the termination of the pull.
-Statuses that are errors or warnings should be telegraphed to the user in language specific way.
+Statuses that are errors should be telegraphed to the user in language specific way. Telegraphing warnings is required???/optional???
 
 Errors:
 - 400 Bad Request
