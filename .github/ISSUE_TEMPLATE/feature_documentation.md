@@ -2,7 +2,7 @@
 name: Feature Documentation
 about: Request documentation to be written for a specific feature
 labels: documentation, enhancement
-assignees: byron, jnmoyne, scottf
+assignees: bruth, jnmoyne, scottf
 ---
 
 ## Overview
