@@ -27,31 +27,44 @@ TLS information such as fully signed client certificates if presented during the
 
 The authorization request will be sent to `$SYS.REQ.USER.AUTH` on the default
 `$G` account, or a named account in server configuration mode. In operator mode,
-it will utilize the connected account. The request will be signed by the
-server's nkey and can be encrypted if configured.
+it will utilize the connected account. The request will be a signed
+`AuthorizationRequest` JWT signed by the server's nkey and can be encrypted if
+configured.
 
-The response to the request will be a signed user JWT that must be signed by the
-declared issuer in server configuration mode or an account signing key in
-operator mode. If the request was encrypted, the response can also be encrypted
-for the issuing server. The request will contain a public user nkey that will be
-required to be the subject of the user JWT response. An authorization service
-can request that the client be bound to a different account.
+The response to the request is a `AuthorizationResponse` JWT. If the callout is
+set to encrypt, the response will be encrypted for the server's nkey. The
+decoded JWT will be issued by auth account nkey as configured in the server. In
+operator mode, it is possibly for the `AuthorizationResponse` to be issued by an
+a signing key for the auth account.
+
+The response JWT has its `aud` (audience) field set to the server ID that was
+specified in the request, and includes two fields, an `error` field where the
+auth callout can return an error. Or a `jwt` field. In configuration mode, the
+user will be issued by the configured auth account key, and the placement for
+the user can be an account such as `$G` or some other account name configured
+for the callout service. In operator mode, the user will be placed on the
+account specified by the user JWT, provided the callout is allowed to place into
+such account. Normal user JWT practice is supported: JWT can be issued by the
+target account or one of its signing keys.
 
 ### Details and Security
 
 The main security concerns with the auth callout proposal are spoofing of the
 request or response. To address these concerns, the requests sent from the
-server will be signed by the server's nkey and can be encrypted. The requests
-will also contain a public user nkey that must be the subject of the response.
-The responses, which are user JWTs, will be signed by an account nkey and can be
-encrypted.
+server will be signed by the server's nkey and can be encrypted. The server will
+generate a server keypair and an xkey keypair on startup, which will be used to
+sign and optionally encrypt the authorization requests.
+
+The requests will also contain a public user nkey that must be the subject of
+the response. The responses, which are `AuthorizationResponse` JWTs will always
+be signed by the callout account (or one of its signing keys in operator mode),
+and can be encrypted.
 
 The server will be configured with an authorization callout issuer, which is a
 public account nkey, in server configuration mode. The response must be signed
 by this issuer and the subject must be the public user nkey from the request. In
-operator mode, the response must be signed by the account bound to the client.
-The server will generate a server keypair and an xkey keypair on startup, which
-will be used to sign and optionally encrypt the authorization requests.
+operator mode, the response must be signed by the account bound to the client or
+one of its signing keys.
 
 When the server receives a client connection request, it will call out to the
 authorization service with a signed request if needed. The request is signed by
@@ -173,9 +186,10 @@ handle all authorization requests and determine which account each user should
 be assigned to. This is primarily applicable in server configuration mode, but
 can also be used in operator mode. In operator mode, the account that enables
 authorization callouts will specify which accounts a client can be assigned to.
-The response user JWT must be signed by the private key of one of these other
-accounts, so that the server can verify that the owner of the new bound account
-authorized the switch.
+It is possible to relax such requirement by specifying "*" which means any
+account. The user JWT returned must be signed by the private key of one of these
+other accounts (or a signing key in operator mode), so that the server can
+verify that the owner of the new bound account authorized the switch.
 
 ### TLS
 
