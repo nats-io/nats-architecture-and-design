@@ -39,8 +39,7 @@ The RePublish option "republish" consists of three configuration fields:
 
 The following validation rules for RePublish option apply:
 
-* Source MUST be a valid subset of the stream's subject space (aggregate of stream's subject filters). A single token
-as `>` wildcard is allowed with meaning taken as any stream-ingested subject.
+* A single token as `>` wildcard is allowed as the Source with meaning taken as any stream-ingested subject.
 * Destination MUST have at least 1 non-wildcard token
 * Destination MAY not match or subset the subject filter(s) of the stream 
 * Source and Destination must otherwise comply with requirements specified in [ADR-30 Subject Transform](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-30.md). 
