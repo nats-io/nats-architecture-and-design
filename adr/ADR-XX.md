@@ -22,7 +22,7 @@ See [ADR-30](ADR-30.md) for Core NATS subject mapping and a description of the a
 The new features introduced by the [PR](https://github.com/nats-io/nats-server/pull/3814) allow the application of subject mapping transformations in two places in the space configuration:
 
 - You can apply a subject mapping transformation as part of a Stream source.
-  - This enables the ability to do sourcing between KV bucket  (as the name of the bucket is part of the subject name in the KV bucket streams, and therefore has to be transformed during the sourcing as the name of the sourcing bucket is different from the name(s) of the bucket(s) being sourced).
+  - Amongst other use cases, this enables the ability to do sourcing between KV bucket  (as the name of the bucket is part of the subject name in the KV bucket streams, and therefore has to be transformed during the sourcing as the name of the sourcing bucket is different from the name(s) of the bucket(s) being sourced).
 - You can apply a subject mapping transformation at the ingres (input) of the stream, meaning after it's been received on Core NATS, or mirrored or sourced from another stream, and before limits are applied (and it gets persisted). This subject mapping transformation is only that, it does not filter messages, it only transforms the subjects of the messages matching the subject mapping source.
   - This enables the ability to insert a partition number as a token in the message subjects.
 
@@ -30,13 +30,49 @@ The new features introduced by the [PR](https://github.com/nats-io/nats-server/p
 
 In addition, it is now possible to source from the same stream more than once.
 
+For example if a stream contains messages on subjects "foo", "bar" and "baz" and you want to source only "foo" and "bar" from that stream you could stream twice from that stream once with the "foo" subject filter and a second time with the "bar" subject filter.
+
+E.g.
+```JSON
+{
+  "name": "sourcingstream",
+  "retention": "limits",
+  "max_consumers": -1,
+  "max_msgs_per_subject": -1,
+  "max_msgs": -1,
+  "max_bytes": -1,
+  "max_age": 0,
+  "max_msg_size": -1,
+  "storage": "file",
+  "discard": "old",
+  "num_replicas": 1,
+  "duplicate_window": 120000000000,
+  "sources": [
+    {
+      "name": "sourcedstream",
+      "filter_subject": "foo"
+    },
+    {
+      "name": "sourcedstream",
+      "filter_subject": "bar"
+    }
+  ],
+  "sealed": false,
+  "deny_delete": false,
+  "deny_purge": false,
+  "allow_rollup_hdrs": false,
+  "allow_direct": false,
+  "mirror_direct": false
+}
+```
+
 From the user's perspective these features manifest themselves as new fields in the Stream Configuration request and Stream Info response messages.
 
 - Additional `"subject_transform_dest"` field in objects in the `"sources"` array of the Stream Config
 - Additional `"subject_transform"` field in Stream Config containing two strings: `"src"` and `"dest"`
 
 E.g.
-```
+```JSON
 {
   "name": "foo",
   "retention": "limits",
@@ -53,8 +89,23 @@ E.g.
   "sources": [
     {
       "name": "source1",
-      "filter_subject": "stream1.>",
+      "filter_subject": "stream1.foo.>",
       "subject_transform_dest": "foo.>"
+    },
+    {
+      "name": "source1",
+      "filter_subject": "stream1.bar.>",
+      "subject_transform_dest": "bar.>"
+    },
+    {
+      "name": "source2",
+      "filter_subject": "stream2.foo.>",
+      "subject_transform_dest": "foo.>"
+    },
+    {
+      "name": "source2",
+      "filter_subject": "stream2.bar.>",
+      "subject_transform_dest": "bar.>"
     }
   ],
   "subject_transform": {
