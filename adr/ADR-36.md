@@ -1,10 +1,10 @@
 # Subject Mapping Transforms in Streams
 
-|Metadata| Value                     |
-|--------|---------------------------|
-|Date    | 2023-02-10                |
-|Author  | @jnmoyne                  |
-|Status  | `Partially Implemented`   |
+|Metadata| Value         |
+|--------|---------------|
+|Date    | 2023-02-10    |
+|Author  | @jnmoyne      |
+|Status  | Implemented   |
 |Tags    | jetstream, client, server |
 
 ## Context and Problem Statement
