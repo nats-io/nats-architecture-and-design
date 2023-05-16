@@ -1,11 +1,11 @@
 # Subject Transform
 
-| Metadata | Value                   |
-|----------|-------------------------|
-| Date     | 2022-07-17              |
-| Author   | @derekcollison, @tbeets |
-| Status   | Implemented             |
-| Tags     | server                  |
+| Metadata | Value                             |
+|----------|-----------------------------------|
+| Date     | 2022-07-17                        |
+| Author   | @jnmoyne, @derekcollison, @tbeets |
+| Status   | Implemented                       |
+| Tags     | server                            |
 
 ## Context and Problem Statement
 
@@ -15,7 +15,9 @@ can be applied to an input subject, yielding a desired output subject.
 
 Transforms can be used as part of:
 
-* Subject mapping
+* Core NATS Subject mapping at the account level
+* JetStream stream definition
+* JetStream sourcing
 * JetStream RePublish
 * Cross-account service and stream mapping
 * Shadow subscriptions (e.g. across a leaf)
@@ -48,7 +50,10 @@ For a valid input subject:
   a `*` wildcard-token in the Source filter) and `x` (x's instance of a `*` wildcard-token in the Source filter).
 * Source-matching `>` wildcard (multi token) tokens are mapped to the respective `>` position in the Destination format
 * Literal tokens in the Destination format are mapped to the output subject unchanged (position and value)
-* Destinations must make use of _all_ of the wildcard-tokens present in the transform's Source.
+
+### Using all the wildcard-tokens in the transform's Source
+* For transforms that are defined in inter-account imports (streams and services) the destinations _MUST_ make use of _ALL_ of the wildcard-tokens present in the transform's Source.
+* However, for transforms used any other place (i.e. Core NATS account mappings, Subject transforms in streams, stream imports and stream republishing) it is allowed to drop any number of wildcard-tokens.
 
 ## Mapping Functions
 
@@ -58,6 +63,8 @@ backwards compatibility.
 
 > Note: Mapping functions names are valid in both upper CamelCase and all lower case (i.e. both `{{Wildcard(1)}}`
 > and `{{wildcard(1)}}` are valid)
+
+> For transforms defined in inter-accounts imports (streams and services) the _ONLY_ allowed mapping function is `{{Wildcard(x)}}` (or the legacy `$x`)
 
 ### List of Mapping Functions
 
