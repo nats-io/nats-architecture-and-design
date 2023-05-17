@@ -29,6 +29,10 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-32](adr/ADR-32.md)|client|Service API|
+|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
+|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
 
 ## Jetstream
@@ -50,6 +54,9 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
+|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
 
 ## Kv
@@ -91,9 +98,13 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
 |[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
+|[ADR-26](adr/ADR-26.md)|server|NATS Authorization Callouts|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-30](adr/ADR-30.md)|server|Subject Transform|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
+|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 
 ## When to write an ADR
 
