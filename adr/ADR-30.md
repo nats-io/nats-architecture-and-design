@@ -52,8 +52,9 @@ For a valid input subject:
 * Literal tokens in the Destination format are mapped to the output subject unchanged (position and value)
 
 ### Using all the wildcard-tokens in the transform's Source
+
 * For transforms that are defined in inter-account imports (streams and services) the destinations _MUST_ make use of _ALL_ of the wildcard-tokens present in the transform's Source.
-* However, for transforms used any other place (i.e. Core NATS account mappings, Subject transforms in streams, stream imports and stream republishing) it is allowed to drop any number of wildcard-tokens.
+* However, starting with version 2.10, for transforms used any other place (i.e. Core NATS account mappings, Subject transforms in streams, stream imports and stream republishing) it is allowed to drop any number of wildcard-tokens.
 
 ## Mapping Functions
 
