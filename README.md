@@ -29,7 +29,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
-|[ADR-32](adr/ADR-32.md)|jetstream, client|JetStream Simplification|
+|[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
 
 ## Jetstream
 
@@ -50,7 +50,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
-|[ADR-32](adr/ADR-32.md)|jetstream, client|JetStream Simplification|
+|[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
 
 ## Kv
 
