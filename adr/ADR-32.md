@@ -77,18 +77,19 @@ below.
 Consumers will have the following operations:
 
 - `Fetch`
+- `Next`
 - `Consume`
 - `Info` - An optional operation that returns the consumer info of the consumer
 - `Delete` - An optional operation to delete the referenced consumer
 
-Both the fetch/consume can provide hints on the batch of messages/data they want
-to process, and perhaps how long to keep a request for messages open.
-
-Lifecycle of the Read/Consume may need to be controlled - for example to stop
+Lifecycle of Consume may need to be controlled - for example to stop
 delivering messages to the callback or drain messages already accumulated before
 stopping the consumer, these can be additional methods on the consumer
 implementation if appropriate or an object that is the return value of callback
 driven consumers.
+
+Note: pull requests issued by clients should have client-side timeouts in addition to
+server-side timeout (`expiry`). Client-side timeout value should always be larger than expiry.
 
 #### Fetch
 
@@ -102,63 +103,80 @@ or via some iterator functionality where getting the next message will block
 until a message is yielded or the operation or the operation finishes, which
 terminates the iterator.
 
-##### Options
+Client should also expose the options to fetch certain amount of data (`max_bytes`)
+instead of messages. Depending on the language, this can either be an option on `Fetch`
+or a different consumer method (e.g. `FetchBytes`).
+
+##### Fetch Configuration options
 
 - `max_messages?: number` - max number of messages to return
 - `expires: number` - amount of time to wait for the request to expire (in nanoseconds)
 - `max_bytes?: number` - max number of bytes to return
 - `idle_heartbeat?: number` - amount idle time the server should wait before
-  sending a heartbeat
+  sending a heartbeat. For requests with `expires > 30s`, heartbeats should be
+  enabled by default
 
-Note that while `batch` and `max_bytes` are described as optional at least one
+Note that while `max_messages` and `max_bytes` are described as optional at least one
 of them is required.
 
-Note that when specifying both `batch` and `max_bytes`, `max_bytes` will take
-precedence. This means that if all messages exceed the specified `max_bytes` no
-message will be yielded by the server
+#### Next
+
+Get a single message from the server. The pull request to fetch the message should
+only be sent once `Next` is invoked.
+
+Depending on the language, the implementation may do `Fetch(max_messages: 1)` or
+or return an iterator.
+
+##### Next Configuration options
+
+- `expires: number` - amount of time to wait for the request to expire (in nanoseconds)
+- `idle_heartbeat?: number` - amount idle time the server should wait before
+  sending a heartbeat. For requests with `expires > 30s`, heartbeats should be
+  enabled by default
 
 #### Consume
 
 Retrieve messages from the server while maintaining a buffer that will refill at
-some point during the message processing maintaining a buffer that will allow
-the processing to go as fast as the client has selected by options on the read
-call.
+some point during the message processing.
 
 Client may want some way to `drain()` the buffer or iterator without pulling
 messages, so that the client can cleanly stop without leaving many messages
 un-acked.
 
-##### Options
+##### Consume Configuration Options
 
-- `max_messages?: number` - max number of messages to return
-- `expires: number` - amount of time to wait for the request to expire.
-- `max_bytes?: number` - max number of bytes to return
+- `max_messages?: number` - max number of messages stored in the buffer
+- `expires: number` - amount of time to wait for a single pull request to expire
+- `max_bytes?: number` - max number of bytes stored in the buffer
 - `idle_heartbeat?: number` - amount idle time the server should wait before
   sending a heartbeat
-- `threshold_messages?: number` - hint for the number of messages that should
+- `threshold_messages?: number` - number of messages left in the buffer that should
   trigger a low watermark on the client, and influence it to request more
-  messages.
-- `threshold_bytes?: number` - hint for the number of messages that should
+  messages
+- `threshold_bytes?: number` - hint for the number of bytes left in buffer that should
   trigger a low watermark on the client, and influence it to request more data.
 
 Note that `max_messages` and `max_bytes` are exclusive. Clients should not allow depending on both constraints.
 If no options is provided, clients should use a default value for `max_messages` and not set `max_bytes`.
 For each constraint, a corresponding threshold can be set.
 
+Note that if `max_bytes` is set, client should set `batch_size` in requests to a large number (e.g. 1 000 000)
+instead of leaving it empty to bypass server sending only one message if `batch_size == 0`.
+
 ###### Defaults and constraints
 
-> Values used as defaults if options are not provided are subject to further discussion.
-> The values presented below are not definite.
+Default configuration values for `Consume` may vary between client implementations,
+depending on what values are most efficient using a specific programming language.
 
-- `max_messages` - 100??? 1000???, [1-???]???
-- `expires` - default 30s, minimum 1s, maximum??? 60s??? [4s-10m]???
+- `max_messages` - depends on a client, probably between 100 and 1000 messages
+- `expires` - default 30s, minimum 1s
 - `max_bytes` - not set, use `max_messages` if not provided
-- `idle_heartbeat` - 1/2 of expires, minimum 1s, maximum 30s??? 30s??? [2s-60s]???
-- `threshold_messages` - 25% of `max_messages`, rounded up (to avoi getting stuck for low max_messages values)
-- `threshold_bytes` - 25% of `max_bytes`
+- `idle_heartbeat` - default 1/2 of expires capping at 30s, minimum 500ms, maximum 30s
+- `threshold_messages` - 50% of `max_messages`
+- `threshold_bytes` - 50% of `max_bytes`
 
-The default values and constraints used for `expiry` and `idle_heartbeat` need to be carefully selected,
-as consumer stability has to be taken into account (when those values are very low, e.g. heartbeat == 1s).
+Clients should make sure that `Consume` works properly when `max_messages` is set to 1 (it's not getting stuck
+when using default `threshold_messages`).
 
 ##### Consume specification
 
@@ -178,10 +196,12 @@ Users should be able to set either max_messages or max_bytes values, but not bot
 `max_bytes` should not be set.
 - If `max_messages` is set by the user, the value should be set for `max_messages` and `max_bytes`
 should not be set.
-- User cannot set both constraint for a single `Consume()` execution.
-- For each constraint, a custom threshold can be set, containing the number of messages/bytes that should be received to
+- If `max_bytes` is set by the user, the value should be set for `max_bytes` and `max_messages`
+should be set to a large value internally (e.g. 1 000 000)
+- User cannot set both constraints for a single `Consume()` execution.
+- For each constraint, a custom threshold can be set, containing the number of messages/bytes that should be processed to
 trigger the next pull request. The value of threshold cannot be higher than the corresponding constraint's value.
-- For each pull request, `batch` or `max_bytes` value should be equal to the threshold value (to fill the buffer)
+- For each pull request, `batch` or `max_bytes` value should be calculated so that the pull request will fill the buffer.
 
 ###### Buffering messages
 
@@ -196,56 +216,67 @@ Pending messages and bytes count should be updated when:
 
 - A new pull request is published - add a value of `request.batch_size` to the pending messages count and
 the value of `request.max_bytes` to the pending byte count.
-- A new user message is processed - subtract 1 from pending messages count and subtract message size from penging byte count.
+- A new user message is processed - subtract 1 from pending messages count and subtract message size from pending byte count.
 - A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count. Clients could just check all statuses for the headers to future proof.
   - 408 Request Timeout
   - 409 Message Size Exceeds MaxBytes
-- A pull request termination status of 404 No Messages is received, subtract the entire pull's batch size and max bytes from the pending messages / bytes count.
+  - 409 Batch-Completed
 
 ###### Message Size Calculation
-The message size (in bytes) should be calculated as the server does it. From consumer.go:
-    ```
-    // Calculate payload size. This can be calculated on client side.
-    // We do not include transport subject here since not generally known on client.
-    sz = len(pmsg.subj) + len(ackReply) + len(pmsg.hdr) + len(pmsg.msg)
-    ```
+
+The message size (in bytes) should be calculated as the server does it. Size consists of:
+
+- Data (payload + headers)
+- Subject
+- Reply subject
+
+ From `consumer.go`:
+
+```go
+// Calculate payload size. This can be calculated on client side.
+// We do not include transport subject here since not generally known on client.
+sz = len(pmsg.subj) + len(ackReply) + len(pmsg.hdr) + len(pmsg.msg)
+```
 
 ###### Status handling
 
-In addition to possibly providing termination `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, 
+In addition to providing termination `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers,
 status messages indicate the termination of the pull.
-Statuses that are errors should be telegraphed to the user in language specific way. Telegraphing warnings is required???/optional???
+Statuses that are errors should be telegraphed to the user in language specific way. Telegraphing warnings is optional.
 
 Errors:
+
 - 400 Bad Request
 - 409 Consumer Deleted
 - 409 Consumer is push based
 
 Warnings:
-- 409 Message Size Exceeds MaxBytes
+
 - 409 Exceeded MaxRequestBatch of %d
 - 409 Exceeded MaxRequestExpires of %v
 - 409 Exceeded MaxRequestMaxBytes of %v
 - 409 Exceeded MaxWaiting
 
 Not Telegraphed:
+
 - 404 No Messages
 - 408 Request Timeout
+- 409 Message Size Exceeds MaxBytes
 
 ###### Idle heartbeats
 
 `Consume()` should always utilize idle heartbeats. Heartbeat values are calculated as follows:
 
-An error is triggered if the timer reaches 2 * request's idle_heartbeat value.
-The timer is reset on each received message (this can be either user message, error message or heartbeat message).
+A warning is triggered if the timer reaches 2 * request's idle_heartbeat value.
+The timer is reset on each received message (this can be either user message, status message or heartbeat message).
 
 Heartbeat timer should be reset and paused in the event of client disconnect and resumed on reconnect.
 
-On heartbeat error, the consumer subscription should be drained and the message processing should be terminated.
+Heartbeat errors are not terminal - they should rather be telegraphed to the user in language idiomatic way.
 
 ###### Server reconnects
 
-Clients should detect server disconnections and reconnections.
+Clients should detect server disconnect and reconnect.
 
 When a disconnect event is received, client should:
 
@@ -255,32 +286,35 @@ When a disconnect event is received, client should:
 When a reconnect event is received, client should:
 
 - Resume the heartbeat timer.
-- Check if consumer exists (fetch consumer info). If consumer is not available, terminate `Consume()` execution.
+- Check if consumer exists (fetch consumer info). If consumer is not available, terminate `Consume()` execution with error.
+This operation may have to be retried several times as JetStream may not be immediately available.
 - Publish a new pull request.
 
 ###### Message processing algorithm
 
 Below is the algorithm for receiving and processing messages.
-It does not take into account server reconnects and heartbeat checks - those should be
-handled asynchronously in a separate thread / routine.
+It does not take into account server reconnects and heartbeat checks - Process of handling those
+was described in previous sections.
 
 1. Verify whether a new pull request needs to be sent:
    - pending messages count reaches threshold
    - pending byte count reaches threshold
 2. If yes, publish a new pull request and add request's `batch` and
 `max_bytes` to pending messages and bytes counters.
-3. Check if new message is availabe.
+3. Check if new message is available.
    - if yes, go to #4
    - if not, go to #1
 4. Reset the heartbeat timer.
 5. Verify the type of message:
-   - if message is a hearbeat message, go to #1
-   - if message is a user message, handle it and subtract 1 message from pending message count
-    and message size from pending bytes count and go to #1
+   - if message is a heartbeat message, go to #1
+   - if message is a user message, handle it (return or execute callback)
+    and subtract 1 message from pending message count and
+    message size from pending bytes count and go to #1
    - if message is an error, go to #6
 6. Verify error type:
    - if message contains `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, go to #7
-   - else terminate the subscription and exit
+   - verify if error should be terminal based on [Status handling](#status-handling),
+   then issue a warning/error (if required) and terminate if necessary.
 7. Read the values of `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
 8. Subtract the values from pending messages count and pending bytes count respectively.
 9. Go to #1.
@@ -291,6 +325,9 @@ An optional operation that returns the consumer info. Note that depending on the
 context (a consumer that is exported across account) the JS API to retrieve the
 info on the consumer may not be available.
 
+Clients may optionally expose a way to retrieved cached info (from the Consumer instance itself),
+bypassing `CONSUMER.INFO` request to the server.
+
 #### Delete
 
 An optional operation that allows deleting the consumer. Note that depending on
@@ -300,4 +337,4 @@ the consumer may not be available.
 ## Consequences
 
 The new JetStream simplified consumer API is separate from the _legacy_
-functionality. The legacy functionality will be deprecacted.
+functionality. The legacy functionality will be deprecated.
