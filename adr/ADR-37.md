@@ -27,39 +27,75 @@ performance.
 
 ## Design
 
-JetStream simplification revolves around the concept of the `Consumer`. The
-consumer definition managed by the server is created by tools (such as nats cli)
-or code. A `Consumer` can be created or added as per the client language
-implementation, typically by providing a stream name and some consumer options.
+The JetStream API consists of three main components: JetStreamContext, Streams,
+and Consumers.
 
-Clients wanting to consume messages from the consumer, simply locate the
-`Consumer`, which then provides functionality for processing, or consuming
-messages. The representation of the `Consumer` is retrieved, and provides
-operations to `fetch` and `consume` messages.
+### JetStream Context
+
+The JetStream Context is mainly responsible for managing streams. It serves as
+the entry point for creating, configuring, and controlling the streams.
+JetStreamContext should also expose methods co manage consumers directly,
+bypassing the need to get/create a stream.
+
+Example set of methods on JetStreamContext:
+
+- Stream operations:
+  - `addStream(streamConfig)`
+  - `updateStream(streamConfig)`
+  - `getStream(streamName)`
+  - `deleteStream(streamName)`
+  - `listStreams()`
+- Consumer operations:
+  - `addConsumer(streamName, consumerConfig)`
+  - `getConsumer(streamName, consumerName)`
+  - `deleteConsumer(streamName, consumerName)`
+- `accountInfo()`
+
+### Streams
+
+Streams are created from the JetStreamContext. They provide a set of operations
+for managing the stream and its contents. With streams, you can perform
+operations such as purging the entire stream and fetching/deleting individual
+messages. Streams also allow for and managing consumers.
+
+Example set of methods on Stream:
+
+- operations on consumers:
+  - `addConsumer(consumerConfig)`
+  - `getConsumer(consumerName)`
+  - `deleteConsumer(consumerName)`
+- operations a stream:
+  - `purge(purgeOpts)`
+  - `info()`
+- getting/deleting individual messages
+  - `getMsg(getMsgOpts)`
+  - `deleteMsg(deleteMsgOpts)`
 
 ### Consumers
 
 Consumer are JetStream API entities from which messages can be read. Consumers
-can be created using language specific verbs. In some cases some of the
-libraries will hang them under a _consumer api_ to prevent a collision with
-functionality that may already exist in the client for purposes of managing the
-low level `ConsumerInfo`.
+should expose methods for getting consumer info, as well as methods for
+consuming messages (`consume()`, `fetch()` and `next()`).
 
-This means that in some languages `add` may not be available (unless major
-version bump in the library). For that reason libraries can choose how to
-instantiate a consumer:
+Example set of methods on Consumer:
 
-- `new Consumer(consumerInfo)`
-- `add(streamName, consumerOptions)`
-- `create(streamName, consumerOptions)`
-- `get(streamName, consumerName)`
-- `delete(streamName, consumerName)`
+- operations on consumer instance:
+  - `info()`
+- operations used to consume messages:
+  - `consume()`
+  - `fetch()`
+  - `next()`
 
-Some of the libraries can provide this functionality by chaining if that is
-appropriate, and makes sense given their current JetStreamManager implementation
-semantics:
+### Design and naming in individual client libraries
 
-`getStream(name).getConsumer(name)`
+Client libraries implementing the JetStream API should adhere to
+language-specific and library best practices while following the outlined
+designs. Method names may vary, such as add versus create, and certain methods
+may be placed differently based on idiomatic conventions (e.g.,
+`consumer.delete()` instead of `stream.deleteConsumer(consumerName)`).
+
+Some libraries may support chaining functionality if it aligns with their
+JetStream implementation semantics, such as `getStream(name).getConsumer(name)`.
 
 ### Ordered Consumer
 
