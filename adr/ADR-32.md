@@ -133,15 +133,26 @@ Returns a JSON having the following structure:
      */
     description: string,
     /**
-     * An array of all endpoint subjects
+     * An array of info for all service endpoints
      */
-    subjects: string[]
+    endpoints: EndpointInfo[]
+}
+```
+
+```typescript
+// EndpointInfo
+{
+    name: string,
+    subject: string,
+    /**
+     * Metadata of a specific endpoint
+     */
+    metadata: Record<string,string>,
 }
 ```
 
 All the fields above map 1-1 to the metadata provided when the service was
-created. Note that `subjects` is a list of all subjects on which endpoints were
-registered.
+created.
 
 The type for this is `io.nats.micro.v1.info_response`.
 
@@ -210,10 +221,6 @@ The type for this is `io.nats.micro.v1.ping_response`.
     * The subject on which the endpoint is registered
     */
     subject: string;
-    /**
-     * Endpoint specific metadata
-     */
-    metadata: Record<string,string>;
     /**
     * The number of requests received by the endpoint
     */
