@@ -97,17 +97,6 @@ may be placed differently based on idiomatic conventions (e.g.,
 Some libraries may support chaining functionality if it aligns with their
 JetStream implementation semantics, such as `getStream(name).getConsumer(name)`.
 
-### Ordered Consumer
-
-By their very nature, OrderedConsumers don’t play well with the above API for
-retrieving the consumer, because the consumer itself will be created and
-possibly re-created by the client during it's lifecycle. Clients may wish to
-provide a:
-
-`getOrderedConsumer(streamName, startOptions, bufferingOptions)` which allows
-consuming messages while conforming to the API operations on a consumer outlined
-below.
-
 ### Operations
 
 Consumers will have the following operations:
