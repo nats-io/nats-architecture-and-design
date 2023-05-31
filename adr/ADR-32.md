@@ -178,21 +178,6 @@ The type for this is `io.nats.micro.v1.ping_response`.
 ### STATS
 
 ```typescript
-// EndpointStats
-{
-  name: string,
-  subject: string,
-  average_processing_time: number,
-  num_errors: number,
-  num_requests: number,
-  processing_time: number,
-  last_error?: string,
-  data: any, 
-  metadata: Record<string,string>,
-}
-```
-
-```typescript
 {
     type: string,
     name: string,
