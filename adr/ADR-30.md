@@ -25,8 +25,7 @@ Transforms can be used as part of:
 A subject transform shall be defined by a _Source_ filter that defines what input subjects are eligible (via match) to
 be
 transformed and a _Destination_ subject mapping format that defines the notional subject filter that the _transformed_
-output
-subject will match.
+output subject will match.
 
 Input subject tokens that match Source wildcard(s) "survive" the transformation and can be used as input to 'mapping
 functions' whose output is used to build the output subject.
@@ -35,6 +34,31 @@ functions' whose output is used to build the output subject.
 
 Destination, taken together with Source, form a valid subject token transform. The resulting transform
 is applied to an input subject (that matches Source subject filter) to determine the output subject.
+
+### Weighted and cluster-scoped mappings
+
+In the case of Core NATS subject mapping at the account level, you can actually have more than one mapping destination per source.
+Each of those mappings has a 'weight' (a percentage between 0 and 100%), for a total of 100%. That weight percentage indicate the likeliness of that mapping being used.
+
+Furthermore, (as of 2.10) weighted mappings can be cluster-scoped meaning that you can also create mapping destinations (for a total of 100% per cluster name) that apply (and take precedence) when the server is part of the cluster specified. This allows administrators to define mappings that change depending upon the cluster where the message is initially published from.
+
+For example consider the following mappings:
+
+```
+        "foo":[
+               {destination:"foo.west", weight: 100%, cluster: "west"},
+               {destination:"foo.central", weight: 100%, cluster: "central"},
+               {destination:"foo.east", weight: 100%, cluster: "east"},
+               {destination:"foo.elsewhere", weight: 100%}
+        ],
+```
+
+Means that an application publishing a message on subject `foo` will result in the message being published over Core NATS with the subject:
+- `foo.west` if the application is connected to any server in the `west` cluster
+- `foo.central` if the application is connected to any server in the `central` cluster
+- `foo.east` if the application is connected to any server in the `east` cluster
+
+You can also define 100%'s worth of destinations as a catch-all for servers that apply for the other clusters in the Super-Cluster (or if the server is not running in clustered mode). In the example above a message published from cluster `south` would be mapped to `foo.elsewhere`.
 
 ### Transform rules
 
