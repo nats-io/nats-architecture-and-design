@@ -84,6 +84,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
+|[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 
 ## Server
 
@@ -105,6 +106,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
+|[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 
 ## When to write an ADR
 
