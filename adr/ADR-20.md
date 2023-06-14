@@ -7,6 +7,12 @@
 |Status  |Partially Implemented|
 |Tags    |jetstream, client, objectstore|
 
+
+|Revision|Date|Author|Info|
+|--------|----|------|----|
+|1       |2021-11-03|@scottf|Initial design|
+|2       |2023-06-14|@Jarema|Add metadata|
+
 ## Context
 
 This document describes a design of a JetStream backed object store. This ADR is still considered Beta/Experimental and may be subject to change.
@@ -84,13 +90,14 @@ in the stream config like in KV.
 
 ```go
 type ObjectStoreConfig struct {
-	Bucket      string        // used in stream name template
-	Description string        // stream description
-	TTL         time.Duration // stream max_age
-	MaxBytes    int64         // stream max_bytes
-	Storage     StorageType   // stream storate_type
-	Replicas    int           // stream replicas
-	Placement   Placement    // stream placement
+	Bucket      string		// used in stream name template
+	Description string		// stream description
+	Metadata    map[string]string	// stream metadata
+	TTL         time.Duration	// stream max_age
+	MaxBytes    int64		// stream max_bytes
+	Storage     StorageType		// stream storate_type
+	Replicas    int			// stream replicas
+	Placement   Placement		// stream placement
 }
 ```
 
@@ -110,6 +117,7 @@ type ObjectStoreConfig struct {
 {
   "name": "OBJ_MY-STORE",
   "description" : "description",
+  "metadata": [{"owner": "infra"}],
   "subjects": [
     "$O.MY-STORE.C.>",
     "$O.MY-STORE.M.>"
@@ -158,9 +166,10 @@ Object Meta is high level information about an object.
 
 ```go
 type ObjectMeta struct {
-    Name        string `json:"name"`
-    Description string `json:"description,omitempty"`
-    Headers     Header `json:"headers,omitempty"`
+    Name        string            `json:"name"`
+    Description string            `json:"description,omitempty"`
+    Headers     Header	          `json:"headers,omitempty"`
+    Metadata    map[string]string `json:"metadata,omitempty"`
 
     // Optional options.
     Opts ObjectMetaOptions `json:"options,omitempty"`
@@ -210,6 +219,7 @@ When the ObjectInfo message is retrieved from the server, use the message metada
 {
 	"name": "object-name",
 	"description": "object-desc",
+	"metadata": [{"owner": "infra"}],
 	"headers": {
 		"key1": ["foo"],
 		"key2": ["bar", "baz"]
@@ -241,6 +251,9 @@ type ObjectStoreStatus interface {
     
     // Description is the description supplied when creating the bucket
     Description() string
+
+    // Bucket-level metadata
+    Metadata() map[string]string
     
     // TTL indicates how long objects are kept in the bucket
     TTL() time.Duration
