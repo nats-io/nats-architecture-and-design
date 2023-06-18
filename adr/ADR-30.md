@@ -1,11 +1,11 @@
 # Subject Transform
 
-| Metadata | Value                   |
-|----------|-------------------------|
-| Date     | 2022-07-17              |
-| Author   | @derekcollison, @tbeets |
-| Status   | Implemented             |
-| Tags     | server                  |
+| Metadata | Value                             |
+|----------|-----------------------------------|
+| Date     | 2022-07-17                        |
+| Author   | @jnmoyne, @derekcollison, @tbeets |
+| Status   | Implemented                       |
+| Tags     | server                            |
 
 ## Context and Problem Statement
 
@@ -15,7 +15,9 @@ can be applied to an input subject, yielding a desired output subject.
 
 Transforms can be used as part of:
 
-* Subject mapping
+* Core NATS Subject mapping at the account level
+* JetStream stream definition
+* JetStream sourcing
 * JetStream RePublish
 * Cross-account service and stream mapping
 * Shadow subscriptions (e.g. across a leaf)
@@ -23,8 +25,7 @@ Transforms can be used as part of:
 A subject transform shall be defined by a _Source_ filter that defines what input subjects are eligible (via match) to
 be
 transformed and a _Destination_ subject mapping format that defines the notional subject filter that the _transformed_
-output
-subject will match.
+output subject will match.
 
 Input subject tokens that match Source wildcard(s) "survive" the transformation and can be used as input to 'mapping
 functions' whose output is used to build the output subject.
@@ -33,6 +34,31 @@ functions' whose output is used to build the output subject.
 
 Destination, taken together with Source, form a valid subject token transform. The resulting transform
 is applied to an input subject (that matches Source subject filter) to determine the output subject.
+
+### Weighted and cluster-scoped mappings
+
+In the case of Core NATS subject mapping at the account level, you can actually have more than one mapping destination per source.
+Each of those mappings has a 'weight' (a percentage between 0 and 100%), for a total of 100%. That weight percentage indicate the likeliness of that mapping being used.
+
+Furthermore, (as of 2.10) weighted mappings can be cluster-scoped meaning that you can also create mapping destinations (for a total of 100% per cluster name) that apply (and take precedence) when the server is part of the cluster specified. This allows administrators to define mappings that change depending upon the cluster where the message is initially published from.
+
+For example consider the following mappings:
+
+```
+        "foo":[
+               {destination:"foo.west", weight: 100%, cluster: "west"},
+               {destination:"foo.central", weight: 100%, cluster: "central"},
+               {destination:"foo.east", weight: 100%, cluster: "east"},
+               {destination:"foo.elsewhere", weight: 100%}
+        ],
+```
+
+Means that an application publishing a message on subject `foo` will result in the message being published over Core NATS with the subject:
+- `foo.west` if the application is connected to any server in the `west` cluster
+- `foo.central` if the application is connected to any server in the `central` cluster
+- `foo.east` if the application is connected to any server in the `east` cluster
+
+You can also define 100%'s worth of destinations as a catch-all for servers that apply for the other clusters in the Super-Cluster (or if the server is not running in clustered mode). In the example above a message published from cluster `south` would be mapped to `foo.elsewhere`.
 
 ### Transform rules
 
@@ -48,7 +74,11 @@ For a valid input subject:
   a `*` wildcard-token in the Source filter) and `x` (x's instance of a `*` wildcard-token in the Source filter).
 * Source-matching `>` wildcard (multi token) tokens are mapped to the respective `>` position in the Destination format
 * Literal tokens in the Destination format are mapped to the output subject unchanged (position and value)
-* Destinations must make use of _all_ of the wildcard-tokens present in the transform's Source.
+
+### Using all the wildcard-tokens in the transform's Source
+
+* For transforms that are defined in inter-account imports (streams and services) the destinations _MUST_ make use of _ALL_ of the wildcard-tokens present in the transform's Source.
+* However, starting with version 2.10, for transforms used any other place (i.e. Core NATS account mappings, Subject transforms in streams, stream imports and stream republishing) it is allowed to drop any number of wildcard-tokens.
 
 ## Mapping Functions
 
@@ -58,6 +88,8 @@ backwards compatibility.
 
 > Note: Mapping functions names are valid in both upper CamelCase and all lower case (i.e. both `{{Wildcard(1)}}`
 > and `{{wildcard(1)}}` are valid)
+
+> For transforms defined in inter-accounts imports (streams and services) the _ONLY_ allowed mapping function is `{{Wildcard(x)}}` (or the legacy `$x`)
 
 ### List of Mapping Functions
 
