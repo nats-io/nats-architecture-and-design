@@ -157,7 +157,7 @@ The short form is a boolean value:
 | `ocsp_cache`            | OCSP cache behavior                                                           |
 |-------------------------|-------------------------------------------------------------------------------|
 | `true` (default, unset) | Is enabled; equivalent to long form with `type: local` and otherwise defaults |
-| `false`                 | Is disabled; equivalen to long form with `type: none`                         |
+| `false`                 | Is disabled; equivalent to long form with `type: none`                         |
 
 Here is an example NATS Server configuration snippet with short form configuration:
 
