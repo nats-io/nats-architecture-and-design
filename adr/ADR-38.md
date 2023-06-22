@@ -149,7 +149,7 @@ server-scoped OCSP response cache. Such cache will be used for all TLS listeners
 
 #### Defaults, short, and long form
 
-The `ocsp_peer` configuration option may be specified in short or long forms.
+The `ocsp_cache` configuration option may be specified in short or long forms.
 
 ###### Short form
 The short form is a boolean value:
