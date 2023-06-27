@@ -34,6 +34,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
+|[ADR-40](adr/ADR-40.md)|client| Request Many|
 
 ## Jetstream
 
