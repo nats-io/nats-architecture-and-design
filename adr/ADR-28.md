@@ -7,6 +7,11 @@
 | Status   | Implemented             |
 | Tags     | jetstream, server       |
 
+## Update History
+| Date       | Author  | Description                                        |
+|------------|---------|----------------------------------------------------|
+| 2023-06-27 | @tbeets | Fix typo on JSON boolean in `headers_only` example |
+
 ## Context and Problem Statement
 
 In some use cases it is useful for a subscriber to monitor messages that have been ingested by a stream (captured to
@@ -55,7 +60,7 @@ Here is an example of a stream configuration with the RePublish option specified
 	"republish": {
         "src": "one.>",
         "dest": "uno.>",
-        "headers_only": "false"
+        "headers_only": false
 	},
 	"retention": "limits",
 	... omitted ...
