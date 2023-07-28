@@ -31,7 +31,9 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 |[ADR-32](adr/ADR-32.md)|client|Service API|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
-|[ADR-34](adr/ADR-34.md)|jetstream, client, server|Title JetStream Consumers Multiple Filters|
+|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
+|[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
 
 ## Jetstream
 
@@ -53,7 +55,9 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
-|[ADR-34](adr/ADR-34.md)|jetstream, client, server|Title JetStream Consumers Multiple Filters|
+|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
+|[ADR-37](adr/ADR-37.md)|jetstream, client|JetStream Simplification|
 
 ## Kv
 
@@ -80,6 +84,8 @@ This repo is used to capture architectural and design decisions as a reference o
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
+|[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
+|[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
 
 ## Server
 
@@ -99,7 +105,10 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-30](adr/ADR-30.md)|server|Subject Transform|
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
-|[ADR-34](adr/ADR-34.md)|jetstream, client, server|Title JetStream Consumers Multiple Filters|
+|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
+|[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
+|[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
 
 ## When to write an ADR
 
