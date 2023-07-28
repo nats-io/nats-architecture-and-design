@@ -27,7 +27,7 @@ TLS information such as fully signed client certificates if presented during the
 
 The authorization request will be sent to `$SYS.REQ.USER.AUTH` on the default
 `$G` account, or a named account in server configuration mode. In operator mode,
-it will utilize the connected account. The request will be signed by the
+it will utilize the public ID of the connected account. The request will be signed by the
 server's nkey and can be encrypted if configured.
 
 The response to the request will be a signed user JWT that must be signed by the
