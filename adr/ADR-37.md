@@ -289,7 +289,7 @@ Not Telegraphed:
 - 409 Message Size Exceeds MaxBytes
 
 Calls to `next()` and `fetch()` should be concluded when the pull is terminated. On the other hand `consume()` should recover
-while maintaing its state (e.g. pending counts) by issuing a new pull request unless the status is `409 Consumer Deleted` in
+while maintaing its state (e.g. pending counts) by issuing a new pull request unless the status is `409 Consumer Deleted` or `409 Consumer is push based` in
 which case `consume()` call should conclude in an implementation specific way idiomatic to the language being used.
 
 ###### Idle heartbeats
