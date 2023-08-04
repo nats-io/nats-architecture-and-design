@@ -288,6 +288,10 @@ Not Telegraphed:
 - 408 Request Timeout
 - 409 Message Size Exceeds MaxBytes
 
+Calls to `next()` and `fetch()` should be concluded when the pull is terminated. On the other hand `consume()` should recover
+while maintaing its state (e.g. pending counts) by issuing a new pull request unless the status is `409 Consumer Deleted` or `409 Consumer is push based` in
+which case `consume()` call should conclude in an implementation specific way idiomatic to the language being used.
+
 ###### Idle heartbeats
 
 `Consume()` should always utilize idle heartbeats. Heartbeat values are calculated as follows:
@@ -339,7 +343,7 @@ was described in previous sections.
 6. Verify error type:
    - if message contains `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, go to #7
    - verify if error should be terminal based on [Status handling](#status-handling),
-   then issue a warning/error (if required) and terminate if necessary.
+   then issue a warning/error (if required) and conclude the call if necessary.
 7. Read the values of `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
 8. Subtract the values from pending messages count and pending bytes count respectively.
 9. Go to #1.
