@@ -7,6 +7,10 @@
 |Status  |`Proposed`, `Approved` `Partially Implemented`, `Implemented`|
 |Tags    |jetstream, client, server|
 
+|Revision|Date|Author|Info|
+ |--------|----|------|----|
+ |1       |YYYY-MM-DD|@author|Initial design|
+
 ## Context and Problem Statement
 
 [Describe the context and problem statement, e.g., in free form using two to three sentences. You may want to articulate the problem in form of a question.]
