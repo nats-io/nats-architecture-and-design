@@ -216,10 +216,11 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     subject: string;
     /**
-    * The number of requests received by the endpoint
-    */
-    /**
     * Queue group to which this endpoint is assigned to
+    */
+    queue_group: string;
+    /**
+    * The number of requests received by the endpoint
     */
     num_requests: number;
     /**
