@@ -4,8 +4,15 @@
 | -------- | --------------------- |
 | Date     | 2022-11-23            |
 | Author   | @aricart              |
-| Status   | Partially Implemented |
+| Status   | Implemented           |
 | Tags     | client                |
+
+## Release History
+
+| Revision | Date       | Description              |
+|----------|------------|--------------------------|
+| 1        | 2022-11-23 | Initial release          |
+| 2        | 2023-09-12 | Configurable queue group |
 
 ## Context and Problem Statement
 
@@ -31,6 +38,7 @@ Service configuration relies on the following:
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
+- `queueGroup` - overrides a default queue group.
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
@@ -144,6 +152,7 @@ Returns a JSON having the following structure:
 {
     name: string,
     subject: string,
+    queueGroup: string,
     /**
      * Metadata of a specific endpoint
      */
@@ -207,6 +216,10 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     subject: string;
     /**
+    * Queue group to which this endpoint is assigned to
+    */
+    queue_group: string;
+    /**
     * The number of requests received by the endpoint
     */
     num_requests: number;
@@ -245,6 +258,7 @@ A group serves as a common prefix to all endpoints registered in it. A group can
 be created using `addGroup(name)` method on a Service. Group name should be a
 valid NATS subject or an empty string, but cannot contain `>` wildcard (as group
 name serves as subject prefix).
+Group can have a default `queueGroup` for endpoints that overrides service `queueGroup`.
 
 Group should expose following methods:
 
@@ -268,6 +282,7 @@ Each service endpoint consists of the following fields:
 - `subject` - an optional NATS subject on which the endpoint will be registered.
   A subject is created by concatenating the subject provided by the user with
   group prefix (if applicable). If subject is not provided, use `name` instead.
+- `queueGroup` - optional override for a service and group `queueGroup`.
 
 Enpoints can be created either on the service directly (`Service.addEndpoint()`)
 or on a group (`Group.addEndpoint`).
@@ -304,11 +319,11 @@ of `respond()`.
 
 ## Request Handling
 
-All service request handlers operate under the queue group `q`. This means that
+All service request handlers operate under the default queue group `q`. This means that
 in order to scale up or down all the user needs to do is add or stop services.
-Note the name of the queue group is fixed to `q` and cannot be changed otherwise
-different implementations on different queue groups will respond to the same
-request.
+Its possible to send request to multiple services, for example to minimize response time by using
+the quickest responder. To achieve that, it requires running some service instances with different `queueGroup`.
+
 
 For each configured endpoint, a queue subscription should be created.
 
