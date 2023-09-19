@@ -49,10 +49,24 @@ For example if a stream contains messages on subjects "foo", "bar" and "baz" and
 From the user's perspective these features manifest themselves as new fields in the Stream Configuration request and Stream Info response messages.
 
 In Mirror and Sources :
-- Additional `"subject_transform_dest"` field and `"subject_transforms"` array in the `"sources"` array and in `"mirror"`. Note that if you use the `"subject_transforms"` array then you can _NOT_ also use either of the single string subject filter or transformation destination fields.
+- Additional `"subject_transforms"` array in the `"sources"` array and in `"mirror"`. Note that if you use the `"subject_transforms"` array then you can _NOT_ also use the single string subject filters.
 
 At the top level of the Stream Config:
 - Additional `"subject_transform"` field in Stream Config containing two strings: `"src"` and `"dest"`
+
+## KV bucket sourcing
+
+Subject transforms in streams open up the ability to do sourcing between KV buckets. The client library implements this by automatically adding the subject transform to the source configuration of the underlying stream for the bucket doing the sourcing.
+
+The transform in question should map the subject names from the sourced bucket name to the sourcing's bucket name.
+
+e.g. if bucket B sources A the transform config for the source from stream A in stream B should have the following transform in the SubjectTransforms array for that StreamSource:
+```
+{
+  "src": "$KV.A.>",
+  "dest": "$KV.B.>"
+}
+```
 
 ## Examples
 
@@ -114,13 +128,21 @@ A stream that sources from the `sourcedstream` stream twice, each time using a s
   "sources": [
     {
       "name": "sourcedstream",
-      "filter_subject": "foo",
-      "subject_transform_dest": "foo-transformed"
+      "subject_transforms": [
+        {
+          "src": "foo",
+          "dest": "foo-transformed"
+        }
+      ]
     },
     {
       "name": "sourcedstream",
-      "filter_subject": "bar",
-      "subject_transform_dest": "bar-transformed"
+      "subject_transforms": [
+        {
+          "src": "bar",
+          "dest": "bar-transformed"
+        }
+      ]
     }
   ],
   "sealed": false,
