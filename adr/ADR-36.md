@@ -42,17 +42,17 @@ In addition, it is now possible to source not just from different streams but al
 
 If you define a single source with multiple subject filters and transforms, in which case the ordering of the messages is guaranteed to be preserved, there can not be any overlap between the filters. If you define multiple sources from the same stream, subject filters can overlap between sources thereby making it possible to duplicate messages from the sourced stream, but the order of the messages between the sources is not guaranteed to be preserved.
 
-For example if a stream contains messages on subjects "foo", "bar" and "baz" and you want to source only "foo" and "bar" from that stream you could specify two subject filters and transforms in a single source, or you can source twice from that stream once with the "foo" subject filter and a second time with the "bar" subject filter.
+For example if a stream contains messages on subjects "foo", "bar" and "baz" and you want to source only "foo" and "bar" from that stream you could specify two subject transforms (with an empty destination) in a single source, or you can source twice from that stream once with the "foo" subject filter and a second time with the "bar" subject filter.
 
 ## Stream config structure changes
 
 From the user's perspective these features manifest themselves as new fields in the Stream Configuration request and Stream Info response messages.
 
 In Mirror and Sources :
-- Additional `"subject_transforms"` array in the `"sources"` array and in `"mirror"`. Note that if you use the `"subject_transforms"` array then you can _NOT_ also use the single string subject filters.
+- Additional `"subject_transforms"` array in the `"sources"` array and in `"mirror"` containing objects made of two string fields: `"src"` and `"dest"`. Note that if you use the `"subject_transforms"` array then you can _NOT_ also use the single string subject filters. The `"dest"` can be empty or `""` in which case there is no transformation, just filtering.
 
 At the top level of the Stream Config:
-- Additional `"subject_transform"` field in Stream Config containing two strings: `"src"` and `"dest"`
+- Additional `"subject_transform"` field in Stream Config containing two strings: `"src"` and `"dest"`. 
 
 ## KV bucket sourcing
 
@@ -173,13 +173,11 @@ A Stream that sources from 2 streams and has a subject transform:
   "sources": [
     {
       "name": "source1",
-      "filter_subject": "stream1.foo.>",
-      "subject_transform_dest": "foo.>"
+      "filter_subject": "stream1.foo.>"
     },
     {
       "name": "source1",
-      "filter_subject": "stream1.bar.>",
-      "subject_transform_dest": "bar.>"
+      "filter_subject": "stream1.bar.>"
     },
     {
       "name": "source2",
