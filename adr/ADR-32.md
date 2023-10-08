@@ -13,6 +13,7 @@
 |----------|------------|--------------------------|
 | 1        | 2022-11-23 | Initial release          |
 | 2        | 2023-09-12 | Configurable queue group |
+| 3        | 2023-10-07 | Add version regex info   |
 
 ## Context and Problem Statement
 
@@ -30,7 +31,9 @@ Service configuration relies on the following:
 - `name` - really the _kind_ of the service. Shared by all the services that
   have the same name. This `name` can only have
   `A-Z, a-z, 0-9, dash, underscore`.
-- `version` - a SemVer string - impl should validate that this is SemVer
+- `version` - a SemVer string - impl should validate that this is SemVer.
+  One of the [official semver](https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string)
+  regex should be used.
 - `description` - a human-readable description about the service (optional)
 - `metadata` - (optional) an object of strings holding free form metadata about
   the deployed instance implemented consistently with
@@ -115,7 +118,7 @@ name: string,
 id: string,
 /**
 * The version of the service
-* Should be validated using official semver regexp: 
+* Should be validated using official semver regexp:
 * https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string
 */
 version: string
@@ -191,7 +194,7 @@ The type for this is `io.nats.micro.v1.ping_response`.
     type: string,
     name: string,
     id: string,
-    version: string, 
+    version: string,
     metadata: Record<string,string>,
     /**
     * Individual endpoint stats
@@ -205,7 +208,7 @@ The type for this is `io.nats.micro.v1.ping_response`.
 
 /**
  * EndpointStats
- */ 
+ */
 {
     /**
     * The name of the endpoint
