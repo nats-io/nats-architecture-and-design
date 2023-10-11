@@ -161,7 +161,10 @@ Returns a JSON having the following structure:
      * The subject on which the endpoint is listening.
      */
     subject: string,
-    queueGroup: string,
+    /**
+     * Queue group to which this endpoint is assigned to
+     */
+    queue_group: string,
     /**
      * Metadata of a specific endpoint
      */
