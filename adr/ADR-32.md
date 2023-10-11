@@ -159,7 +159,6 @@ Returns a JSON having the following structure:
     name: string,
     /**
      * The subject on which the endpoint is listening.
-     * This includes the full path when the endpoint is part of a group
      */
     subject: string,
     queueGroup: string,
@@ -223,7 +222,6 @@ The type for this is `io.nats.micro.v1.ping_response`.
     name: string;
     /**
     * The subject on which the endpoint is listening.
-    * This includes the full path when the endpoint is part of a group 
     */
     subject: string;
     /**
