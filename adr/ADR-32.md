@@ -153,7 +153,14 @@ Returns a JSON having the following structure:
 ```typescript
 // EndpointInfo
 {
+    /**
+     * The name of the endpoint
+     */
     name: string,
+    /**
+     * The subject on which the endpoint is registered.
+     * This includes the full path when the endpoint is part of a group
+     */
     subject: string,
     queueGroup: string,
     /**
@@ -215,7 +222,8 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     name: string;
     /**
-    * The subject on which the endpoint is registered
+    * The subject on which the endpoint is registered.
+    * This includes the full path when the endpoint is part of a group 
     */
     subject: string;
     /**
