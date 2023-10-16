@@ -28,6 +28,8 @@ Ensuring a consistent way how Clients establish and maintain connection with the
 
 ### Establishing the connection
 
+**TODO** Add WebSocket flow.
+
 #### Minimal example
 
 1. Clients initiate a network connection to the Server.
