@@ -56,7 +56,7 @@ This method is available in all NATS Server versions.
 This method has been available since NATS Server 2.11.
 
 There are two prerequisites to use this method:
-1. Server has enabled `handshake_first` field in the `tls` block.
+1. Server config has enabled `handshake_first` field in the `tls` block.
 2. The client has set the `tls_first` option set to true.
 
 **handshake_first**
