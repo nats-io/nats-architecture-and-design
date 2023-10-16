@@ -13,6 +13,7 @@
 |----------|------------|-------------------------------------------|
 | 1        | 2023-10-16 | Document NATS Server 2.10 sourced buckets |
 | 1        | 2023-10-16 | Document read replica mirrors buckets     |
+| 1        | 2023-10-16 | Document consistency guarantees           |
 
 
 ## Context
@@ -216,6 +217,16 @@ later.
 ### JetStream interactions
 
 The features to support KV is in NATS Server 2.6.0.
+
+#### Consistency Guarantees
+
+By default, we do not provide read-after-write consistency.  Reads are performed directly to any replica, including out
+of date ones.  If those replicas do not catch up multiple reads of the same key can give different values between 
+reads. If the cluster is healthy and performing well most reads would result in consistent values, but this should not
+be relied on to be true.
+
+If `allow_direct` is disabled on a bucket configuration read-after-write consistency is achieved at the expense of 
+performance.  It is then also not possible to use the mirror based read replicas.
 
 #### Buckets
 
@@ -451,6 +462,8 @@ As mirrors support subject filters these regional replicas can hold region speci
 
 As this is a `Mirror` this stream does not listen on a subject and so the only way to get data into it is via the origin
 bucket.
+
+Watchers will always run on the original stream.
 
 While it appears that there is significant overlap between this config and the source based one, only this strategy 
 creates RTT aware automatic nearest replica selection.  Replicas can be added and removed without clients requiring any
