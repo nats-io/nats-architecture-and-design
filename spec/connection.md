@@ -30,10 +30,13 @@ Ensuring a consistent way how Clients establish and maintain connection with the
 
 #### Minimal example
 
-1. Clients initiate a TCP connection to the Server.
+1. Clients initiate a network connection to the Server.
 2. Server responds with [INFO][INFO] json.
 3. Client sends [CONNECT][CONNECT] json.
 4. Clients and Server start to exchange PING/PONG messages to detect if the connection is alive.
+
+**Note** Server can send subsequent [INFO][INFO] on a ongoing connection.
+Client needs to handle them approprietly and update server lists and server info.
 
 #### Auth flow
 TODO
@@ -45,7 +48,7 @@ There are two flows available in the Server that enable TLS.
 
 This method is available in all NATS Server versions.
 
-1. Clients initiate a TCP connection to the Server.
+1. Clients initiate a network connection to the Server.
 2. Server responds with [INFO][INFO] json.
 3. If Server [INFO][INFO] contains `tls_required` set to `true`, or the client has a tls requirement set to `true`, the client performs a TLS upgrade.
 4. Client sends [CONNECT][CONNECT] json.
@@ -68,7 +71,7 @@ has those possible values:
 
 The flow itself is flipped. TLS is established before the Server sends INFO:
 
-1. Clients initiate a TCP connection to the Server.
+1. Clients initiate a network connection to the Server.
 2. Client upgrades the connection to TLS.
 2. Server [INFO][INFO] json.
 4. Client sends [CONNECT][CONNECT] json.
@@ -89,7 +92,7 @@ By default, those URLs are used.
 
 There are two methods that clients should use to detect disconnections:
 1. Missing two consecutive PONGs from the Server.
-2. Handling errors from TCP connection.
+2. Handling errors from network connection.
 
 #### Reconnect process
 
@@ -138,9 +141,9 @@ be a footgun and surprise for users who do not expect that the client can give u
 
 **default 5s**
 
-Specifies how long the client will wait for the TCP connection to be established.
+Specifies how long the client will wait for the network connection to be established.
 In some languages, this can hang eternally, and timeout mechanics might be necessary.
-In others, the TCP Connection method might have a way to configure its timeout.
+In others, the network connection method might have a way to configure its timeout.
 
 #### Custom reconnect
 
@@ -156,7 +159,7 @@ If set, the client enforces the TLS, whether the Server also requires it or not.
 
 If `tls://` scheme is used in the connection string, this also enforces tls.
 
-#### Ingore advertised servers
+#### Ignore advertised servers
 
 **default: false**
 When connecting to the Server, it may send back a list of other servers in the cluster of which it is aware.
@@ -186,7 +189,7 @@ Contains information about client, including optional signature, client version 
 
 
 #### Ping Pong
-This is a mechanism to detect broken connections that may not be reported by a TCP connection in a given language.
+This is a mechanism to detect broken connections that may not be reported by the network connection in a given language.
 
 If the Server sends `PING`, the client should answer with `PONG`.
 If the Client sends `PING`, the Server should answer with `PONG`.
@@ -215,6 +218,7 @@ Smart Reconnection could be a potential big improvement.
 ## Design
 
 NATS is a plaintext protocol based on TCP.
+It can also leverage WebSockets as a transport layer.
 
 ## Decision
 
