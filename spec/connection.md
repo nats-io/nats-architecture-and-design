@@ -88,6 +88,8 @@ The client should store those URLs and use them in the Reconnection Strategy.
 A client should have an option to turn off using advertised URLs.
 By default, those URLs are used.
 
+**TODO**: Add more in-depth explanation how topology discovery works.
+
 ### Reconnection Strategies (In progress)
 
 #### Detecting disconnection
@@ -110,12 +112,28 @@ When the client detects disconnection, it starts to reconnect attempts with the 
 If there is any change in the connection state - connected/disconnected, the client should have some way of notifying the user about it.
 This can be a callback function or any other idiomatic mechanism in a given language for reporting asynchronous events.
 
+**Disconnect buffer**
+Most clients have a buffer that will aggregate messages on the client side in case of disconnection.
+It will fill up the buffer and send pending messages as soon as connection is restored.
+If buffer will be filled before the conneciton is restored - publish attempts should return error noting that fact.
+
 ## Reference-level Explanation
 ### Client options
 
 Although clients should provide sensible defaults for handling the connection,
 in many cases, it requires some tweaking.
 The below list defines what can be changed, what it means, and what the defaults are.
+
+#### Ping interval
+
+**default**: 2 minutes
+
+As the client or server might not know that the connection is severed, NATS has Ping/Pong protocol.
+Client can set at what intervals it will send a PING to the server, expecting PONG.
+If two consecutive PONGs are missed, conneciton is marked as lost triggering reconnect attempt.
+
+It's worth noting that shorter PING intervals can improve responsiveness of the client to network issues,
+but it also increases the load on the whole NATS system and the network itself with each added client.
 
 #### Retry on failed initial connect
 
@@ -153,6 +171,11 @@ In others, the network connection method might have a way to configure its timeo
 
 If fine-grained control over reconnect attempts intervals is needed, this option allows users to specify one.
 Implementation should make sense in a given language. For example, it can be a callback `fn reconnect(attempt: int) -> Duration`.
+
+#### Disconnect buffer
+
+If given client supports storing messges during disconnect periods, this option allows to tweak the number of stored messages.
+It should also allow disable buffering entirely.
 
 #### Tls required
 
