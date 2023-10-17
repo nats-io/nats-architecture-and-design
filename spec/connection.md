@@ -73,14 +73,16 @@ has those possible values:
 
 The flow itself is flipped. TLS is established before the Server sends INFO:
 
-1. Clients initiate a network connection to the Server.
+1. Client initiate a network connection to the Server.
 2. Client upgrades the connection to TLS.
-2. Server [INFO][INFO] json.
+2. Server sends [INFO][INFO] json.
 4. Client sends [CONNECT][CONNECT] json.
-5. Clients and Server start to exchange PING/PONG messages to detect if the connection is alive.
+5. Client and Server start to exchange PING/PONG messages to detect if the connection is alive.
 
 
 ### Servers discovery
+
+**Note**: Server will send back the info only
 
 When Server sends back [INFO][INFO]. It may contain additional URLs to which the client can make connection attempts.
 The client should store those URLs and use them in the Reconnection Strategy.
@@ -95,7 +97,7 @@ By default, those URLs are used.
 #### Detecting disconnection
 
 There are two methods that clients should use to detect disconnections:
-1. Missing two consecutive PONGs from the Server.
+1. Missing two consecutive PONGs from the Server (number of missing PONGs can be configured).
 2. Handling errors from network connection.
 
 #### Reconnect process
@@ -105,7 +107,7 @@ When the client detects disconnection, it starts to reconnect attempts with the 
     The client attempts to reconnect immediately after finding out it has been disconnected.
 2. Exponential backoff with jitter
    - When the first reconnect fails, the backoff process should kick in. Default Jitter should also be included to avoid thundering herd problems.
-3. If the Server returned additional URLs, the client should try reconnecting in random order to each Server on the list.
+3. If the Server returned additional URLs, the client should try reconnecting in random order to each Server on the list, unless randomization option is disabled in the client [options](#Retain-servers-order).
 4. Successful reconnect resets the timers
 5. Upon reconnection, clients should resubscribe to all created subscriptions.
 
@@ -134,6 +136,12 @@ If two consecutive PONGs are missed, connection is marked as lost triggering rec
 
 It's worth noting that shorter PING intervals can improve responsiveness of the client to network issues,
 but it also increases the load on the whole NATS system and the network itself with each added client.
+
+#### Max Pings Out
+
+**default**: 2
+
+Sets number of allowed outstanding PONG responses for the client PINGs before marking client as disconnected and triggering reconnect.
 
 #### Retry on failed initial connect
 
@@ -219,14 +227,10 @@ This is a mechanism to detect broken connections that may not be reported by the
 If the Server sends `PING`, the client should answer with `PONG`.
 If the Client sends `PING`, the Server should answer with `PONG`.
 
-If two consecutive `PONGs are missed, the client should treat the connection as broken, and it should start reconnect attempts.
+If two (configurable) consecutive `PONGs are missed, the client should treat the connection as broken, and it should start reconnect attempts.
 
 The default interval for PING is 2 minutes.
 
-#### Client connection related options
-These options should be available to end users, allowing control over connection handling.
-
-#####
 
 ### Error Handling (TODO)
 
@@ -240,18 +244,6 @@ Discuss any additional security considerations pertaining to the TLS implementat
 
 Smart Reconnection could be a potential big improvement.
 
-## Design
-
-NATS is a plaintext protocol based on TCP.
-It can also leverage WebSockets as a transport layer.
-
-## Decision
-
-[Maybe this was just an architectural decision...]
-
-## Consequences
-
-[Any consequences of this design, such as breaking change or Vorpal Bunnies]
 
 [INFO]: https://beta-docs.nats.io/ref/protocols/client#info
 [CONNECT]: https://beta-docs.nats.io/ref/protocols/client#connect
