@@ -46,7 +46,7 @@ TODO
 #### TLS
 There are two flows available in the Server that enable TLS.
 
-##### Standard TLS
+##### Standard NATS TLS (Explicit TLS)
 
 This method is available in all NATS Server versions.
 
@@ -56,7 +56,7 @@ This method is available in all NATS Server versions.
 4. Client sends [CONNECT][CONNECT] json.
 5. Clients and Server start to exchange PING/PONG messages to detect if the connection is alive.
 
-##### TLS First
+##### TLS First (Implicit TLS)
 
 This method has been available since NATS Server 2.11.
 
@@ -103,7 +103,7 @@ There are two methods that clients should use to detect disconnections:
 When the client detects disconnection, it starts to reconnect attempts with the following rules:
 1. Immediate reconnect attempt
     The client attempts to reconnect immediately after finding out it has been disconnected.
-2. Exponential BackOff with Jitter
+2. Exponential backoff with jitter
    - When the first reconnect fails, the backoff process should kick in. Default Jitter should also be included to avoid thundering herd problems.
 3. If the Server returned additional URLs, the client should try reconnecting in random order to each Server on the list.
 4. Successful reconnect resets the timers
@@ -115,7 +115,7 @@ This can be a callback function or any other idiomatic mechanism in a given lang
 **Disconnect buffer**
 Most clients have a buffer that will aggregate messages on the client side in case of disconnection.
 It will fill up the buffer and send pending messages as soon as connection is restored.
-If buffer will be filled before the conneciton is restored - publish attempts should return error noting that fact.
+If buffer will be filled before the connection is restored - publish attempts should return error noting that fact.
 
 ## Reference-level Explanation
 ### Client options
@@ -130,7 +130,7 @@ The below list defines what can be changed, what it means, and what the defaults
 
 As the client or server might not know that the connection is severed, NATS has Ping/Pong protocol.
 Client can set at what intervals it will send a PING to the server, expecting PONG.
-If two consecutive PONGs are missed, conneciton is marked as lost triggering reconnect attempt.
+If two consecutive PONGs are missed, connection is marked as lost triggering reconnect attempt.
 
 It's worth noting that shorter PING intervals can improve responsiveness of the client to network issues,
 but it also increases the load on the whole NATS system and the network itself with each added client.
@@ -174,7 +174,7 @@ Implementation should make sense in a given language. For example, it can be a c
 
 #### Disconnect buffer
 
-If given client supports storing messges during disconnect periods, this option allows to tweak the number of stored messages.
+If given client supports storing messages during disconnect periods, this option allows to tweak the number of stored messages.
 It should also allow disable buffering entirely.
 
 #### Tls required
