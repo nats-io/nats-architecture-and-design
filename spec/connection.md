@@ -37,8 +37,8 @@ Ensuring a consistent way how Clients establish and maintain connection with the
 3. Client sends [CONNECT][CONNECT] json.
 4. Clients and Server start to exchange PING/PONG messages to detect if the connection is alive.
 
-**Note** Server can send subsequent [INFO][INFO] on a ongoing connection.
-Client needs to handle them approprietly and update server lists and server info.
+**Note** If clients sets `protocol` field in [Connect][Connect] to equal or greater than 1, Server can send subsequent [INFO][INFO] on a ongoing connection.
+Client needs to handle them appropriately and update server lists and server info.
 
 #### Auth flow
 TODO
