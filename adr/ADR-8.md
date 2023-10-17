@@ -1,18 +1,25 @@
 # JetStream based Key-Value Stores
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2021-06-30|
-|Author  |@ripienaar|
-|Status  |Implemented|
-|Tags    |jetstream, client, kv|
+| Metadata | Value                 |
+|----------|-----------------------|
+| Date     | 2021-06-30            |
+| Author   | @ripienaar            |
+| Status   | Implemented           |
+| Tags     | jetstream, client, kv |
+
+## Release History
+
+| Revision | Date       | Description                               |
+|----------|------------|-------------------------------------------|
+| 1        | 2023-10-16 | Document NATS Server 2.10 sourced buckets |
+| 1        | 2023-10-16 | Document read replica mirrors buckets     |
+| 1        | 2023-10-16 | Document consistency guarantees           |
+
 
 ## Context
 
-This document describes a design and initial implementation of a JetStream backed key-value store. The initial implementation
-is available in the CLI as `nats kv` with the reference client implementation being the `nats.go` repository.
-
-This document aims to guide client developers in implementing this feature in the language clients we maintain.
+This document describes a design and initial implementation of a JetStream backed key-value store. All tier-1 clients 
+support KV.
 
 ## Status and Roadmap
 
@@ -41,16 +48,17 @@ additional behaviors will come during the 1.x cycle.
 
 ### 1.1
 
- * Encoders and Decoders for keys and values
- * Additional Operation that indicates server limits management deleted messages
+ * Merged buckets using NATS Server 2.10 subject transforms
+ * Read replicas facilitated by Stream Mirrors
+ * Replica auto discovery for mirror based replicas
 
 ### 1.2
 
- * Read replicas facilitated by Stream Mirrors
  * Read-only operation mode
- * Replica auto discovery
  * Read cache against with replica support
  * Ranged operations
+ * Encoders and Decoders for keys and values
+ * Additional Operation that indicates server limits management deleted messages
 
 ### 1.3
 
@@ -210,6 +218,16 @@ later.
 
 The features to support KV is in NATS Server 2.6.0.
 
+#### Consistency Guarantees
+
+By default, we do not provide read-after-write consistency.  Reads are performed directly to any replica, including out
+of date ones.  If those replicas do not catch up multiple reads of the same key can give different values between 
+reads. If the cluster is healthy and performing well most reads would result in consistent values, but this should not
+be relied on to be true.
+
+If `allow_direct` is disabled on a bucket configuration read-after-write consistency is achieved at the expense of 
+performance.  It is then also not possible to use the mirror based read replicas.
+
 #### Buckets
 
 A bucket is a Stream with these properties:
@@ -297,10 +315,17 @@ Deleted data - (see later section on deletes) - has the `KV-Operation` header se
 into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history. 
 
 ##### Get Operation
+ 
+###### When allow_direct is false
 
 We have extended the `io.nats.jetstream.api.v1.stream_msg_get_request` API to support loading the latest value for a specific
-subject.  Thus a read for `CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request` with the
-`last_by_subj` set to `$KV.CONFIGURATION.auth.username`.
+subject.  Thus, a read for `$KV.CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request` 
+with the `last_by_subj` set to `$KV.CONFIGURATION.auth.username`.
+
+###### When allow_direct is true
+
+We have introduced a new direct API that allows retrieving the last message for a subject via `$JS.APIDIRECT.GET.
+<STREAM>.<SUBJECT>`. This should be used for performing all gets on a bucket if direct is enabled.
 
 ##### History
 
@@ -360,14 +385,90 @@ first time any message has a `Pending==0`. This signal must also be sent if no d
 Whatchers should support at least the following options. Languages can choose to support more models if they wish, as long as that
 is clearly indicated as a language specific extension. Names should be language idiomatic but close to these below.
 
-|Name|Description|
-|----|-----------|
-|`IncludeHistory`|Send all available history rather than just the latest entries|
-|`IgnoreDeletes`|Only sends `PUT` operation entries|
-|`MetaOnly`|Does not send any values, only metadata about those values|
-|`UpdatesOnly`|Only sends new updates made, no current or historical values are sent. The End Of Initial Data marker is sent as soon as the watch starts.|
+| Name             | Description                                                                                                                                |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `IncludeHistory` | Send all available history rather than just the latest entries                                                                             |
+| `IgnoreDeletes`  | Only sends `PUT` operation entries                                                                                                         |
+| `MetaOnly`       | Does not send any values, only metadata about those values                                                                                 |
+| `UpdatesOnly`    | Only sends new updates made, no current or historical values are sent. The End Of Initial Data marker is sent as soon as the watch starts. |
 
 The default behavior with no options set is to send all the `last_per_subject` values, including delete/purge operations.
+
+#### Replicas for NATS Server 2.10 and newer
+
+Since NATS Server 2.10 we support transforming messages as a stream configuration item. This allows us to source one 
+bucket from another and rewrite the keys in the new bucket to have the correct name.
+
+To copy the keys `NEW.>` from bucket `ORDERS` into `NEW_ORDERS` we create the new stream with the following 
+partial config:
+
+```json
+    "sources": [
+      {
+        "name": "KV_ORDERS",
+        "filter_subject": "$KV.ORDERS.NEW.>",
+        "subject_transforms": [
+          {
+            "src": "$KV.ORDERS.>",
+            "dest": "$KV.NEW_ORDERS.>"
+          }
+        ]
+      }
+    ],
+```
+
+This results in all messages from `ORDERS` keys `NEW.>` to be copied into `NEW_ORDERS` and the subjects rewritten on 
+write to the new bucket so that a unmodified KV client on `NEW_ORDERS` would just work.
+
+As this is a `Source` and not a `Mirror` this new bucket can accept writes.  Sourced streams can be created with no
+listening subjects which would render the mirror a read-only replica.  Given that it's a Source it can be made with
+multiple sources to create an aggregate bucket by using multiple subject transforms.
+
+#### Read replica mirrors
+
+Regional read replicas can be built using the standard mirror feature by setting `mirror_direct` to true as long as the
+origin bucket also has `allow_direct`.
+
+When a direct read is done the response will be from the rtt-nearest mirror.  With a mirror added the `nats` command
+can be used to verify that a alternative location is set:
+
+```
+$ nats s info KV_ORDERS
+...
+State:
+
+            Alternates: KV_ORDERS_NYC: Cluster: nyc Domain: hub
+                            KV_ORDERS: Cluster: lon Domain: hub
+
+```
+
+Here we see a RTT-sorted list of alternatives, the `KV_ORDERS_NYC` is nearest to me in the RTT sorted list.
+
+When doing a direct get the headers will confirm the mirror served the request:
+
+```
+$ nats req '$JS.API.DIRECT.GET.KV_ORDERS.$KV.ORDERS.NEW.123' ''
+13:26:06 Sending request on "JS.API.DIRECT.GET.KV_ORDERS.$KV.ORDERS.NEW.123"
+13:26:06 Received with rtt 1.319085ms
+13:26:06 Nats-Stream: KV_ORDERS_NYC
+13:26:06 Nats-Subject: $KV.ORDERS.NEW.123
+13:26:06 Nats-Sequence: 12
+13:26:06 Nats-Time-Stamp: 2023-10-16T12:54:19.409051084Z
+
+{......}
+```
+
+As mirrors support subject filters these regional replicas can hold region specific keys.
+
+As this is a `Mirror` this stream does not listen on a subject and so the only way to get data into it is via the origin
+bucket.
+
+Watchers will always run on the original stream.
+
+While it appears that there is significant overlap between this config and the source based one, only this strategy 
+creates RTT aware automatic nearest replica selection.  Replicas can be added and removed without clients requiring any
+knowledge of these replicas and clients will automatically use the nearest replica.  During the life of a client the 
+replica used may even change as network conditions change.
 
 #### API Design notes
 
