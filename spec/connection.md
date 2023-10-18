@@ -173,7 +173,7 @@ Specifies how long the client will wait for the network connection to be establi
 In some languages, this can hang eternally, and timeout mechanics might be necessary.
 In others, the network connection method might have a way to configure its timeout.
 
-#### Custom reconnect
+#### Custom reconnect delay
 
 **Default: none**
 
@@ -205,6 +205,8 @@ but it also may be unwanted if, for example, some servers URLs are unreachable f
 By default, if many server addresses are passed in the connect string or array, the client will try to connect to them in random order.
 This helps healthy connection distribution, but if in a specific case list should be treated as a preference list,
 randomization may be turned off.
+
+This function can be expressed "enable retaining order" or "disable randomization" depending on what is more idiomatic in given language.
 
 ### Protocol Commands and Grammar
 
