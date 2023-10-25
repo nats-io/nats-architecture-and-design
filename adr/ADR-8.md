@@ -16,6 +16,7 @@
 | 2        | 2023-10-16 | Document read replica mirrors buckets               |
 | 2        | 2023-10-16 | Document consistency guarantees                     |
 | 3        | 2023-10-19 | Formalize initial bucket topologies                 |
+| 4        | 2023-10-25 | Support compression                                 |
 
 
 ## Context
@@ -47,6 +48,7 @@ additional behaviors will come during the 1.x cycle.
  * Key starting with `_kv` is reserved for internal use
  * CLI tool to manage the system as part of `nats`, compatible with client implementations
  * Accept arbitrary application prefixes, as outlined in [ADR-19](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-19.md)
+ * Data Compression for NATS Server 2.10
 
 ### 1.1
 
@@ -124,6 +126,9 @@ type Status interface {
 	// Keys return a list of all keys in the bucket - not possible now except in caches
 	Keys() ([]string, error)
 
+	// IsCompressed indicates if the data is compressed on disk
+	IsCompressed() bool
+	
 	// BackingStore is a name indicating the kind of backend
 	BackingStore() string
 
@@ -137,6 +142,9 @@ The `BackingStore` describes the type of backend and for now returns `JetStream`
 Languages can choose to expose additional information about the bucket along with this interface, in the Go implementation
 the `Status` interface is above but the `JetStream` specific implementation can be cast to gain access to `StreamInfo()`
 for full access to JetStream state.
+
+The choice of `IsCompressed()` as a method name is idiomatic for Go, language maintainers can make a similar idiomatic 
+choice.
 
 Other languages do not have a clear 1:1 match of the above idea so maintainers are free to do something idiomatic.
 
@@ -253,8 +261,9 @@ A bucket is a Stream with these properties:
  * Allow Direct is always set to `true`. (It can be modified out-of-band only if desired, but not through KV bucket update.)
  * Placement is allowed
  * Republish is allowed
+ * If compression is requested in the configuration set `compression` to `true`
 
-Here is a full example of the `CONFIGURATION` bucket:
+Here is a full example of the `CONFIGURATION` bucket with compression enabled:
 
 ```json
 {
@@ -276,6 +285,7 @@ Here is a full example of the `CONFIGURATION` bucket:
   "rollup_hdrs": true,
   "deny_delete": true,
   "allow_direct": true,
+  "compression": true,
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
