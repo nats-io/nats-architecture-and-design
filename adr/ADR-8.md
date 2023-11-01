@@ -261,7 +261,7 @@ A bucket is a Stream with these properties:
  * Allow Direct is always set to `true`. (It can be modified out-of-band only if desired, but not through KV bucket update.)
  * Placement is allowed
  * Republish is allowed
- * If compression is requested in the configuration set `compression` to `true`
+ * If compression is requested in the configuration set `compression` to `s2`
 
 Here is a full example of the `CONFIGURATION` bucket with compression enabled:
 
@@ -285,7 +285,7 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   "rollup_hdrs": true,
   "deny_delete": true,
   "allow_direct": true,
-  "compression": true,
+  "compression": "s2",
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
