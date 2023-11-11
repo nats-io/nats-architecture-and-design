@@ -1,19 +1,20 @@
 # Service API
 
-| Metadata | Value                 |
-| -------- | --------------------- |
-| Date     | 2022-11-23            |
-| Author   | @aricart              |
-| Status   | Implemented           |
-| Tags     | client                |
+| Metadata | Value       |
+| -------- | ----------- |
+| Date     | 2022-11-23  |
+| Author   | @aricart    |
+| Status   | Implemented |
+| Tags     | client      |
 
 ## Release History
 
 | Revision | Date       | Description              |
-|----------|------------|--------------------------|
+| -------- | ---------- | ------------------------ |
 | 1        | 2022-11-23 | Initial release          |
 | 2        | 2023-09-12 | Configurable queue group |
 | 3        | 2023-10-07 | Add version regex info   |
+| 4        | 2023-11-10 | Explicit naming          |
 
 ## Context and Problem Statement
 
@@ -336,7 +337,6 @@ in order to scale up or down all the user needs to do is add or stop services.
 Its possible to send request to multiple services, for example to minimize response time by using
 the quickest responder. To achieve that, it requires running some service instances with different `queueGroup`.
 
-
 For each configured endpoint, a queue subscription should be created.
 
 > Note: Handler subject does not contain the `$SRV` prefix. This prefix is
@@ -346,3 +346,9 @@ The handlers specified by the client to process requests should operate as any
 standard subscription handler. This means that no assumption is made on whether
 returning from the callback signals that the request is completed. The framework
 will dispatch requests as fast as the handler returns.
+
+### Naming
+
+For consistency of documentation and understanding by users, clients that implement the
+service API and tooling that interacts with services should use the term "service" or
+"services".
