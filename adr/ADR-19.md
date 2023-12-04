@@ -1,4 +1,4 @@
-# API prefixes for materialized JetStream views: 
+# API prefixes for materialized JetStream views
 
 |Metadata|Value|
 |--------|-----|
@@ -9,20 +9,20 @@
 
 ## Context
 
-This document describes a design on how to support API prefixes for materialized JS views. 
+This document describes a design on how to support API prefixes for materialized JS views.
 
 API prefixes allow the client library to disambiguate access to independent JetStreams that run either in different domains or different accounts.
 By specifying the prefix in the API, a client program can essentially pick which one it wants to communicate with.
 This mechanism needs to be supported for materialized JS views as well.
 
-## Overview 
+## Overview
 
 Each JetStream only listens to default API subjects with the prefix `$JS.API`.
 Thus, when the client uses `$JS.API`, it communicates with the JetStream, local to its account and domain.
 
 To avoid traffic going to some other JetStream the following mechanisms are in place:
-1. Account: Since the API has to be imported with an altered prefix, the request will not cross account boundaries. 
-    In a JetStream enabled account, an import without a prefix set will result in an error as JetStream is imported as well and we error on import overlaps. 
+1. Account: Since the API has to be imported with an altered prefix, the request will not cross account boundaries.
+    In a JetStream enabled account, an import without a prefix set will result in an error as JetStream is imported as well and we error on import overlaps.
 2. Domain: On leaf node connections, the nats server adds in denies for `$JS.API.>`.
 
 When the client library sets an API prefix, all API subjects, the client publishes and subscribes to start with that instead of `$JS.API`.
@@ -33,16 +33,16 @@ As messages and subscriptions cross boundaries the following happens:
 2. Domain: When crossing the leaf node connection between domains, an automatically inserted mapping strips the API prefix and replaces it with `$JS.API`.
 
 This JetStream disambiguation mechanism needs to be added to materialized views such as KV and object store as well.
-Specifically, we need to tag along on the same API prefix. 
+Specifically, we need to tag along on the same API prefix.
 Setting different values to reach the same JetStream is a non starter.
 
 ## Design
 
 The first token of any API or materialized view is considered the default API prefix and will mean have local semantics.
-Thus, for the concrete views we treat the tokens `$KV` and `$OBJ` as the respective default API prefixes. 
-For publishes and subscribes the API just replaces the first token with the specified (non default) prefix. 
+Thus, for the concrete views we treat the tokens `$KV` and `$OBJ` as the respective default API prefixes.
+For publishes and subscribes the API just replaces the first token with the specified (non default) prefix.
 
-To share API access across accounts this is sufficient as account export/import takes care of the rest. 
+To share API access across accounts this is sufficient as account export/import takes care of the rest.
 To access an API in the same account but different domain, the `nats-server` maintaining a leaf node connection will add in the appropriate mappings from domain specific API to local API and deny local API traffic.
 
 ## KV Example
@@ -52,21 +52,21 @@ For JetStream specific API calls, the local API prefix `$JS.API` has to be repla
 
 Because the JetStream specified API prefix differs from `$JS.API`, the KV API uses the same prefix as is specififed for JetStream API.
 
-For the KV API we prefix `$KV` with `JS.from-acc1`, resulting in `JS.from-acc1.$KV`. 
-Thus, in order to put `key` in the bin `bin`, we send to `JS.from-acc1.$KV.bin.key` 
+For the KV API we prefix `$KV` with `JS.from-acc1`, resulting in `JS.from-acc1.$KV`.
+Thus, in order to put `key` in the bin `bin`, we send to `JS.from-acc1.$KV.bin.key`
 
 When crossing the account boundaries, this is then translated back to `$KV.bin.key`.
-Thus, the underlying stream still needs to be created with a subscription to `$KV.bin.key`. 
+Thus, the underlying stream still needs to be created with a subscription to `$KV.bin.key`.
 
 Domains are just a special case of API prefixes and will work the same way.
 The API prefix `$JS.<domain-name>.API` will lead to `$JS.<domain-name>.API.$KV.bin.key`.
 As the leaf node connection into the domain is crossed, the inserted mapping will changes the subject back to `$KV.bin.key`.
 
-## Consequences 
+## Consequences
 
-The proposed change is backwards compatible with materialized views already in use. 
+The proposed change is backwards compatible with materialized views already in use.
 
-I suggested prefixing so we can have one prefix across different APIs. 
+I suggested prefixing so we can have one prefix across different APIs.
 To avoid accidental API overlaps going forward, the implication for JetStream is to NOT start the first token after the API prefix with `$`.
 
 Specifically, JetStream will never expose any functionality under `$JS.API.$KV.>`.
@@ -78,7 +78,7 @@ This however will not be backwards compatible.
 
 ## Testing
 
-Here is a server config to test your changes. 
+Here is a server config to test your changes.
 * The JetStream prefix to use is `fromA`
 * The inbox prefix to use is `forI`
 
