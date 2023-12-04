@@ -2,14 +2,14 @@
 
 |Metadata|Value|
 |--------|-----|
-|Date    |2023-10-12 |
-|Author  |@Jarema |
-|Status  |`Implemented`|
-|Tags    |client, server|
+| Date    | 2023-10-12    |
+| Author  | @Jarema       |
+| Status  | `Implemented` |
+| Tags    | spec          |
 
 |Revision|Date|Author|Info|
- |--------|----|------|----|
- |1       |2023-10-12|@author|Initial draft|
+ |--------|------------|---------|---------------|
+ |1       | 2023-10-12 | @Jarema | Initial draft |
 
 ## Summary
 
@@ -64,8 +64,7 @@ There are two prerequisites to use this method:
 1. Server config has enabled `handshake_first` field in the `tls` block.
 2. The client has set the `tls_first` option set to true.
 
-**handshake_first**
-has those possible values:
+**handshake_first** has those possible values:
 - **`false`**: handshake first is disabled. Default value
 - `true`: handshake first is enabled and enforced. Clients that do not use this flow will fail to connect.
 - `duration` (i.e. 2s): a hybrid mode that will wait a given time, allowing the client to follow the `tls_first` flow. After the duration has expired, `INFO` is sent, enabling standard client TLS flow.
@@ -81,7 +80,6 @@ The flow itself is flipped. TLS is established before the Server sends INFO:
 
 
 ### Servers discovery
-
 **Note**: Server will send back the info only
 
 When Server sends back [INFO][INFO]. It may contain additional URLs to which the client can make connection attempts.
@@ -104,7 +102,7 @@ There are two methods that clients should use to detect disconnections:
 
 When the client detects disconnection, it starts to reconnect attempts with the following rules:
 1. Immediate reconnect attempt
-    The client attempts to reconnect immediately after finding out it has been disconnected.
+   - The client attempts to reconnect immediately after finding out it has been disconnected.
 2. Exponential backoff with jitter
    - When the first reconnect fails, the backoff process should kick in. Default Jitter should also be included to avoid thundering herd problems.
 3. If the Server returned additional URLs, the client should try reconnecting in random order to each Server on the list, unless randomization option is disabled in the client [options](#Retain-servers-order).
