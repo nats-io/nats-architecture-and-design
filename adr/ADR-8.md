@@ -1,11 +1,11 @@
 # JetStream based Key-Value Stores
 
-| Metadata | Value                 |
-|----------|-----------------------|
-| Date     | 2021-06-30            |
-| Author   | @ripienaar            |
-| Status   | Implemented           |
-| Tags     | jetstream, client, kv |
+| Metadata | Value                       |
+|----------|-----------------------------|
+| Date     | 2021-06-30                  |
+| Author   | @ripienaar                  |
+| Status   | Implemented                 |
+| Tags     | jetstream, client, kv, spec |
 
 ## Release History
 
