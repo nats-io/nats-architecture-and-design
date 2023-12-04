@@ -110,6 +110,14 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 |[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
 
+## Spec
+
+A new way of describing NATS architecture and features in more holistic way.
+
+|Name|Description|
+|----|-----------|
+|[Connection](spec/connection.md)|Establishing connection, reconnects, tls etc.|
+
 ## When to write an ADR
 
 Not every little decision needs an ADR, and we are not overly prescriptive about the format apart from the initial header format.
