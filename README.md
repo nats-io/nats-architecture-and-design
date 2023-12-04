@@ -34,6 +34,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
+|[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 
 ## Jetstream
 
@@ -109,6 +110,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 |[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
+|[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 
 ## Spec
 
@@ -117,7 +119,7 @@ This repo is used to capture architectural and design decisions as a reference o
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv, spec|JetStream based Key-Value Stores|
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
-|[ADR-40](adr/ADR-40.md)|spec|NATS Connection|
+|[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 
 ## When to write an ADR
 

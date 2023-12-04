@@ -2,10 +2,10 @@
 
 |Metadata|Value|
 |--------|-----|
-| Date    | 2023-10-12    |
-| Author  | @Jarema       |
-| Status  | Implemented   |
-| Tags    | spec          |
+| Date    | 2023-10-12                    |
+| Author  | @Jarema                       |
+| Status  | Implemented                   |
+| Tags    | client, server, spec          |
 
 |Revision|Date|Author|Info|
  |--------|------------|---------|---------------|
