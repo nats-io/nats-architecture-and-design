@@ -1,11 +1,11 @@
 # Service API
 
-| Metadata | Value       |
-| -------- | ----------- |
-| Date     | 2022-11-23  |
-| Author   | @aricart    |
-| Status   | Implemented |
-| Tags     | client      |
+| Metadata | Value             |
+| -------- | ----------------- |
+| Date     | 2022-11-23        |
+| Author   | @aricart          |
+| Status   | Implemented       |
+| Tags     | client, spec      |
 
 ## Release History
 

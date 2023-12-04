@@ -5,7 +5,7 @@
 | Date     | 2022-11-23                                                     |
 | Author   | @aricart, @derekcollison, @tbeets, @scottf, @Jarema, @piotrpio |
 | Status   | Approved                                                       |
-| Tags     | jetstream, client                                              |
+| Tags     | jetstream, client, spec                                        |
 
 ## Context and Problem Statement
 
