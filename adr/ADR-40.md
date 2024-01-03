@@ -92,6 +92,13 @@ By default, those URLs are used.
 
 ### Reconnection Strategies (In progress)
 
+#### On-Demand reconnect
+
+Client should have a way that allows users to force reconnection process.
+This can be useful for refreshing auth or rebalancing clients.
+When triggered, client will drop connection to the current server and perform standard reconnection process.
+That means that all subscriptions and consumers should be resubscribed and their work resumed after successful reconnect where all reconnect options are respected.
+
 #### Detecting disconnection
 
 There are two methods that clients should use to detect disconnections:
