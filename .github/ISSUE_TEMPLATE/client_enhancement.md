@@ -2,7 +2,7 @@
 name: Client Enhancement
 about: Request a new feature to be added to NATS clients
 labels: enhancement, client
-assignees: ripienaar, wallyqs, scottf, aricart, derekcollison, Jarema, piotrpio, jnmoyne, bruth, caspervonb, levb, mtmk
+assignees: ripienaar, wallyqs, scottf, aricart, derekcollison, Jarema, piotrpio, jnmoyne, bruth, levb, mtmk
 ---
 
 ## Overview
@@ -24,7 +24,7 @@ The behavior is documented in ADR-X.
  - [ ] C @levb
  - [ ] Python @wallyqs
  - [ ] Ruby @wallyqs
- - [ ] Rust @Jarema @caspervonb
+ - [ ] Rust @Jarema
  - [ ] .Net V2 @mtmk
 
 ## Other Tasks
