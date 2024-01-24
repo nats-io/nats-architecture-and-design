@@ -70,20 +70,25 @@ When Allow Direct is true, each of the stream's servers configures a responder a
 Clients may make requests with the same payload as the Get message API populating the following server struct:
 
  ```text
-Seq     uint64 `json:"seq,omitempty"`
-LastFor string `json:"last_by_subj,omitempty"`
-NextFor string `json:"next_by_subj,omitempty"`
+Seq      uint64 `json:"seq,omitempty"`
+LastFor  string `json:"last_by_subj,omitempty"`
+NextFor  string `json:"next_by_subj,omitempty"`
+Batch    int `json:"batch,omitempty"`
+MaxBytes int `json:"max_bytes,omitempty"`
 ```
 
 Example request payloads:
-* `{last_by_subj: string}` - get the last message having the subject
+
 * `{seq: number}` - get a message by sequence
+* `{last_by_subj: string}` - get the last message having the subject
 * `{next_by_subj: string}` - get the first message (lowest seq) having the specified subject
 * `{seq: number, next_by_subj: string}` - get the first message with a seq >= to the input seq that has the specified subject
+* `{seq: number, batch: number, next_by_subj: string}` - gets up to batch number of messages >= than seq that has specified subject
+* `{seq: number, batch: number, next_by_subj: string, max_bytes: number}` - as above but limited to a maximum size of messages received in bytes
 
 #### Subject-Appended Direct Get API
 
-The purpose of this form is so that environmnents may choose to apply subject-based interest restrictions (user permissions
+The purpose of this form is so that environments may choose to apply subject-based interest restrictions (user permissions
 within an account and/or cross-account export/import grants) such that only specific
 subjects in stream may be read (vs any subject in the stream).
 
@@ -93,19 +98,33 @@ where `last_by_subj` is derived by the token (or series of tokens) following the
 
 It is an error (408) if a client calls Subject-Appended Direct Get and includes a request payload.
 
+#### Batched requests
+
+Using the `batch` and `max_bytes` keys one can request multiple messages in a single API call.
+
+The server will send multiple messages without any flow control to the reply subject, it will send up to `max_bytes` messages.  When `max_bytes` is unset the server will use the `max_pending` configuration setting or the server default (currently 64MB)
+
+The last message in the batch will have the `Nats-Pending-Messages` header set that clients can use to determine if further batch calls are needed. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
+
+When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. There is no way to detect this scenario and the batch request will time out. Language documentation must clearly call out what server version supports this.
+
 #### Response Format 
 
-Direct Get may return an error code:
+Responses may include these status codes:
+
+- `204` indicates the message is the end of a batch of messages, the description header would have value `EOB`
 - `404` if the request is valid but no matching message found in stream 
 - `408` if the request is empty or invalid
 
 > Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
 
 Otherwise, Direct Get reply contains the message along with the following message headers:
+
 - `Nats-Stream`: stream name
 - `Nats-Sequence`: message sequence number 
 - `Nats-Time-Stamp`: message publish timestamp
 - `Nats-Subject`: message subject
+- `Nats-Pending-Messages`: the last message in a batch would have this set indicating how many messages are left matching the request
 
 > A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
 
