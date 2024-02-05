@@ -189,22 +189,15 @@ direct fields of ObjectInfo
 ```go
 type ObjectInfo struct {
     ObjectMeta
-
     Bucket  string    `json:"bucket"`
-
     NUID    string    `json:"nuid"`
-
     // the total object size in bytes
     Size    uint64    `json:"size"`
-
     ModTime time.Time `json:"mtime"`
-
     // the total number of chunks
     Chunks  uint32    `json:"chunks"`
-
     // as in http, <digest-algorithm>=<digest-value>
     Digest  string    `json:"digest,omitempty"`
-
     Deleted bool      `json:"deleted,omitempty"`
 }
 ```
