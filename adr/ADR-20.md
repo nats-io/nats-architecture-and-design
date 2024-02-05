@@ -5,7 +5,7 @@
 |Date    |2021-11-03|
 |Author  |@scottf|
 |Status  |Partially Implemented|
-|Tags    |jetstream, client, objectstore|
+|Tags    |jetstream, client, objectstore, spec|
 
 
 |Revision|Date|Author|Info|
