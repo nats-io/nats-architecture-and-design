@@ -100,7 +100,7 @@ type ObjectStoreConfig struct {
 	Storage     StorageType		// stream storate_type
 	Replicas    int			// stream replicas
 	Placement   Placement		// stream placement
-	Compression  bool		// stream compression
+	Compression  bool		// stream compression, s2 or none
 }
 ```
 
@@ -136,7 +136,7 @@ type ObjectStoreConfig struct {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
   },
-  compression: true
+  compression: "s2"
 }
 ```
 
