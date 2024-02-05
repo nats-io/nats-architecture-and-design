@@ -32,7 +32,7 @@ Current feature list:
 - Ability to specify chunk size
 - Ability to delete an object
 - Ability to understand the state of the object store
-- Store compression (via Stream compression)
+- Data Compression of Object Stores for NATS Server 2.10
 
 Possible future features
 
@@ -100,7 +100,7 @@ type ObjectStoreConfig struct {
 	Storage     StorageType		// stream storate_type
 	Replicas    int			// stream replicas
 	Placement   Placement		// stream placement
-    Compression bool        // stream compression
+	Compression  bool		// stream compression
 }
 ```
 
@@ -282,6 +282,9 @@ type ObjectStoreStatus interface {
     IsCompressed() bool
 }
 ```
+
+The choice of `IsCompressed()` as a method name is idiomatic for Go, language maintainers can make a similar idiomatic
+choice.
 
 ## Functional Interfaces
 
