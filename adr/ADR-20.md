@@ -100,9 +100,12 @@ type ObjectStoreConfig struct {
 	Storage     StorageType		// stream storate_type
 	Replicas    int			// stream replicas
 	Placement   Placement		// stream placement
-	Compression  bool		// stream compression, s2 or none
+	Compression bool		// stream compression
 }
 ```
+
+* If Compression is requested in the configuration, set its value in the Stream config to `s2`.
+Object Store does not expose internals of Stream config, therefore the bool value is used.
 
 ### Stream Configuration and Subject Templates
 
