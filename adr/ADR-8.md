@@ -123,7 +123,7 @@ type Status interface {
 	// TTL is how long the bucket keeps values for
 	TTL() time.Duration
 
-	// Keys return a list of all keys in the bucket - not possible now except in caches
+	// Keys return a list of all keys in the bucket
 	Keys() ([]string, error)
 
 	// IsCompressed indicates if the data is compressed on disk
@@ -664,4 +664,3 @@ ditto for service registeries and so forth.
 On the name `Entry` for the returned result. `Value` seemed a bit generic and I didn't want to confuse matters mainly in the go client
 that has the unfortunate design of just shoving everything and the kitchen sink into a single package. `KVValue` is a stutter and so
 settled on `Entry`.
-
