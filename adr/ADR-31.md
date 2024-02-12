@@ -104,7 +104,7 @@ Using the `batch` and `max_bytes` keys one can request multiple messages in a si
 
 The server will send multiple messages without any flow control to the reply subject, it will send up to `max_bytes` messages.  When `max_bytes` is unset the server will use the `max_pending` configuration setting or the server default (currently 64MB)
 
-After the batch is sent a zero length payload message will be sent with the `Nats-Pending-Messages` header set that clients can use to determine if further batch calls are needed. Additionally the `Nats-Last-Sequence` will hold the sequence of the last message sent. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
+After the batch is sent a zero length payload message will be sent with the `Nats-Num-Pending` and `Nats-Last-Sequence` headers set that clients can use to determine if further batch calls are needed. Additionally the `Nats-Last-Sequence` will hold the sequence of the last message sent. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
 
 When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. Old servers can be detected by the absence of the `Nats-Num-Pending` header in the first reply.
 
@@ -126,7 +126,6 @@ Direct Get replies contain the message along with the following message headers:
 - `Nats-Subject`: message subject
 - `Nats-Num-Pending`: when batched, the number of messages left in the stream matching the batch parameters
 - `Nats-Last-Sequence`: when batched, the stream sequence of the previous message
-- `Nats-Pending-Messages`: the final nil-body message for a batch would have this set indicating how many messages are left matching the request
 
 > A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
 
