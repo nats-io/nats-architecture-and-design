@@ -104,27 +104,29 @@ Using the `batch` and `max_bytes` keys one can request multiple messages in a si
 
 The server will send multiple messages without any flow control to the reply subject, it will send up to `max_bytes` messages.  When `max_bytes` is unset the server will use the `max_pending` configuration setting or the server default (currently 64MB)
 
-The last message in the batch will have the `Nats-Pending-Messages` header set that clients can use to determine if further batch calls are needed. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
+After the batch is sent a zero length payload message will be sent with the `Nats-Pending-Messages` header set that clients can use to determine if further batch calls are needed. Additionally the `Nats-Last-Sequence` will hold the sequence of the last message sent. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
 
-When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. There is no way to detect this scenario and the batch request will time out. Language documentation must clearly call out what server version supports this.
+When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. Old servers can be detected by the absence of the `Nats-Num-Pending` header in the first reply.
 
 #### Response Format 
 
 Responses may include these status codes:
 
-- `204` indicates the message is the end of a batch of messages, the description header would have value `EOB`
+- `204` indicates the the end of a batch of messages, the description header would have value `EOB`
 - `404` if the request is valid but no matching message found in stream 
 - `408` if the request is empty or invalid
 
 > Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
 
-Otherwise, Direct Get reply contains the message along with the following message headers:
+Direct Get replies contain the message along with the following message headers:
 
 - `Nats-Stream`: stream name
 - `Nats-Sequence`: message sequence number 
 - `Nats-Time-Stamp`: message publish timestamp
 - `Nats-Subject`: message subject
-- `Nats-Pending-Messages`: the last message in a batch would have this set indicating how many messages are left matching the request
+- `Nats-Num-Pending`: when batched, the number of messages left in the stream matching the batch parameters
+- `Nats-Last-Sequence`: when batched, the stream sequence of the previous message
+- `Nats-Pending-Messages`: the final nil-body message for a batch would have this set indicating how many messages are left matching the request
 
 > A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
 
