@@ -193,14 +193,14 @@ You would associate message either by using a unique `Nats-Trace-Dest` subject o
 
 The `events` list contains all the events that happened in a given server.  We see here that there are different types of event according to the table below:
 
-| Type | Description     |
-|------|-----------------|
-| `in` | Ingress         |
-| `sm` | Subject Mapping |
-| `se` | Stream Export   |
-| `si` | Service Import  |
-| `js` | JetStream       |
-| `eg` | Egress          |
+| Type | Server Data Type         | Description     |
+|------|--------------------------|-----------------|
+| `in` | `MsgTraceIngress`        | Ingress         |
+| `sm` | `MsgTraceSubjectMapping` | Subject Mapping |
+| `se` | `MsgTraceStreamExport`   | Stream Export   |
+| `si` | `MsgTraceServiceImport`  | Service Import  |
+| `js` | `MsgTraceJetStream`      | JetStream       |
+| `eg` | `MsgTraceEgress`         | Egress          |
 
 We also see a `kind` field, this holds the NATS Servers client Kind, at present these are the values:
 
