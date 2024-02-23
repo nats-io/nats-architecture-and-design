@@ -3,7 +3,7 @@
 
 | Metadata | Value                 |
 |----------|-----------------------|
-| Date     | 2022-02-22            |
+| Date     | 2024-02-22            |
 | Author   | @ripienaar, @kozlovic |
 | Status   | Implemented           |
 | Tags     | observability, server |
@@ -15,7 +15,7 @@
 
 ## Context and Problem Statement
 
-As NATS networks become more complex with Super Clusters, Leafnodes, multiple Accounts and JetStream knowing the path that messages take through the system hard to predict.
+As NATS networks become more complex with Super Clusters, Leafnodes, multiple Accounts and JetStream knowing the path that messages take through the system is hard to predict.
 
 Further, when things go wrong, it's hard to know where messages can be lost, denied or delayed.
 
@@ -29,7 +29,7 @@ NATS supports tracking latency of Request-Reply service interactions, this is do
 
 When tracing is activated every subsystem that touches a message will produce Trace Events.  These Events are aggregated per server and published to a destination subject.
 
-A single message will therefor result in potentially a number of messages originating from each server a message traverse - each holding potentially multiple Trace Events.
+A single message published activating tracing will therefor result in potentially a number of Trace messages - one from each server a message traverse, each holding potentially multiple Trace Events.
 
 At present the following _Trace Types_ are supported
 
@@ -53,7 +53,7 @@ This mode of Activation allows headers to be added to any message that declares 
 |`Nats-Trace-Only`|Prevents delivery to the final client, reports that it would have been delivered (`1`, `true`, `on`)|
 |`Accept-Encoding`|Enables compression of trace payloads (`gzip`, `snappy`)|
 
-The `Nats-Trace-Only` header can be used to prevent sending badly formed messages to subscribers, the servers will trace the message to its final destination and report the client it would be delivered to without actually delivering it.
+The `Nats-Trace-Only` header can be used to prevent sending badly formed messages to subscribers, the servers will trace the message to its final destination and report the client it would be delivered to without actually delivering it. Additionally when this is set messages will also not traverse any Route, Gateway or Leafnode that does not support the Tracing feature.
 
 ### Trace Context activation
 
@@ -65,14 +65,35 @@ In this case no `Nats-Trace-Dest` header can be set to indicate where the messag
 accounts {
   A {
     users: [{user: a, password: pwd}]
-    trace_dest: "a.trace.subj"
+    msg_trace: {
+        dest: "a.trace.subj"
+        sampling: "100%"
+    }
   }
 }
 ```
 
-Here we set the `trace_dest` configuration for the `A` account, this enables support for Trace Context and will deliver all messages with the `traceparent` header and the `sampled` flag set to true.
+Here we set the `msg_trace` configuration for the `A` account, this enables support for Trace Context and will deliver all messages with the `traceparent` header and the `sampled` flag set to true.
+
+Note the `sampling`, here set to 100% which is the default, will further trigger only a % of traces that have the `sampled` value in the `traceparent` header.  This allow you to specifically sample only a subset of messages traversing NATS while your micro services will sample all.
 
 When this feature is enabled any message holding the `Nats-Trace-Dest` header as in the previous section will behave as if the `traceparent` header was not set at all.  In essense the Ad-Hoc mode has precedence.
+
+### Cross Account Tracing
+
+By default a trace will end at an account boundary when crossing an Import or Export. This is a security measure to not allow an importing account to observe the internals of the exporting account.
+
+The exporting account can opt into this sharing using the configuration items below:
+
+```
+accounts {
+  B {
+   exports = [ { allow_trace: true, stream: "nats.add" } ]
+  }
+}
+```
+
+Note this export has `allow_trace` set, when an importing account `A` initiate a trace the path, client names, mappings and more that is configured in the account `B` will become visible in traces delivered to account `A`.
 
 ## nats CLI
 
@@ -185,7 +206,13 @@ Lets have a quick look at some key fields:
 
 These events form a Directed Acyclic Graph that you can sort using the Hop information. The Server that sends the message to another Route, Gateway or Leafnode will indicate it will publish to a number of `hops` and each server that receives the message will have the `Nats-Trace-Hop` header set in its `request`.  
 
-Given `Server` -> `Gateway` -> `Router` -> `Leafnode` -> `Client` the first remote side of the Gateway would have `1.1` and the Leafnode might have `1.1.1`. However if there were multiple subscribers and multiple hops you might end up with `1.2.3`. On the sending side the Egress events have a `hop` key that would be `1` in the first case etc.
+The origin server - the server that receives the initial message with the `Nats-Trace-Dest` header - will have a hops count indicating to how many other servers (routes, leafs, gateways) it has forwarded the message to. This is not necessarily the total number of servers that the message will traverse.
+
+Each time a server forwards a message to a remote server, it appends a number to its own `Nats-Trace-Hop` header value. Since the origin server does not have one, if it forwards a message to say a ROUTE, that remote server would receive the message with a new header `Nats-Trace-Hop` with the value of `1`, then the origin server forwards to a GATEWAY, and that server would receive the message with `Nats-Trace-Hop` value set to `2`.
+
+Each of these servers in turn, if forwarding a message to another server, would add an incremental number to their existing `Nats-Trace-Hop` value, which would result in `1.1`, and `2.1`, etc..
+
+Take a simple example of the origin server that has a LEAF server, which in turn as another LEAF server (daisy chained). If a message with tracing is forwarded, the trace message emitted from the origin server would have hops to `1` (since the origin server forwarded directly only to the first LEAF remote server). The trace emitted from the first LEAF would have a `Nats-Trace-Hop` header with value `1`. It would also have hops set to `1` (assuming there was interest in the last LEAF server). Finally, the last LEAF server would have a `Nats-Trace-Hop` of `1.1` and would have no hops field (since value would be 0).
 
 You would associate message either by using a unique `Nats-Trace-Dest` subject or by parsing the `traceparent` to get the trace and span IDs.
 
@@ -231,6 +258,8 @@ Most of the trace types are self explanatory but I'll call out a few specific he
 #### MsgTraceEgress and MsgTraceIngress
 
 These messages indicates the message entering and leaving the server via a `kind` connection. It includes the `acc` it's being sent for, subscription (`sub`) and Queue Group (`queue`) on the Egress.
+
+**Note** that for non CLIENT egresses, the subscription and queue group will be omitted. This is because NATS Servers optimize and send a single message across servers, based on a known interest, and let the remote servers match local subscribers. So it would be misleading to report the first match that caused a server to forward a message across the route as the egress' subscription.
 
 Here in cases of ACLs denying a publish the `error` will be filled in:
 
