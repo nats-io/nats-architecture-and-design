@@ -79,6 +79,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
+|[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
 
 ## Security
 
@@ -111,6 +112,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 |[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
+|[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
 
 ## Spec
 

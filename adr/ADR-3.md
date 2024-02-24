@@ -1,12 +1,12 @@
 # NATS Service Latency Distributed Tracing Interoperability
 
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2020-05-21|
-|Author  |@ripienaar|
-|Status  |Approved|
-|Tags    |observability, server|
+| Metadata | Value                 |
+|----------|-----------------------|
+| Date     | 2020-05-21            |
+| Author   | @ripienaar            |
+| Status   | Approved              |
+| Tags     | observability, server |
 
 ## Context
 
