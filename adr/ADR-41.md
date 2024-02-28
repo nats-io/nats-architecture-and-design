@@ -77,23 +77,29 @@ Here we set the `msg_trace` configuration for the `A` account, this enables supp
 
 Note the `sampling`, here set to 100% which is the default, will further trigger only a % of traces that have the `sampled` value in the `traceparent` header.  This allow you to specifically sample only a subset of messages traversing NATS while your micro services will sample all.
 
-When this feature is enabled any message holding the `Nats-Trace-Dest` header as in the previous section will behave as if the `traceparent` header was not set at all.  In essense the Ad-Hoc mode has precedence.
+When this feature is enabled any message holding the `Nats-Trace-Dest` header as in the previous section will behave as if the `traceparent` header was not set at all.  In essence the Ad-Hoc mode has precedence.
 
 ### Cross Account Tracing
 
-By default a trace will end at an account boundary when crossing an Import or Export. This is a security measure to not allow an importing account to observe the internals of the exporting account.
-
-The exporting account can opt into this sharing using the configuration items below:
+By default a trace will end at an account boundary when crossing an Import or Export. This is a security measure to restrict visibility into foreign accounts and require opt-in to allow.
 
 ```
 accounts {
   B {
-   exports = [ { allow_trace: true, stream: "nats.add" } ]
+   exports = [ 
+    // on a service the direction of flow is into the exporting
+    // account, so the exporter need to allow tracing
+    { service: "nats.add", allow_trace: true } 
+   ]
+   
+   imports = [
+    // on a stream import the direction of flow is from exporter into
+    // the importer, so the importer need to allow tracing
+    {stream: {account: A, subject: ticker}, allow_trace: true}
+   ]
   }
 }
 ```
-
-Note this export has `allow_trace` set, when an importing account `A` initiate a trace the path, client names, mappings and more that is configured in the account `B` will become visible in traces delivered to account `A`.
 
 ## nats CLI
 
