@@ -23,7 +23,7 @@ This describes a feature of the NATS Server 2.11 that allows messages to be trac
 
 ## Prior Work
 
-NATS supports tracking latency of Request-Reply service interactions, this is documented in ADR-3.
+NATS supports tracking latency of Request-Reply service interactions, this is documented in [ADR-3](adr/ADR-3.md).
 
 ## Design
 
@@ -48,10 +48,11 @@ Not all messages are traced and there is no flag to enable it on all messages.  
 
 This mode of Activation allows headers to be added to any message that declares where to deliver the traces and inhibit delivery to the final application.
 
-|Header|Description|
-|`Nats-Trace-Dest`|A subject that will receive the Trace messages|
-|`Nats-Trace-Only`|Prevents delivery to the final client, reports that it would have been delivered (`1`, `true`, `on`)|
-|`Accept-Encoding`|Enables compression of trace payloads (`gzip`, `snappy`)|
+| Header            | Description                                                                                          |
+|-------------------|------------------------------------------------------------------------------------------------------|
+| `Nats-Trace-Dest` | A subject that will receive the Trace messages                                                       |
+| `Nats-Trace-Only` | Prevents delivery to the final client, reports that it would have been delivered (`1`, `true`, `on`) |
+| `Accept-Encoding` | Enables compression of trace payloads (`gzip`, `snappy`)                                             |
 
 The `Nats-Trace-Only` header can be used to prevent sending badly formed messages to subscribers, the servers will trace the message to its final destination and report the client it would be delivered to without actually delivering it. Additionally when this is set messages will also not traverse any Route, Gateway or Leafnode that does not support the Tracing feature.
 
