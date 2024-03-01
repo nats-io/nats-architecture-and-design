@@ -94,6 +94,9 @@ nc.subscribe("q", {
 });
 ```
 
+A full implementation of the above concept
+[can be found here](https://gist.github.com/aricart/18ae2f305f263ec915330684a3029698)
+
 The implementation of the middleware relies on being able to construct `Msg`
 objects that conform to the interface of a NATS message. Some clients, such as
 JavaScript don't expose a way of creating a `Msg` object, or to publish a
