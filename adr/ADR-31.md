@@ -1,11 +1,16 @@
 # JetStream Direct Get 
 
-| Metadata | Value                                         |
-|----------|-----------------------------------------------|
-| Date     | 2022-08-03                                    |
-| Author   | @mh, @ivan, @derekcollison, @alberto, @tbeets |
-| Status   | Implemented                                   |
-| Tags     | jetstream, client, server                     |
+| Metadata | Value                                                     |
+|----------|-----------------------------------------------------------|
+| Date     | 2022-08-03                                                |
+| Author   | @mh, @ivan, @derekcollison, @alberto, @tbeets, @ripienaar |
+| Status   | Implemented                                               |
+| Tags     | jetstream, client, server                                 |
+
+| Revision | Date       | Author     | Info                                           |
+|----------|------------|------------|------------------------------------------------|
+| 1        | 2022-08-08 | @tbeets    | Initial design                                 |
+| 2        | 2024-03-06 | @ripienaar | Adds Multi and Batch behaviors for Server 2.11 |
 
 ## Context and motivation 
 
@@ -70,11 +75,12 @@ When Allow Direct is true, each of the stream's servers configures a responder a
 Clients may make requests with the same payload as the Get message API populating the following server struct:
 
  ```text
-Seq      uint64 `json:"seq,omitempty"`
-LastFor  string `json:"last_by_subj,omitempty"`
-NextFor  string `json:"next_by_subj,omitempty"`
-Batch    int `json:"batch,omitempty"`
-MaxBytes int `json:"max_bytes,omitempty"`
+Seq       uint64      `json:"seq,omitempty"`
+LastFor   string     `json:"last_by_subj,omitempty"`
+NextFor   string     `json:"next_by_subj,omitempty"`
+Batch     int        `json:"batch,omitempty"`
+MaxBytes  int        `json:"max_bytes,omitempty"`
+StartTime *time.Time `json:"start_time,omitempty"`
 ```
 
 Example request payloads:
@@ -82,6 +88,7 @@ Example request payloads:
 * `{seq: number}` - get a message by sequence
 * `{last_by_subj: string}` - get the last message having the subject
 * `{next_by_subj: string}` - get the first message (lowest seq) having the specified subject
+* `{start_time: string}` - get the first message at or newer than the time specified in RFC 3339 format (since server 2.11)
 * `{seq: number, next_by_subj: string}` - get the first message with a seq >= to the input seq that has the specified subject
 * `{seq: number, batch: number, next_by_subj: string}` - gets up to batch number of messages >= than seq that has specified subject
 * `{seq: number, batch: number, next_by_subj: string, max_bytes: number}` - as above but limited to a maximum size of messages received in bytes
