@@ -150,8 +150,8 @@ Responses may include these status codes:
 - `404` if the request is valid but no matching message found in stream 
 - `408` if the request is empty or invalid
 - `413` when a multi subject get matches too many subjects
-- 
-> Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
+
+Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
 
 Direct Get replies contain the message along with the following message headers:
 
@@ -162,8 +162,8 @@ Direct Get replies contain the message along with the following message headers:
 - `Nats-Num-Pending`: when batched, the number of messages left in the stream matching the batch parameters
 - `Nats-Last-Sequence`: when batched, the stream sequence of the previous message
 - `Nats-UpTo-Sequence`: when doing multi subject gets the sequence should be used for following requests to ensure consistent reads
-- 
-> A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
+
+A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
 
 
 ## Example calls
