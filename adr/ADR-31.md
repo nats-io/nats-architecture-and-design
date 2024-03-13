@@ -1,11 +1,16 @@
 # JetStream Direct Get 
 
-| Metadata | Value                                         |
-|----------|-----------------------------------------------|
-| Date     | 2022-08-03                                    |
-| Author   | @mh, @ivan, @derekcollison, @alberto, @tbeets |
-| Status   | Implemented                                   |
-| Tags     | jetstream, client, server                     |
+| Metadata | Value                                                     |
+|----------|-----------------------------------------------------------|
+| Date     | 2022-08-03                                                |
+| Author   | @mh, @ivan, @derekcollison, @alberto, @tbeets, @ripienaar |
+| Status   | Implemented                                               |
+| Tags     | jetstream, client, server                                 |
+
+| Revision | Date       | Author     | Info                                           |
+|----------|------------|------------|------------------------------------------------|
+| 1        | 2022-08-08 | @tbeets    | Initial design                                 |
+| 2        | 2024-03-06 | @ripienaar | Adds Multi and Batch behaviors for Server 2.11 |
 
 ## Context and motivation 
 
@@ -70,11 +75,12 @@ When Allow Direct is true, each of the stream's servers configures a responder a
 Clients may make requests with the same payload as the Get message API populating the following server struct:
 
  ```text
-Seq      uint64 `json:"seq,omitempty"`
-LastFor  string `json:"last_by_subj,omitempty"`
-NextFor  string `json:"next_by_subj,omitempty"`
-Batch    int `json:"batch,omitempty"`
-MaxBytes int `json:"max_bytes,omitempty"`
+Seq       uint64      `json:"seq,omitempty"`
+LastFor   string     `json:"last_by_subj,omitempty"`
+NextFor   string     `json:"next_by_subj,omitempty"`
+Batch     int        `json:"batch,omitempty"`
+MaxBytes  int        `json:"max_bytes,omitempty"`
+StartTime *time.Time `json:"start_time,omitempty"`
 ```
 
 Example request payloads:
@@ -82,6 +88,7 @@ Example request payloads:
 * `{seq: number}` - get a message by sequence
 * `{last_by_subj: string}` - get the last message having the subject
 * `{next_by_subj: string}` - get the first message (lowest seq) having the specified subject
+* `{start_time: string}` - get the first message at or newer than the time specified in RFC 3339 format (since server 2.11)
 * `{seq: number, next_by_subj: string}` - get the first message with a seq >= to the input seq that has the specified subject
 * `{seq: number, batch: number, next_by_subj: string}` - gets up to batch number of messages >= than seq that has specified subject
 * `{seq: number, batch: number, next_by_subj: string, max_bytes: number}` - as above but limited to a maximum size of messages received in bytes
@@ -104,9 +111,36 @@ Using the `batch` and `max_bytes` keys one can request multiple messages in a si
 
 The server will send multiple messages without any flow control to the reply subject, it will send up to `max_bytes` messages.  When `max_bytes` is unset the server will use the `max_pending` configuration setting or the server default (currently 64MB)
 
-After the batch is sent a zero length payload message will be sent with the `Nats-Num-Pending` and `Nats-Last-Sequence` headers set that clients can use to determine if further batch calls are needed. Additionally the `Nats-Last-Sequence` will hold the sequence of the last message sent. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
+After the batch is sent a zero length payload message will be sent with the `Nats-Num-Pending` and `Nats-Last-Sequence` headers set that clients can use to determine if further batch calls are needed. It would also have the `Status` header set to `204` with the `Description` header being `EOB`.
 
 When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. Old servers can be detected by the absence of the `Nats-Num-Pending` header in the first reply.
+
+#### Multi-subject requests
+
+Multiple subjects can be requested in the same manner that a Batch can be requested. In this mode we support consistent point in time reads by allowing for a group of subjects to be read as they were at a point in time - assuming the stream holds enough historical data.
+
+To help inform proper use of this feature vs just using a consumer, any multi-subject request may only allow matching up to 1024 subjects. Any more will result in a `413` status reply.
+
+Using requests like `{"multi_last":["$KV.USERS.1234.>"]}` all the latest values for all subjects below that wildcard will be returned.
+
+Specific data for a user could be requested using `{"multi_last":["$KV.USERS.1234.name", "$KV.USERS.1234.address"]}`. Rather than getting all the user data, only values for for two specific keys will be returned.
+
+To facilitate consistent multi key reads, the `up_to_seq` and `up_to_time` keys can be added which will restrict the results up to a certain point in time.
+
+Imagine we have a new bucket and we did:
+
+```
+$ nats kv put USERS 1234.name Bob                # message seq 1
+$ nats kv put USERS 1234.surname Smith           # message seq 2
+$ nats kv put USERS 1234.address 1 Main Street   # message seq 3
+$ nats kv put USERS 1234.address 10 Oak Lane     # message seq 4 updates message 3
+```
+
+If we did a normal multi read using `{"multi_last":["$KV.USERS.1234.>"]}` we would get the address `10 Oak Lane` returned.  However, to get a record as it was at a certain point in the past we could supply the sequence or time, adding `"up_to_seq":3` to the request will return address `1 Main Street` along with the other data. Likewise, assuming there was a noticeable gap of time changing addresses, the `up_to_time` could be used as a form of temporal querying.
+
+A `batch` parameter can be added to restrict the result set to a certain size, otherwise the server will decide when to end the batch using the same `EOB` marker message seen in Batched Mode with the addition of the `Nats-UpTo-Sequence` header.
+
+When the server cannot send any more data it will respond, like the above Batch, with a zero-length payload message including the `Nats-Num-Pending` and `Nats-Last-Sequence` headers enabling clients to determine if further batch calls are needed. In addition, it would also have the `Status` header set to `204` with the `Description` header being `EOB`. The `Nats-UpTo-Sequence` header will be set indicating the last message in the stream that matched criteria. This number would be used in subsequent requests as the `up_to_seq` value to ensure batches of multi-gets are done around a consistent point in time.
 
 #### Response Format 
 
@@ -115,7 +149,8 @@ Responses may include these status codes:
 - `204` indicates the the end of a batch of messages, the description header would have value `EOB`
 - `404` if the request is valid but no matching message found in stream 
 - `408` if the request is empty or invalid
-
+- `413` when a multi subject get matches too many subjects
+- 
 > Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
 
 Direct Get replies contain the message along with the following message headers:
@@ -126,8 +161,10 @@ Direct Get replies contain the message along with the following message headers:
 - `Nats-Subject`: message subject
 - `Nats-Num-Pending`: when batched, the number of messages left in the stream matching the batch parameters
 - `Nats-Last-Sequence`: when batched, the stream sequence of the previous message
-
+- `Nats-UpTo-Sequence`: when doing multi subject gets the sequence should be used for following requests to ensure consistent reads
+- 
 > A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
+
 
 ## Example calls
 
