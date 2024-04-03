@@ -46,8 +46,10 @@ Example set of methods on JetStreamContext:
   - `deleteStream(streamName)`
   - `listStreams()`
 - Consumer operations:
-  - `addConsumer(streamName, consumerConfig)`
   - `getConsumer(streamName, consumerName)`
+  - `createConsumer(streamName, consumerConfig)`
+  - `updateConsumer(streamName, consumerConfig)`
+  - `createOrUpdateConsumer(streamName, consumerConfig)`
   - `deleteConsumer(streamName, consumerName)`
 - `accountInfo()`
 
@@ -61,8 +63,10 @@ messages. Streams also allow for and managing consumers.
 Example set of methods on Stream:
 
 - operations on consumers:
-  - `addConsumer(consumerConfig)`
   - `getConsumer(consumerName)`
+  - `createConsumer(consumerConfig)`
+  - `updateConsumer(consumerConfig)`
+  - `createOrUpdateConsumer(consumerConfig)`
   - `deleteConsumer(consumerName)`
 - operations a stream:
   - `purge(purgeOpts)`
