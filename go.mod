@@ -1,6 +1,6 @@
 module github.com/nats-io/nats-architecture-and-design
 
-go 1.21
+go 1.22
 
 require gitlab.com/golang-commonmark/markdown v0.0.0-20211110145824-bf3e522c626a
 
