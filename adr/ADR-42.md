@@ -91,7 +91,7 @@ Pull requests will have the following additional fields:
  * `"min_pending": 1000` - only deliver messages when `num_pending` for the consumer is >= 1000
  * `"min_ack_pending: 1000` - only deliver messages when `ack_pending` for the consumer is >= 1000
 
-If `min_pending` and `min_ack_pending` are both given both have to be satisfied (boolean AND).
+If `min_pending` and `min_ack_pending` are both given either being satisfied will result in delivery (boolean OR).
 
 ### `pinned_client` policy
 
