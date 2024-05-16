@@ -98,16 +98,8 @@ If `min_pending` and `min_ack_pending` are both given either being satisfied wil
 Users want to have a single client perform all the work for a consumer, but they also want to have a stand-by client that
 can take over when the primary, aka `pinned` client, fails.
 
-Users would like the ability to influence which client will generally be considered the active, pinned, one - but we feel
-providing exact control would not be in the interest of distributed patterns, so instead we'll support a concept of priorities
-between 1 and 10. Multiple clients can share the same priority which will result in a random client be picked from the lowest
-priority as the next candidate for pinning. If no priority is supplied in a pull it will default to 5.
-
 **NOTE: We should not describe this in terms of exclusivity as there is no such guarantee, there will be times when one
 client think it is pinned when it is not because the server switched.** 
-
-If the current pinned client is priority 5 and a pull comes in for this group from a lower priority client the server will
-switch to this lower priority client.
 
 The `pinned_client` policy provides server-side orchestration for the selection of the pinned client.
 
@@ -131,18 +123,16 @@ This configuration states:
 A pull request will have the following additional fields:
 
  * `"group": "jobs"` - the group the pull belongs to, pulls not part of a valid group will result in an error
- * `"priority": 1` - the priority this pull is done at, valid values are 1 to 10. Absent means 5. Anything else is an error
  * `"id": "xyz"` - the pinned client will have this ID set to the one the server supplied (see below), otherwise this field is absent
 
-When no pinned client has been selected by the server the first message that will be delivered will include a `Nats-Pin: xyz`
-header. The client that gets this message should at that point ensure that all future pull requests have the same ID set.
-The pinned client is chosen by walking all the waiting pulls and picking the lowest priority one.
+When no pinned client has been selected by the server the first message that will be delivered, and all future ones,
+will include a `Nats-Pin-Id: xyz` header. The client that gets this message should at that point ensure that all future
+pull requests have the same ID set.
 
-If a lower priority pull is received than the current pinned clients most recent pull the server will switch to a new
-pinned client:
+When a new pinned client needs to be picked - after timeout, admin action, first delivery etc, this process is followed:
 
- 1. Stop delivering messages for this group, wait for all in-flight messages to be completed, continue to serve heartbeats etc 
- 2. Pick the new pinned client by priority and group
+ 1. Stop delivering messages for this group, wait for all in-flight messages to be completed, continue to serve heartbeats
+ 2. Pick the new pinned client by rtt
  3. Store the new pinned `nuid`
  4. Deliver the message to the new pinned client with the ID set
  5. Create an advisory that a new pinned client was picked
@@ -150,7 +140,10 @@ pinned client:
 
 If no pulls from the pinned client is received within `PriorityTimeout` the server will switch again using the same flow as above.
 
-Clients can expose call-back notifications when they become pinned (first message with `Nats-Pin` header is received) and
+Future iterations of this feature would introduce the concept of a priority field so clients can self-organise but we decided
+to deliver that in a future iteration.
+
+Clients can expose call-back notifications when they become pinned (first message with `Nats-Pin-Id` header is received) and
 when they lose the pin (they receive the 4xx error when doing a pull with a old ID).
 
 A new API, `$JS.API.CONSUMER.UNPIN.<STREAM>.<CONSUMER>.<GROUP>`, can be called which will clear the ID and trigger a client switch as above.
