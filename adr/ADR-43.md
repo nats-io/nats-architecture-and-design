@@ -7,9 +7,11 @@
 |Status  | Partially Implemented |
 |Tags    | client                |
 
-## Context
+## Overview
 
-This document describes a managed aysnc publish utility.
+This document describes a managed async publish utility.
+
+## Publisher
 
 #### Required Properties
 
@@ -21,18 +23,26 @@ This document describes a managed aysnc publish utility.
 | String idPrefix                             | used to make unique identifiers around each message. Defaults to a NUID                                                                                                                          |
 | int maxInFlight                             | no more than this number of messages can be waiting for publish ack. Defaults to 50.                                                                                                             |
 | int refillAllowedAt                         | if the queue size reaches maxInFlight, a hold is placed so no more messages can be published until the in flight queue is this amount of less, at which time the hold is removed. Defaults to 0. |
-| RetryConfig retryConfig                     | If the user wants to publish with retries, they must supply a config, otherwise the publish will be attempted only once.                                                                         |
-| long pollTime                               | The amount of time in ms to poll any given queue. Ensures polling doesn't block indefinitely. Defaults to 100ms                                                                                  |
-| long holdPauseTime                          | The amount of time in ms to pause between checks when hold is on. Defaults to 100ms                                                                                                              |
-| long waitTimeout                            | The timeout when waiting for a publish to be acknowledged. Defaults to 5000ms                                                                                                                    |
+| RetryConfig retryConfig                     | if the user wants to publish with retries, they must supply a config, otherwise the publish will be attempted only once.                                                                         |
+| long pollTime                               | the amount of time in ms to poll any given queue. Ensures polling doesn't block indefinitely. Defaults to 100ms                                                                                  |
+| long holdPauseTime                          | the amount of time in ms to pause between checks when hold is on. Defaults to 100ms                                                                                                              |
+| long waitTimeout                            | the timeout when waiting for a publish to be acknowledged. Defaults to 5000ms                                                                                                                    |
 | PublisherListener publisherListener         | a callback with the following methods, see description of Flight later                                                                                                                           |
-| void published(Flight flight)               | the flight is ready when the message is published                                                                                                                                                |
-| void acked(Flight flight);                  | the publish ack was received                                                                                                                                                                     |
-| void completedExceptionally(Flight flight); | the publish exceptioned, including the lower level request timeout                                                                                                                               |
-| void timeout(Flight flight)                 | the ack was not returned in time based on wait timeout                                                                                                                                           |
 
 
-### Flight structure
+## PublisherListener Interface
+
+The callback interface for the user to get information about the publish workflow
+
+| Method                                      | Description                                                        |
+|---------------------------------------------|--------------------------------------------------------------------|
+| void published(Flight flight)               | the flight is ready when the message is published                  |
+| void acked(Flight flight);                  | the publish ack was received                                       |
+| void completedExceptionally(Flight flight); | the publish exceptioned, including the lower level request timeout |
+| void timeout(Flight flight)                 | the ack was not returned in time based on wait timeout             |
+
+## Flight structure
+
 An object that holds state of the message as it makes its way through the workflow
 
 | Property                                            | Description                                                                     |
@@ -46,19 +56,19 @@ An object that holds state of the message as it makes its way through the workfl
 | PublishOptions getOptions()                         | the original message publish options (i.e. expectations)                        |
 
 
-### Behavior
+## Behavior
 
-| Name | Description                                                                                                                                                                                               |
-|------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Name          | Description                                                                                                                                                                                               |
+|---------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | publishRunner | loop that reads from the queue of messages added by the user                                                                                                                                              |
 | flightsRunner | loop that checks the status of publish acks                                                                                                                                                               |
-| start         | start the runners with indivudal threads. Designed to allow user to start the runners on threads they provide themselves.                                                                                 |
+| start         | start the runners with individual threads. Designed to allow user to start the runners on threads they provide themselves.                                                                                |
 | stop          | stop the runners before the next iteration                                                                                                                                                                |
-| drain         | prevent any messages being added to the queue. Workflow stops when all messages are published then acknkowledged/exceptioned/timedout                                                                     |
+| drain         | prevent any messages being added to the queue. Workflow stops when all messages are published then acknowledged/exceptioned/time-out                                                                      |
 | publishAsync  | parallel api to JetStream publishAsync api. All return a CompletableFuture<Flight> that is complete once the message is actually published. Can be ignored in place of PublisherListener.publish callback |
 
 
-### Publish Runner Pseudo Code
+## Publish Runner Pseudo Code
 ```
 while keepGoing flag
   if (not in hold pattern)
@@ -73,7 +83,7 @@ while keepGoing flag
         sleep holdPauseTime
 ```
 
-### Flights Runner Pseudo Code:
+## Flights Runner Pseudo Code:
 ```
 while keepGoing flag
   check the in flight queue using pollTime
