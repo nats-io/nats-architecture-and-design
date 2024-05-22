@@ -74,7 +74,7 @@ while keepGoing flag
   if (not in hold pattern)
       check the user's queue using pollTime
       if there is something...
-        if it's the drain maker, we are done
+        if it's the drain marker, we are done
         else
           publish async (with retry config if provided)
           notify listener to indicate published
