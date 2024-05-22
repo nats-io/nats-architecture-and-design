@@ -79,8 +79,8 @@ while keepGoing flag
           publish async (with retry config if provided)
           notify listener to indicate published
           if in flight queue has reached maxInFlight put hold on
-      else in holding pattern
-        sleep holdPauseTime
+  else in holding pattern
+      sleep holdPauseTime
 ```
 
 ## Flights Runner Pseudo Code:
