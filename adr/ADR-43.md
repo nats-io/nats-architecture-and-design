@@ -71,7 +71,7 @@ An object that holds state of the message as it makes its way through the workfl
 ## Publish Runner Pseudo Code
 ```
 while keepGoing flag
-  if (not in hold pattern)
+  if not in holding pattern
       check the user's queue using pollTime
       if there is something...
         if it's the drain marker, we are done
