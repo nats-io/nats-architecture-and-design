@@ -72,32 +72,32 @@ An object that holds state of the message as it makes its way through the workfl
 ```
 while keepGoing flag
   if not in holding pattern
-      check the user's queue using pollTime
-      if there is something...
-        if it's the drain marker, we are done
-        else
-          publish async (with retry config if provided)
-          notify listener to indicate published
-          if in flight queue has reached maxInFlight put hold on
+    check the user's queue using pollTime
+    if there is something...
+      if it's the drain marker, we are done
+      else
+        publish async (with retry config if provided)
+        notify listener to indicate published
+        if in flight queue has reached maxInFlight put hold on
   else in holding pattern
-      sleep holdPauseTime
+    sleep holdPauseTime
 ```
 
 ## Flights Runner Pseudo Code:
 ```
 while keepGoing flag
   check the in flight queue using pollTime
-      if there is something
-        if been asked to drain && user queue is empty and in flights queue is empty, we are done
+    if there is something
+      if been asked to drain and user queue is empty and in flights queue is empty, we are done
         else
           if the flight's publish ack future is done
-              if the future is complete and publish ack was received
-                notify listener to indicate the publish was acked
-              else if the future was completed with an exception
-                notify listener to indicate the publish completed exceptionally
-              else if the wait timeout has been exceeded
-                notify listener to indicate the publish timed out
-                complete the future exceptionally so if the user is waiting on the future instaed of the callback they can see it
-              else put it back in the queue for later
-        if in flight queue has equal to or less than the refillAllowedAt threshold make remove the hold
+            if the publish ack was received
+              notify listener to indicate the publish was acked
+            else if the future was completed with an exception
+              notify listener to indicate the publish completed exceptionally
+            else if the wait timeout has been exceeded
+              notify listener to indicate the publish timed out
+              complete the future exceptionally so if the user is waiting on the future instaed of the callback they can see it
+          else if otherwise not done, put it back in the queue for later
+      if in flight queue has equal to or less than the refillAllowedAt threshold make remove the hold
 ```
