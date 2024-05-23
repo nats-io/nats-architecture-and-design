@@ -93,6 +93,10 @@ Pull requests will have the following additional fields:
 
 If `min_pending` and `min_ack_pending` are both given either being satisfied will result in delivery (boolean OR).
 
+In the specific case where MaxAckPending is 1 and a pull is made using `min_pending: 1` this should only be served when
+there are no other pulls waiting. This means we have to give priority to pulls without conditions over those with when
+considering the next pull that will receive a message.
+
 ### `pinned_client` policy
 
 Users want to have a single client perform all the work for a consumer, but they also want to have a stand-by client that
