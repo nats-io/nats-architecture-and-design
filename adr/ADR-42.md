@@ -127,11 +127,12 @@ This configuration states:
 A pull request will have the following additional fields:
 
  * `"group": "jobs"` - the group the pull belongs to, pulls not part of a valid group will result in an error
- * `"id": "xyz"` - the pinned client will have this ID set to the one the server supplied (see below), otherwise this field is absent
+ * `"id": "xyz"` - the pinned client will have this ID set to the one the server last supplied (see below), otherwise 
+   this field is absent
 
-When no pinned client has been selected by the server the first message that will be delivered, and all future ones,
-will include a `Nats-Pin-Id: xyz` header. The client that gets this message should at that point ensure that all future
-pull requests have the same ID set.
+After selecting a new pinned client, the first message that will be delivered to this client, and all future ones, will 
+include a Nats-Pin-Id: xyz header. The client that gets this message should at that point ensure that all future pull 
+requests have the same ID set.
 
 When a new pinned client needs to be picked - after timeout, admin action, first delivery etc, this process is followed:
 
