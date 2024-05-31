@@ -35,6 +35,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
+|[ADR-42](adr/ADR-42.md)|client, server|NATS Client LifeCycle (-ERR Protocol Error Handling)|
 
 ## Jetstream
 
@@ -113,6 +114,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
+|[ADR-42](adr/ADR-42.md)|client, server|NATS Client LifeCycle (-ERR Protocol Error Handling)|
 
 ## Spec
 
