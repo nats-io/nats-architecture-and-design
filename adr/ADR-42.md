@@ -61,8 +61,8 @@ require taking the service offline if the subscription is vital for its
 operation.
 
 Note that regardless of a localized error handling mechanism, you should also
-notify the async error handler as you don't know exactly where they are looking
-for errors.
+notify the async error handler as you don't know exactly where the client code
+is looking for errors.
 
 ## Authorization Violation
 
