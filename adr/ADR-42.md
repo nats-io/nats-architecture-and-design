@@ -18,6 +18,7 @@ are incorrect from the perspective of Permissions or Authorization.
 
 ## Errors
 
+
 ### Permission Violation
 
 `Permission Violation` means that the client tried to publish or subscribe on a
@@ -69,14 +70,14 @@ Note that regardless of a localized error handling mechanism, you should also
 notify the async error handler as you don't know exactly where the client code
 is looking for errors.
 
-## Authorization Violation
+### Authorization Violation
 
 `Authorization Violation` is sent whenever the credentials for a client are not
 accepted. This is followed by a server initiated disconnect. Clients will
 normally reconnect (depending on their connection options). If the client
 closes, this should be reported as the last error.
 
-## User Authentication Expired
+### User Authentication Expired
 
 `User Authentication Expired` protocol error happens whenever credentials for
 the client expire while the client is connected to the server. It is followed by
@@ -84,7 +85,7 @@ a server disconnect. This error should be notified in the async handler. On
 reconnect the client is going to be rejected with `Authorization Violation` and
 follow its reconnect logic.
 
-## Account Expiration
+### Account Expiration
 
 `Account Authentication Expired` is sent whenever the account JWT expires and a
 client for the account is connected. This will result in a disconnect initiated
@@ -92,7 +93,7 @@ by the server. On reconnect the client will be rejected with
 `Authorization Violation` until the account configuration is refreshed on the
 server. The client will follow its reconnect logic.
 
-## Secure Connection - TLS Required
+### Secure Connection - TLS Required
 
 `Secure Connection - TLS Required` is sent if the client is trying to connect on
 a server that requires TLS.
@@ -100,7 +101,7 @@ a server that requires TLS.
 _????????_ The client should have done extensive ServerInfo investigation and
 determined that this would have been a failure
 
-## Maximum Number of Connections
+### Maximum Number of Connections
 
 `maximum connections exceeded` server limit on number of connections reached.
 Server will send to the client the `-ERR maximum connections exceeded`, client
@@ -112,7 +113,7 @@ connections are in progress. This should be treated as
 `maximum connections exceeded` or reworked on the server to send this error
 instead.
 
-## Max Payload Violation
+### Max Payload Violation
 
 `Maximum Payload Violation` is sent to the client if it attempts to publish more
 data than it is allowed by `max_payload`. The server will disconnect the client
@@ -120,7 +121,7 @@ after sending the protocol error. Note that clients should test payload sizes
 and fail publishes that exceed the server configuration, as this allow the error
 to be localized when possible to the user code that caused the error.
 
-## User Authentication Revoked
+### User Authentication Revoked
 
 `User Authentication Revoked` this is reported when an account is updated and
 the user is revoked in the account. On connects where the user is already
@@ -128,7 +129,7 @@ revoked, it is just an `Authorization Error`. On actual experimentation, the
 client never saw `User Authentication Revoked`, and instead was just
 disconnected. Reconnect was greeted with a `Authorization Error`.
 
-## Invalid Client Protocol
+### Invalid Client Protocol
 
 `invalid client protocol` sent to the client if the protocol version from the
 client doesn't match. Client is disconnected when this error is sent.
@@ -136,7 +137,7 @@ client doesn't match. Client is disconnected when this error is sent.
 _????????_ Currently, this is not a concern since presumably, a server will be
 able to deal with protocol version 1 when protocol upgrades.
 
-## No Responders Requires Headers
+### No Responders Requires Headers
 
 `no responders requires headers support` sent if the client requests no
 responder, but rejects headers. Client is disconnected when this error is sent.
@@ -146,12 +147,12 @@ clients.
 _????????_ `headers` connect option shouldn't be exposed by the clients - this
 is a holdover from when clients opted in to `headers`.
 
-## Failed Account Registration
+### Failed Account Registration
 
 `Failed Account Registration` an internal error while registering an account.
 (Looking for reproducible test).
 
-## Invalid Publish Subject
+### Invalid Publish Subject
 
 `Invalid Publish Subject` (this requires the server in pedantic mode). Client is
 not disconnected when this error is sent. Note that for subscribe operations,
@@ -160,12 +161,12 @@ such cases there will be no error, your subscription will simply be part of a
 queue. If multiple spaces or some other variant, the server will treat it as a
 protocol error.
 
-## Unknown Protocol Operation
+### Unknown Protocol Operation
 
 `Unknown Protocol Operation` this error is sent if the server doesn't understand
 a command. This is followed by a disconnect.
 
-## Other Errors (not necessarily seen by the client)
+### Other Errors (not necessarily seen by the client)
 
 - `maximum account active connections exceeded` not notified to the client, the
   client connecting will be disconnected (seen as a connection refused.)
