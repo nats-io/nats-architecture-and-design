@@ -17,6 +17,7 @@
 | 2        | 2023-10-16 | Document consistency guarantees                     |
 | 3        | 2023-10-19 | Formalize initial bucket topologies                 |
 | 4        | 2023-10-25 | Support compression                                 |
+| 5        | 2024-06-05 | Add KV management                                   |
 
 
 ## Context
@@ -211,6 +212,44 @@ type KV interface {
 	Destroy() error
 
 	RoKV
+}
+```
+
+## KV Management
+
+This is set of operations on the KV stores from the JetStream context.
+
+```go
+// KeyValueManager is used to manage KeyValue stores. It provides methods to
+// create, delete, and retrieve.
+type KeyValueManager interface {
+    // KeyValue will lookup and bind to an existing KeyValue store.
+    // Name can be `get_key_value`, or whatever name is idiomatic in given language.
+    KeyValue(ctx context.Context, bucket string) (KeyValue, error)
+
+    // CreateKeyValue will create a KeyValue store with the given
+    // configuration.
+    CreateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
+
+    // UpdateKeyValue will update an existing KeyValue store with the given
+    // configuration.
+    UpdateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
+
+    // CreateOrUpdateKeyValue will create a KeyValue store if it does not
+    // exist or update an existing KeyValue store with the given
+    // configuration (if possible).
+    CreateOrUpdateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
+
+    // DeleteKeyValue will delete given KeyValue store.
+    DeleteKeyValue(ctx context.Context, bucket string) error
+
+    // KeyValueStoreNames is used to retrieve a list of key value store
+    // names.
+    KeyValueStoreNames(ctx context.Context) KeyValueNamesLister
+
+    // KeyValueStores is used to retrieve a list of key value store
+    // statuses.
+    KeyValueStores(ctx context.Context) KeyValueLister
 }
 ```
 
