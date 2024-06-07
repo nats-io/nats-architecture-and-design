@@ -7,6 +7,13 @@
 | Status   | Approved                                                       |
 | Tags     | jetstream, client, spec                                        |
 
+## Release History
+
+| Revision | Date       | Description                                         |
+|----------|------------|-----------------------------------------------------|
+| 1        | 2023-05-30 | Initial stable release                              |
+| 2        | 2024-06-07 | Change server reconnect behavior during `consume()` |
+
 ## Context and Problem Statement
 
 Consuming messages from a JetStream require a large number of options and design
@@ -313,15 +320,16 @@ Clients should detect server disconnect and reconnect.
 
 When a disconnect event is received, client should:
 
-- Reset the heartbeat timer.
 - Pause the heartbeat timer.
+- Stop publishing new pull requests.
 
 When a reconnect event is received, client should:
 
-- Resume the heartbeat timer.
-- Check if consumer exists (fetch consumer info). If consumer is not available, terminate `Consume()` execution with error.
-This operation may have to be retried several times as JetStream may not be immediately available.
+- Reset the heartbeat timer.
 - Publish a new pull request.
+
+Clients should never terminate the `Consume()` call on disconnect and reconnect
+events and should not check if consumer is still available after reconnect.
 
 ###### Message processing algorithm
 
