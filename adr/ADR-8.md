@@ -217,39 +217,39 @@ type KV interface {
 
 ## KV Management
 
-This is set of operations on the KV stores from the JetStream context.
+This is set of operations on the KV buckets from the JetStream context.
 
 ```go
-// KeyValueManager is used to manage KeyValue stores. It provides methods to
+// KeyValueManager is used to manage KeyValue buckets. It provides methods to
 // create, delete, and retrieve.
 type KeyValueManager interface {
-    // KeyValue will lookup and bind to an existing KeyValue store.
+    // KeyValue will lookup and bind to an existing KeyValue bucket.
     // Name can be `get_key_value`, or whatever name is idiomatic in given language.
     KeyValue(ctx context.Context, bucket string) (KeyValue, error)
 
-    // CreateKeyValue will create a KeyValue store with the given
+    // CreateKeyValue will create a KeyValue bucket with the given
     // configuration.
     CreateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
 
-    // UpdateKeyValue will update an existing KeyValue store with the given
+    // UpdateKeyValue will update an existing KeyValue bucket with the given
     // configuration.
     UpdateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
 
-    // CreateOrUpdateKeyValue will create a KeyValue store if it does not
-    // exist or update an existing KeyValue store with the given
+    // CreateOrUpdateKeyValue will create a KeyValue bucket if it does not
+    // exist or update an existing KeyValue bucket with the given
     // configuration (if possible).
     CreateOrUpdateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
 
-    // DeleteKeyValue will delete given KeyValue store.
+    // DeleteKeyValue will delete given KeyValue bucket.
     DeleteKeyValue(ctx context.Context, bucket string) error
 
-    // KeyValueStoreNames is used to retrieve a list of key value store
+    // KeyValueBucketNames is used to retrieve a list of key value bucket
     // names.
-    KeyValueStoreNames(ctx context.Context) KeyValueNamesLister
+    KeyValueBuckerNames(ctx context.Context) KeyValueNamesLister
 
-    // KeyValueStores is used to retrieve a list of key value store
+    // KeyValueBuckets is used to retrieve a list of key value bucket
     // statuses.
-    KeyValueStores(ctx context.Context) KeyValueLister
+    KeyValueBuckets(ctx context.Context) KeyValueLister
 }
 ```
 
