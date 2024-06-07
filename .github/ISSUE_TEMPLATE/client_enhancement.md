@@ -22,7 +22,7 @@ The behavior is documented in ADR-X.
  - [ ] JavaScript @aricart
  - [ ] .Net @scottf
  - [ ] C @levb
- - [ ] Python @wallyqs
+ - [ ] Python @caspervonb
  - [ ] Ruby @wallyqs
  - [ ] Rust @Jarema
  - [ ] .Net V2 @mtmk
