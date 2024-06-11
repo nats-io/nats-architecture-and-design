@@ -185,6 +185,8 @@ type RoKV interface {
 }
 ```
 
+Regarding `Keys`, optionally the client can provide a method that provides the keys in an iterable or consumable form. 
+
 ## KV
 
 This is the read-write KV store handle, every backend should implement a language equivalent interface. But note the comments
@@ -254,8 +256,8 @@ type KeyValueManager interface {
 ```
 
 `KeyValueBucketNames` provides a `KeyValueNamesLister`. `KeyValueBuckets` provides a `KeyValueStatusLister`. 
-A _Lister_ is defined as ??????????
-
+A _Lister_ can be anything such as a parallel to the underlying JetStream Management Stream Names call or can
+provide the data in an iterable or consumable form. 
 
 ## Storage Backends
 
