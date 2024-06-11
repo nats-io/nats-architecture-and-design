@@ -217,7 +217,7 @@ type KV interface {
 
 ## KV Management
 
-This is set of operations on the KV buckets from the JetStream context.
+This is set of operations on the KV buckets from the JetStream context. 
 
 ```go
 // KeyValueManager is used to manage KeyValue buckets. It provides methods to
@@ -245,13 +245,17 @@ type KeyValueManager interface {
 
     // KeyValueBucketNames is used to retrieve a list of key value bucket
     // names.
-    KeyValueBuckerNames(ctx context.Context) KeyValueNamesLister
+    KeyValueBucketNames(ctx context.Context) KeyValueNamesLister
 
     // KeyValueBuckets is used to retrieve a list of key value bucket
     // statuses.
-    KeyValueBuckets(ctx context.Context) KeyValueLister
+    KeyValueBuckets(ctx context.Context) KeyValueStatusLister
 }
 ```
+
+`KeyValueBucketNames` provides a `KeyValueNamesLister`. `KeyValueBuckets` provides a `KeyValueStatusLister`. 
+A _Lister_ is defined as ??????????
+
 
 ## Storage Backends
 
