@@ -13,11 +13,22 @@ Client lifecycle such as connect/reconnect/liveliness (ping/pong)/LDM behaviours
 are fairly complex in a NATS client. This ADR simply documents `-ERR` protocol
 messages that are sent to a client.
 
+## Errors
+
 The `-ERR` protocol message is an important signal for clients about things that
 are incorrect from the perspective of Permissions or Authorization.
 
-## Errors
+A note about implementation - the current format of the errors is simple, but
+messages are not typed in a way that is simple for clients to understand what
+should happen - in many cases the server will disconnect th client. In others it
+is just a runtime error that an update in configuration at runtime may re-enable
+the client to do what was rejected previously. However the client has no way to
+know whether the server will disconnect it or not.
 
+In cases where the error is surfaced during connection it creates the nuance
+that it is difficult for the client to know if the error is recoverable (simply
+attempt to reconnect later) or not. Depending on the client implementation this
+makes it difficult - in
 
 ### Permission Violation
 
