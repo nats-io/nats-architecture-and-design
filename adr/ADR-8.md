@@ -246,18 +246,18 @@ type KeyValueManager interface {
     DeleteKeyValue(ctx context.Context, bucket string) error
 
     // KeyValueBucketNames is used to retrieve a list of key value bucket
-    // names.
+    // names. The KeyValueNamesLister should behave in a similar fashion
+	// to the language implementation of Get Stream Names. If not already some sort of iterable, 
+    // an iterable form of the api is acceptable as well.
     KeyValueBucketNames(ctx context.Context) KeyValueNamesLister
 
     // KeyValueBuckets is used to retrieve a list of key value bucket
-    // statuses.
+    // statuses. The KeyValueNamesLister should behave in a similar fashion 
+	// to the language implementation of Get Stream Infos. If not already some sort of iterable, 
+	// an iterable form of the api is acceptable as well.
     KeyValueBuckets(ctx context.Context) KeyValueStatusLister
 }
 ```
-
-`KeyValueBucketNames` provides a `KeyValueNamesLister`. `KeyValueBuckets` provides a `KeyValueStatusLister`. 
-A _Lister_ can be anything such as a parallel to the underlying JetStream Management Stream Names call or can
-provide the data in an iterable or consumable form. 
 
 ## Storage Backends
 
