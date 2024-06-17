@@ -253,8 +253,8 @@ type KeyValueManager interface {
 
     // KeyValueBuckets is used to retrieve a list of key value bucket
     // statuses. The KeyValueNamesLister should behave in a similar fashion 
-	// to the language implementation of Get Stream Infos. If not already some sort of iterable, 
-	// an iterable form of the api is acceptable as well.
+    // to the language implementation of Get Stream Infos. If not already some sort of iterable, 
+    // an iterable form of the api is acceptable as well.
     KeyValueBuckets(ctx context.Context) KeyValueStatusLister
 }
 ```
