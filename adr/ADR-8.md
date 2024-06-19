@@ -124,8 +124,20 @@ type Status interface {
 	// TTL is how long the bucket keeps values for
 	TTL() time.Duration
 
-	// Keys return a list of all keys in the bucket
+	// Keys return a list of all keys in the bucket.
+	// Historically this method returned a complete slice of all keys in the bucket,
+	// however clients should return interable result.
 	Keys() ([]string, error)
+
+	// KeysWithFilter returns a filtered list of keys in the bucket.
+	// Historically this method returned a complete slice of all keys in the bucket,
+	// however clients should return interable result.
+	KeysWithFilter(filter string) ([]string, error)
+
+	// KeysWithFilters returns a filtered list of keys in the bucket.
+	// Historically this method returned a complete slice of all keys in the bucket,
+	// however clients should return interable result.
+	KeysWithFilters(filter []string) ([]string, error)
 
 	// IsCompressed indicates if the data is compressed on disk
 	IsCompressed() bool
@@ -185,7 +197,7 @@ type RoKV interface {
 }
 ```
 
-Regarding `Keys`, optionally the client can provide a method that provides the keys in an iterable or consumable form. 
+Regarding `Keys`, optionally the client can provide a method that provides the keys in an iterable or consumable form.
 
 ## KV
 
@@ -219,7 +231,7 @@ type KV interface {
 
 ## KV Management
 
-This is set of operations on the KV buckets from the JetStream context. 
+This is set of operations on the KV buckets from the JetStream context.
 
 ```go
 // KeyValueManager is used to manage KeyValue buckets. It provides methods to
@@ -247,13 +259,13 @@ type KeyValueManager interface {
 
     // KeyValueBucketNames is used to retrieve a list of key value bucket
     // names. The KeyValueNamesLister should behave in a similar fashion
-	// to the language implementation of Get Stream Names. If not already some sort of iterable, 
+	// to the language implementation of Get Stream Names. If not already some sort of iterable,
     // an iterable form of the api is acceptable as well.
     KeyValueBucketNames(ctx context.Context) KeyValueNamesLister
 
     // KeyValueBuckets is used to retrieve a list of key value bucket
-    // statuses. The KeyValueNamesLister should behave in a similar fashion 
-    // to the language implementation of Get Stream Infos. If not already some sort of iterable, 
+    // statuses. The KeyValueNamesLister should behave in a similar fashion
+    // to the language implementation of Get Stream Infos. If not already some sort of iterable,
     // an iterable form of the api is acceptable as well.
     KeyValueBuckets(ctx context.Context) KeyValueStatusLister
 }
