@@ -185,6 +185,8 @@ type RoKV interface {
 }
 ```
 
+Regarding `Keys`, optionally the client can provide a method that provides the keys in an iterable or consumable form. 
+
 ## KV
 
 This is the read-write KV store handle, every backend should implement a language equivalent interface. But note the comments
@@ -217,7 +219,7 @@ type KV interface {
 
 ## KV Management
 
-This is set of operations on the KV buckets from the JetStream context.
+This is set of operations on the KV buckets from the JetStream context. 
 
 ```go
 // KeyValueManager is used to manage KeyValue buckets. It provides methods to
@@ -244,12 +246,16 @@ type KeyValueManager interface {
     DeleteKeyValue(ctx context.Context, bucket string) error
 
     // KeyValueBucketNames is used to retrieve a list of key value bucket
-    // names.
-    KeyValueBuckerNames(ctx context.Context) KeyValueNamesLister
+    // names. The KeyValueNamesLister should behave in a similar fashion
+	// to the language implementation of Get Stream Names. If not already some sort of iterable, 
+    // an iterable form of the api is acceptable as well.
+    KeyValueBucketNames(ctx context.Context) KeyValueNamesLister
 
     // KeyValueBuckets is used to retrieve a list of key value bucket
-    // statuses.
-    KeyValueBuckets(ctx context.Context) KeyValueLister
+    // statuses. The KeyValueNamesLister should behave in a similar fashion 
+    // to the language implementation of Get Stream Infos. If not already some sort of iterable, 
+    // an iterable form of the api is acceptable as well.
+    KeyValueBuckets(ctx context.Context) KeyValueStatusLister
 }
 ```
 
