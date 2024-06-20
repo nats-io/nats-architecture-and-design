@@ -18,6 +18,7 @@
 | 3        | 2023-10-19 | Formalize initial bucket topologies                 |
 | 4        | 2023-10-25 | Support compression                                 |
 | 5        | 2024-06-05 | Add KV management                                   |
+| 6        | 2024-06-05 | Add Keys listers with filters                       |
 
 
 ## Context
@@ -129,14 +130,12 @@ type Status interface {
 	// however clients should return interable result.
 	Keys() ([]string, error)
 
-	// KeysWithFilter returns a filtered list of keys in the bucket.
-	// Historically this method returned a complete slice of all keys in the bucket,
-	// however clients should return interable result.
-	KeysWithFilter(filter string) ([]string, error)
-
 	// KeysWithFilters returns a filtered list of keys in the bucket.
 	// Historically this method returned a complete slice of all keys in the bucket,
 	// however clients should return interable result.
+	// Languages can implement the list of filters in most idiomatic way - as an iterator, variadic argument, slice, etc.
+	// When multiple filters are passed, client library should check `consumer info` from `consumer create method` if the filters are matching,
+	// as nats-server < 2.10 would ignore them.
 	KeysWithFilters(filter []string) ([]string, error)
 
 	// IsCompressed indicates if the data is compressed on disk
