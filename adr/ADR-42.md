@@ -30,9 +30,9 @@ that it is difficult for the client to know if the error is recoverable (simply
 attempt to reconnect later) or not. Depending on the client implementation this
 makes it difficult - in
 
-### Permission Violation
+### Permissions Violation
 
-`Permission Violation` means that the client tried to publish or subscribe on a
+`Permissions Violation` means that the client tried to publish or subscribe on a
 subject for which it has no permissions. This type of error can happen or
 surface at any time, as changes to permissions intentionally or not can happen.
 This means that even if the subscription has been working, it is possible that
