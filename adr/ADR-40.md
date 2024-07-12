@@ -299,15 +299,15 @@ are incorrect from the perspective of Permissions or Authorization.
 
 A note about implementation - the current format of the errors is simple, but
 messages are not typed in a way that is simple for clients to understand what
-should happen - in many cases the server will disconnect th client. In others it
-is just a runtime error that an update in configuration at runtime may re-enable
-the client to do what was rejected previously. However the client has no way to
-know whether the server will disconnect it or not.
+should happen - in many cases the server will disconnect th client. In other
+cases it is just a runtime error that an update in configuration at runtime may
+re-enable the client to do what was rejected previously. However, the client has
+no way to know whether the server will disconnect it or not.
 
 In cases where the error is surfaced during connection it creates the nuance
 that it is difficult for the client to know if the error is recoverable (simply
-attempt to reconnect later) or not. Depending on the client implementation this
-makes it difficult - in
+attempt to reconnect later) or not. In some cases a client connection will never
+resolve unless the number of maximum reconnect attempts is specified.
 
 #### Permissions Violation
 
