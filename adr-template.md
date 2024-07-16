@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |YYYY-MM-DD|
 |Author  |@<github user>, @<github user>|
-|Status  |`Proposed`, `Approved` `Partially Implemented`, `Implemented`|
+|Status  |`Approved` `Partially Implemented`, `Implemented`|
 |Tags    |jetstream, client, server|
 
 |Revision|Date|Author|Info|
