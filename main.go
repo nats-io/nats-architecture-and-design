@@ -172,10 +172,18 @@ func renderIndexes(adrs []*ADR) error {
 	}
 
 	tagsList := []string{}
+	hasDeprecated := false
 	for k := range tags {
+		if k == "deprecated" {
+			hasDeprecated = true
+			continue
+		}
 		tagsList = append(tagsList, k)
 	}
 	sort.Strings(tagsList)
+	if hasDeprecated {
+		tagsList = append(tagsList, "deprecated")
+	}
 
 	type tagAdrs struct {
 		Tag  string
