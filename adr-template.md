@@ -1,15 +1,15 @@
 # Title
 
-|Metadata|Value|
-|--------|-----|
-|Date    |YYYY-MM-DD|
-|Author  |@<github user>, @<github user>|
-|Status  |`Approved` `Partially Implemented`, `Implemented`|
-|Tags    |jetstream, client, server|
+| Metadata | Value                                                           |
+|----------|-----------------------------------------------------------------|
+| Date     | YYYY-MM-DD                                                      |
+| Author   | @<github user>, @<github user>                                  |
+| Status   | `Approved` `Partially Implemented`, `Implemented`, `Deprecated` |
+| Tags     | jetstream, client, server                                       |
 
-|Revision|Date|Author|Info|
- |--------|----|------|----|
- |1       |YYYY-MM-DD|@author|Initial design|
+| Revision | Date       | Author  | Info           |
+|----------|------------|---------|----------------|
+| 1        | YYYY-MM-DD | @author | Initial design |
 
 ## Context and Problem Statement
 

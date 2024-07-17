@@ -1,11 +1,17 @@
 # JetStream Subscribe Workflow
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2021-08-11|
-|Author  |@kozlovic|
-|Status  |Partially Implemented|
-|Tags    |jetstream, client|
+| Metadata | Value      |
+|----------|------------|
+| Date     | 2021-08-11 |
+| Author   | @kozlovic  |
+| Status   | Deprecated |
+| Tags     | deprecated |
+
+## Revision History
+
+| Revision | Date       | Description                  |
+|----------|------------|------------------------------|
+| final    | 2024/07/17 | Deprecate in favor of ADR-37 |
 
 ## Context
 

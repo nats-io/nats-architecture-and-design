@@ -21,7 +21,6 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-11](adr/ADR-11.md)|client|Hostname resolution|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
 |[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
-|[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 |[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
@@ -37,6 +36,12 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
 
+## Deprecated
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-15](adr/ADR-15.md)|deprecated|JetStream Subscribe Workflow|
+
 ## Jetstream
 
 |Index|Tags|Description|
@@ -49,7 +54,6 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
 |[ADR-12](adr/ADR-12.md)|jetstream|JetStream Encryption At Rest|
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
-|[ADR-15](adr/ADR-15.md)|jetstream, client|JetStream Subscribe Workflow|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore, spec|JetStream based Object Stores|
