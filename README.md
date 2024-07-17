@@ -36,12 +36,6 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
 
-## Deprecated
-
-|Index|Tags|Description|
-|-----|----|-----------|
-|[ADR-15](adr/ADR-15.md)|deprecated|JetStream Subscribe Workflow|
-
 ## Jetstream
 
 |Index|Tags|Description|
@@ -130,6 +124,12 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
+
+## Deprecated
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-15](adr/ADR-15.md)|deprecated|JetStream Subscribe Workflow|
 
 ## When to write an ADR
 
