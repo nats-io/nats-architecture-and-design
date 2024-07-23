@@ -388,7 +388,8 @@ server. The client will follow its reconnect logic.
 `Secure Connection - TLS Required` is sent if the client is trying to connect on
 a server that requires TLS.
 
-> [!IMPORTANT] The client should have done extensive ServerInfo investigation
+> [!IMPORTANT] 
+> The client should have done extensive ServerInfo investigation
 > and determined that this would have been a failure when initiating the
 > connection.
 
@@ -433,7 +434,8 @@ disconnected. Reconnect was greeted with a `Authorization Error`.
 `invalid client protocol` sent to the client if the protocol version from the
 client doesn't match. Client is disconnected when this error is sent.
 
-> [!NOTE] Currently, this is not a concern since presumably, a server will be
+> [!NOTE] 
+> Currently, this is not a concern since presumably, a server will be
 > able to deal with protocol version 1 when protocol upgrades.
 
 #### No Responders Requires Headers
@@ -443,7 +445,8 @@ responder, but rejects headers. Client is disconnected when this error is sent.
 Current clients hardcode `headers: true`, so this error shouldn't be seen by
 clients.
 
-> [!IMPORTANT] `headers` connect option shouldn't be exposed by the clients -
+> [!IMPORTANT] 
+> `headers` connect option shouldn't be exposed by the clients -
 > this is a holdover from when clients opted in to `headers`.
 
 #### Failed Account Registration
