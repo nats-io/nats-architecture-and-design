@@ -388,9 +388,9 @@ server. The client will follow its reconnect logic.
 `Secure Connection - TLS Required` is sent if the client is trying to connect on
 a server that requires TLS.
 
-> [!IMPORTANT] 
-> The client should have done extensive ServerInfo investigation and
-> determined that this would have been a failure when initiating the connection.
+> [!IMPORTANT] The client should have done extensive ServerInfo investigation
+> and determined that this would have been a failure when initiating the
+> connection.
 
 #### Maximum Number of Connections
 
@@ -414,11 +414,11 @@ after sending the protocol error. Note that clients should test payload sizes
 and fail publishes that exceed the server configuration, as this allow the error
 to be localized when possible to the user code that caused the error.
 
-
 #### Maximum Subscriptions Exceeded
 
-`maximum subscriptions exceeded` is sent to the client if attempts to create more
-subscriptions than it the account is allowed. The error is not terminal to the connection.
+`maximum subscriptions exceeded` is sent to the client if attempts to create
+more subscriptions than it the account is allowed. The error is not terminal to
+the connection.
 
 #### User Authentication Revoked
 
@@ -433,9 +433,8 @@ disconnected. Reconnect was greeted with a `Authorization Error`.
 `invalid client protocol` sent to the client if the protocol version from the
 client doesn't match. Client is disconnected when this error is sent.
 
-> [!NOTE] 
-> Currently, this is not a concern since presumably, a server will be able to deal 
-> with protocol version 1 when protocol upgrades.
+> [!NOTE] Currently, this is not a concern since presumably, a server will be
+> able to deal with protocol version 1 when protocol upgrades.
 
 #### No Responders Requires Headers
 
@@ -444,9 +443,8 @@ responder, but rejects headers. Client is disconnected when this error is sent.
 Current clients hardcode `headers: true`, so this error shouldn't be seen by
 clients.
 
-> [!IMPORTANT]
-> `headers` connect option shouldn't be exposed by the clients - this
-> is a holdover from when clients opted in to `headers`.
+> [!IMPORTANT] `headers` connect option shouldn't be exposed by the clients -
+> this is a holdover from when clients opted in to `headers`.
 
 #### Failed Account Registration
 
