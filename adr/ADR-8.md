@@ -352,6 +352,9 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
 }
 ```
 
+Note: Previous revisions of this document noted that "Duplicate window must be same as `max_age` when `max_age` is less than 2 minutes".
+This behavior requires no code on the client. As long as `duplicate_window` is not supplied in the configuration, the server will supply this logic.
+
 #### Storing Values
 
 Writing a key to the bucket is a basic JetStream request.
