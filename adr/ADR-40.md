@@ -58,7 +58,7 @@ This method is available in all NATS Server versions.
 
 ##### TLS First (Implicit TLS)
 
-This method has been available since NATS Server 2.11.
+This method has been available since NATS Server 2.10.11
 
 There are two prerequisites to use this method:
 1. Server config has enabled `handshake_first` field in the `tls` block.
