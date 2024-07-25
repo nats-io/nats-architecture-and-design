@@ -307,7 +307,6 @@ A bucket is a Stream with these properties:
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Key TTL is managed using the `max_age` key
- * Duplicate window must be same as `max_age` when `max_age` is less than 2 minutes
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
  * Overall bucket size can be limited using `max_bytes`
@@ -337,7 +336,6 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   "storage": "file",
   "discard": "new",
   "num_replicas": 1,
-  "duplicate_window": 120000000000,
   "rollup_hdrs": true,
   "deny_delete": true,
   "allow_direct": true,
@@ -353,6 +351,9 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   }
 }
 ```
+
+Note: Previous revisions of this document noted that "Duplicate window must be same as `max_age` when `max_age` is less than 2 minutes".
+This behavior requires no code on the client. As long as `duplicate_window` is not supplied in the configuration, the server will supply this logic.
 
 #### Storing Values
 
