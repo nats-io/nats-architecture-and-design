@@ -60,6 +60,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-42](adr/ADR-42.md)|jetstream, server|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
+|[ADR-44](adr/ADR-44.md)|jetstream, server|Versioning for JetStream Assets|
 
 ## Kv
 
@@ -116,6 +117,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
 |[ADR-42](adr/ADR-42.md)|jetstream, server|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
+|[ADR-44](adr/ADR-44.md)|jetstream, server|Versioning for JetStream Assets|
 
 ## Spec
 
