@@ -45,8 +45,6 @@ Service configuration relies on the following:
   building a `EndpointStats`
 - `queueGroup` - overrides a default queue group.
 
-The `queueGroup` may not be empty.
-
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
 service. At a minimum the service is expected to offer functions/methods that
@@ -343,7 +341,8 @@ in order to scale up or down all the user needs to do is add or stop services.
 Its possible to send request to multiple services, for example to minimize response time by using
 the quickest responder. To achieve that, it requires running some service instances with different `queueGroup`.
 
-For each configured endpoint, a queue subscription should be created.
+For each configured endpoint, a queue subscription should be created. Unless the option to create
+a normal enqueued subscription is activated.
 
 > Note: Handler subject does not contain the `$SRV` prefix. This prefix is
 > reserved for internal handlers.
