@@ -1,20 +1,21 @@
 # Service API
 
-| Metadata | Value             |
-| -------- | ----------------- |
-| Date     | 2022-11-23        |
-| Author   | @aricart          |
-| Status   | Implemented       |
-| Tags     | client, spec      |
+| Metadata | Value        |
+|----------|--------------|
+| Date     | 2022-11-23   |
+| Author   | @aricart     |
+| Status   | Implemented  |
+| Tags     | client, spec |
 
 ## Release History
 
-| Revision | Date       | Description              |
-| -------- | ---------- | ------------------------ |
-| 1        | 2022-11-23 | Initial release          |
-| 2        | 2023-09-12 | Configurable queue group |
-| 3        | 2023-10-07 | Add version regex info   |
-| 4        | 2023-11-10 | Explicit naming          |
+| Revision | Date       | Description                               |
+|----------|------------|-------------------------------------------|
+| 1        | 2022-11-23 | Initial release                           |
+| 2        | 2023-09-12 | Configurable queue group                  |
+| 3        | 2023-10-07 | Add version regex info                    |
+| 4        | 2023-11-10 | Explicit naming                           |
+| 5        | 2024-08-08 | Optional queue groups, immutable metadata |
 
 ## Context and Problem Statement
 
@@ -38,11 +39,13 @@ Service configuration relies on the following:
 - `description` - a human-readable description about the service (optional)
 - `metadata` - (optional) an object of strings holding free form metadata about
   the deployed instance implemented consistently with
-  [Metadata for Stream and Consumer ADR-33](ADR-33.md).
+  [Metadata for Stream and Consumer ADR-33](ADR-33.md). Must be immutable once set.
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
 - `queueGroup` - overrides a default queue group.
+
+The `queueGroup` may not be empty.
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
@@ -291,14 +294,17 @@ Each service endpoint consists of the following fields:
   Multiple endpoints can have the same names.
 - `handler` - request handler - see [Request Handling](#Request-Handling)
 - `metadata` - an optional `Record<string,string>` providing additional
-  information about the endpoint
+  information about the endpoint. Must be immutable once set.
 - `subject` - an optional NATS subject on which the endpoint will be registered.
   A subject is created by concatenating the subject provided by the user with
   group prefix (if applicable). If subject is not provided, use `name` instead.
 - `queueGroup` - optional override for a service and group `queueGroup`.
 
-Enpoints can be created either on the service directly (`Service.addEndpoint()`)
+Endpoints can be created either on the service directly (`Service.addEndpoint()`)
 or on a group (`Group.addEndpoint`).
+
+Clients should provide an idiomatic way to set no `queueGroup` when unset the subscription
+for the endpoint will be a normal subscribe instead of a queue subscribe.
 
 ## Error Handling
 
