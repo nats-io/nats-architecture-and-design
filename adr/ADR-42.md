@@ -175,3 +175,39 @@ Future iterations will include delivery stats per group.
 
 Once multiple groups are supported consumer updates could add and remove groups. Today only the `PriorityTimeout` 
 setting supports being updated.
+
+#### Advisories
+
+We will publish advisories when a switch is performed and when a pin is lost.
+
+```golang
+const  JSAdvisoryConsumerPinnedPre = "$JS.EVENT.ADVISORY.CONSUMER.PINNED"
+const JSAdvisoryConsumerUnpinnedPre = "$JS.EVENT.ADVISORY.CONSUMER.UNPINNED"
+const JSConsumerGroupPinnedAdvisoryType = "io.nats.jetstream.advisory.v1.consumer_group_pinned"
+
+// JSConsumerGroupPinnedAdvisory indicates that a group switched to a new pinned client
+type JSConsumerGroupPinnedAdvisory struct {
+   TypedEvent
+   Account           string      `json:"account,omitempty"`
+   Stream            string      `json:"stream"`
+   Consumer          string      `json:"consumer"`
+   Domain            string      `json:"domain,omitempty"`
+   Group             string      `json:"group"`
+   PinnedClientId    string      `json:"pinned_id"`
+   Client            *ClientInfo `json:"client"` // if available
+}
+
+const JSConsumerGroupUnPinnedAdvisoryType = "io.nats.jetstream.advisory.v1.consumer_group_unpinned"
+
+// JSConsumerGroupUnPinnedAdvisory indicates that a pin was lost
+type JSConsumerGroupUnPinnedAdvisory struct {
+   TypedEvent
+   Account           string      `json:"account,omitempty"`
+   Stream            string      `json:"stream"`
+   Consumer          string      `json:"consumer"`
+   Domain            string      `json:"domain,omitempty"`
+   Group             string      `json:"group"`
+   // one of "admin" or "timeout", could be an enum up to the implementor to decide
+   Reason            string      `json:"reason"`
+}
+```
