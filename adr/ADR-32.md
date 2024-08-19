@@ -15,6 +15,7 @@
 | 2        | 2023-09-12 | Configurable queue group |
 | 3        | 2023-10-07 | Add version regex info   |
 | 4        | 2023-11-10 | Explicit naming          |
+| 5        | 2024-03-16 | Header methods           |
 
 ## Context and Problem Statement
 
@@ -352,3 +353,15 @@ will dispatch requests as fast as the handler returns.
 For consistency of documentation and understanding by users, clients that implement the
 service API and tooling that interacts with services should use the term "service" or
 "services".
+
+
+### Headers
+
+Services should allow headers to be retrieved through two methods:
+
+- get(key) - returns the first value associated with the key
+- values(key) - returns all values associated with the key
+
+Services should allow a header value to be added through the following method:
+
+- add(key, value) - adds the value to the associated key or adds the key/value if the key doesn't exist.
