@@ -11,10 +11,11 @@
 | Revision | Date       | Author     | Info           |
 |----------|------------|------------|----------------|
 | 1        | 2024-05-14 | @ripienaar | Initial design |
+| 2        | 2024-10-15 | @jarema    | Add client implementation details |
 
 ## Context and Problem Statement
 
-We have a class of feature requests that all come down to adding behaviours on a consumer that affects delivery to groups 
+We have a class of feature requests that all come down to adding behaviours on a consumer that affects delivery to groups
 of clients who interact with the consumer.
 
 Some examples:
@@ -49,20 +50,20 @@ We introduce 2 settings on `ConsumerConfig` that activates these related feature
 The presence of the `PriorityPolicy` set to a known policy activates the set of features documented here, `PriorityGroups`
 require at least one entry.
 
-Technically in some of the proposed policies the `PriorityGroups` have no real meaning today, but we keep it for consistency 
-and allow for future features to be added that would be per-group without then requiring all clients to be updated. 
+Technically in some of the proposed policies the `PriorityGroups` have no real meaning today, but we keep it for consistency
+and allow for future features to be added that would be per-group without then requiring all clients to be updated.
 Future message grouping features would require groups to be listed here.
 
-In the initial implementation we should limit `PriorityGroups` to one per consumer only and error should one be made with 
+In the initial implementation we should limit `PriorityGroups` to one per consumer only and error should one be made with
 multiple groups. In future iterations multiple groups will be supported along with dynamic partitioning of stream
 data.
 
 This is only supported on Pull Consumers, configuring this on a Push consumer must raise an error.
 
 > [!NOTE]
-> Some aspects of configuration is updatable, called out in the respective sections, but we cannot support updating a 
-> consumer from one with groups to one without and vice versa due to the internal state tracking that is required and 
-> the fact that generally clients need adjustment to use these features. We have identified some mitigation approaches 
+> Some aspects of configuration is updatable, called out in the respective sections, but we cannot support updating a
+> consumer from one with groups to one without and vice versa due to the internal state tracking that is required and
+> the fact that generally clients need adjustment to use these features. We have identified some mitigation approaches
 > to ease migration but will wait for user feedback. We also cannot switch between different policies.
 
 ## Priority Policies
@@ -71,8 +72,8 @@ This is only supported on Pull Consumers, configuring this on a Push consumer mu
 
 Users want certain clients to only get messages when certain criteria are met.
 
-Imagine jobs are best processed locally in `us-east-1` but at times there might be so many jobs in that region that 
-`us-west-1` region handling some overflow, while less optimal in terms of transit costs and latency, would be desirable 
+Imagine jobs are best processed locally in `us-east-1` but at times there might be so many jobs in that region that
+`us-west-1` region handling some overflow, while less optimal in terms of transit costs and latency, would be desirable
 to ensure serving client needs as soon as possible.
 
 The `overflow` policy enables Pull requests to be served only if criteria like `num_pending` and `num_ack_pending` are
@@ -111,7 +112,7 @@ Users want to have a single client perform all the work for a consumer, but they
 can take over when the primary, aka `pinned` client, fails.
 
 **NOTE: We should not describe this in terms of exclusivity as there is no such guarantee, there will be times when one
-client think it is pinned when it is not because the server switched.** 
+client think it is pinned when it is not because the server switched.**
 
 The `pinned_client` policy provides server-side orchestration for the selection of the pinned client.
 
@@ -135,11 +136,11 @@ This configuration states:
 A pull request will have the following additional fields:
 
  * `"group": "jobs"` - the group the pull belongs to, pulls not part of a valid group will result in an error
- * `"id": "xyz"` - the pinned client will have this ID set to the one the server last supplied (see below), otherwise 
+ * `"id": "xyz"` - the pinned client will have this ID set to the one the server last supplied (see below), otherwise
    this field is absent
 
-After selecting a new pinned client, the first message that will be delivered to this client, and all future ones, will 
-include a Nats-Pin-Id: xyz header. The client that gets this message should at that point ensure that all future pull 
+After selecting a new pinned client, the first message that will be delivered to this client, and all future ones, will
+include a Nats-Pin-Id: xyz header. The client that gets this message should at that point ensure that all future pull
 requests have the same ID set.
 
 When a new pinned client needs to be picked - after timeout, admin action, first delivery etc, this process is followed:
@@ -149,7 +150,7 @@ When a new pinned client needs to be picked - after timeout, admin action, first
  3. Store the new pinned `nuid`
  4. Deliver the message to the new pinned client with the ID set
  5. Create an advisory that a new pinned client was picked
- 6. Respond with a 4xx header to any pulls, including waiting ones, that have a different ID set. Client that received this error will clear the ID and pull with no ID 
+ 6. Respond with a 4xx header to any pulls, including waiting ones, that have a different ID set. Client that received this error will clear the ID and pull with no ID
 
 If no pulls from the pinned client is received within `PriorityTimeout` the server will switch again using the same flow as above.
 
@@ -173,7 +174,7 @@ type PriorityGroupState struct {
 
 Future iterations will include delivery stats per group.
 
-Once multiple groups are supported consumer updates could add and remove groups. Today only the `PriorityTimeout` 
+Once multiple groups are supported consumer updates could add and remove groups. Today only the `PriorityTimeout`
 setting supports being updated.
 
 #### Advisories
@@ -211,3 +212,28 @@ type JSConsumerGroupUnPinnedAdvisory struct {
    Reason            string      `json:"reason"`
 }
 ```
+
+# Client side implementation
+
+### Pull Requests changes
+
+To use either of the policies, a client needs to
+expose a new options on `fetch`, `consume`, or any other method that are used for pull consumers.
+
+#### Groups
+- `group` - mandatory field. If consumer has configured `PriorityGroups`, every Pull Request needs to provide it.
+
+#### Overflow
+When Consumer is in `overflow` mode, user should be able to optionally specify thresholds for pending and ack pending messages.
+
+- `min_pending` - when specified, this Pull request will only receive messages when the consumer has at least this many pending messages.
+- `min_ack_pending` - when specified, this Pull request will only receive messages when the consumer has at least this many ack pending messages.
+
+#### Pinning
+In pinning mode, user does not have to provide anything beyond `group`.
+Client needs to properly handle the `id` sent by the server. That applies only to ` Consume`. Fetch should not be supported in this mode.
+At least initially.
+
+1. When client receives the `id` from the server via `Nats-Pin-Id` header, it needs to store it and use it in every subsequent pull request for this group.
+2. If client receives `423` Status error, it should clear the `id` and continue pulling without it.
+3. Clients should implement the `unpin` method described in this ADR.
