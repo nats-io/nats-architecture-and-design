@@ -94,6 +94,16 @@ We have to handle updates to asset configuration since an update might use a fea
 Servers would advertise their supported API level in `jsz`, `varz` and `$JS.API.INFO`. It should also be logged
 at JetStream startup.
 
+## When to increment API Level
+
+Generally when adding any new feature/field to the `StreamConfig` or `ConsumerConfig`. Especially when the field was set
+by a user and the asset should be loaded in offline mode when the feature is not supported by the server.
+
+If a new feature is added, the API level only needs to be incremented if another feature planned for the same release
+didn't already increment the API level. Meaning if multiple new features are added within the same release cycle, the
+API level only needs to be incremented once and not for every new feature.
+
+
 # Server-set metadata
 
 We'll store current server and asset related information in the existing `metadata` field allowing us to expand this in 
@@ -181,12 +191,3 @@ For 2.11 we should:
  * soft unmarshalling failures with an option to enable fatal failures
 
 For future versions we can round the feature set out with the offline features and more.
-
-# When to increment API Level
-
-Generally when adding any new feature/field to the `StreamConfig` or `ConsumerConfig`. Especially when the field was set
-by a user and the asset should be loaded in offline mode when the feature is not supported by the server.
-
-If a new feature is added, the API level only needs to be incremented if another feature planned for the same release
-didn't already increment the API level. Meaning if multiple new features are added within the same release cycle, the
-API level only needs to be incremented once and not for every new feature.
