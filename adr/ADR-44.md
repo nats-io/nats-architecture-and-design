@@ -1,11 +1,11 @@
 # Versioning for JetStream Assets
 
-| Metadata | Value             |
-|----------|-------------------|
-| Date     | 2024-07-22        |
-| Author   | @ripienaar        |
-| Status   | Approved          |
-| Tags     | jetstream, server |
+| Metadata | Value                 |
+|----------|-----------------------|
+| Date     | 2024-07-22            |
+| Author   | @ripienaar            |
+| Status   | Partially Implemented |
+| Tags     | jetstream, server     |
 
 # Context and Problem Statement
 
@@ -43,16 +43,16 @@ over time between API versions as they get updated with new features.
 
 So we attempt to address both classes of problem here by utilizing Metadata and a few new server features and concepts.
 
-# Feature Support Level
+# API Support Level
 
-The first concept we wish to introduce is the concept of a number that indicates the feature level of the servers 
+The first concept we wish to introduce is the concept of a number that indicates the API level of the servers
 JetStream support.
 
 | Level | Versions |
 |-------|----------|
-| "0"   | < 2.10.0 |
-| "1"   | 2.10.x   |
-| "2"   | 2.11.x   |
+| 0     | < 2.11.0 |
+| 1     | 2.11.x   |
+| 2     | 2.12.x   |
 
 While here it's shown incrementing at the major boundaries it's not strictly required, if we were to introduce a 
 critical new feature mid 2.11 that could cause a bump in support level mid release without it being an issue - we 
@@ -91,7 +91,7 @@ clients if the client had to assert `needs a server of at least level 1`.
 
 We have to handle updates to asset configuration since an update might use a feature only found in newer servers.
 
-Servers would advertise their supported feature level in `jsz`, `varz` and `$JS.API.INFO`. It should also be logged
+Servers would advertise their supported API level in `jsz`, `varz` and `$JS.API.INFO`. It should also be logged
 at JetStream startup.
 
 # Server-set metadata
@@ -99,12 +99,13 @@ at JetStream startup.
 We'll store current server and asset related information in the existing `metadata` field allowing us to expand this in 
 time, today we propose the following:
 
-| Name                             | Description                                       |
-|----------------------------------|---------------------------------------------------|
-| `_nats.server.version`           | The current server version hosting an asset       |
-| `_nats.server.api_version`       | The current server feature level hosting an asset |
-| `_nats.server.require.api_level` | The required feature level to start an asset      |
-| `_nats.created.server.version`   | The version server that first created this asset  |
+| Name                             | Description                                               |
+|----------------------------------|-----------------------------------------------------------|
+| `_nats.server.version`           | The current server version hosting an asset               |
+| `_nats.server.api_level`         | The current server API level hosting an asset             |
+| `_nats.server.require.api_level` | The required API level to start an asset                  |
+| `_nats.created.server.version`   | The version of the server that first created this asset   |
+| `_nats.created.server.api_level` | The API level of the server that first created this asset |
 
 We intend to store some client hints in here to help us track what client language and version created assets.
 
@@ -123,7 +124,7 @@ it is offline in every way that would result in a change.  Likewise a compatible
 The Stream and Consumer state should get new fields `Offline bool` and `OfflineReason string` that should be set for 
 such assets.
 
-When the server starts and determines it cannot start an asset for any reason, due to error or required Feature 
+When the server starts and determines it cannot start an asset for any reason, due to error or required API
 Level, it should set this mode and fields.
 
 For starting incompatible streams in offline mode we would need to load the config in the current manner to figure out
@@ -148,10 +149,10 @@ should exist to turn this into a fatal error rather than a logged warning only.
 It could also be desirable to allow a header in the API requests to signal strict unmarshalling should be fatal for a 
 specific API call in order to facilitate testing.
 
-# Minimal supported feature level for assets
+# Minimal supported API level for assets
 
 When the server loads assets it should detect incompatible features using a combination of `DisallowUnknownFields` 
-and comparing the server feature levels to those required by the asset.
+and comparing the server API levels to those required by the asset.
 
 Incompatible assets should be loaded in Offline mode and an advisory should be published.
 
@@ -168,8 +169,9 @@ the meta leader version is known - but in reality one cannot really tell a lot f
 guaranteed to be representative of the cluster and is particularly problematic in long running clients as the server
 may have been upgraded since last `INFO` call.
 
-In future we could have clients assert that a certain API call requires a certain Feature Level but it was felt that 
+In the future we could have clients assert that a certain API call requires a certain API Level but it was felt that
 today that would not be feasible to do given the amount of clients and their current state.
+
 # Implementation Targets
 
 For 2.11 we should:
@@ -178,4 +180,13 @@ For 2.11 we should:
  * start reporting the metadata
  * soft unmarshalling failures with an option to enable fatal failures
 
-For future versions we can round the feature set out with the offline features and more.  q
+For future versions we can round the feature set out with the offline features and more.
+
+# When to increment API Level
+
+Generally when adding any new feature/field to the `StreamConfig` or `ConsumerConfig`. Especially when the field was set
+by a user and the asset should be loaded in offline mode when the feature is not supported by the server.
+
+If a new feature is added, the API level only needs to be incremented if another feature planned for the same release
+didn't already increment the API level. Meaning if multiple new features are added within the same release cycle, the
+API level only needs to be incremented once and not for every new feature.
