@@ -118,6 +118,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-42](adr/ADR-42.md)|jetstream, server|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
 |[ADR-44](adr/ADR-44.md)|jetstream, server|Versioning for JetStream Assets|
+|[ADR-45](adr/ADR-45.md)|server, testing|Testing flow for long-running server tests|
 
 ## Spec
 
@@ -128,6 +129,12 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
+
+## Testing
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-45](adr/ADR-45.md)|server, testing|Testing flow for long-running server tests|
 
 ## Deprecated
 
