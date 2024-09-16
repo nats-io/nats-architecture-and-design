@@ -34,7 +34,7 @@ Other tests that are currently slow but enabled could also be relocated, (e.g., 
 
 Proposed change summary:
 
- - Create a new test for long files in the server package, e.g.: `server/long_running_tests.go`
+ - Create a new test for long files in the server package, e.g.: `server/long_running_test.go`
  - Test in the new files are **disabled by default** to avoid unintentional execution
    - e.g. `//go:build long_running_tests`
  - Relocate existing slow tests in the new file
