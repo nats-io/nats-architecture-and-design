@@ -2,14 +2,14 @@
 
 | Metadata | Value                                                           |
 |----------|-----------------------------------------------------------------|
-| Date     | 2022-09-16                                                      |
+| Date     | 2024-09-16                                                      |
 | Author   | @mprimi, @ReubenMathew                                          |
 | Status   | Approved                                                        |
 | Tags     | server, testing                                                 |
 
 | Revision | Date       | Author  | Info           |
 |----------|------------|---------|----------------|
-| 1        | 2022-09-16 | @mprimi | Initial design |
+| 1        | 2024-09-16 | @mprimi | Initial design |
 
 ## Context and Problem Statement
 
@@ -17,14 +17,14 @@ The server codebase contains dormant tests currently skipped because they take t
 
 ## [Context | References | Prior Work]
 
-The list of currently skipped test is relatively short:
+The list of currently skipped tests is relatively short:
 
  * [TestStreamSourcingScalingSourcingManyBenchmark](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/jetstream_sourcing_scaling_test.go#L111)
  * [TestJetStreamConsumerFetchWithDrain](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/jetstream_consumer_test.go#L1081)
  * [TestJetStreamClusterBusyStreams](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/jetstream_cluster_4_test.go#L1684)
  * [TestJetStreamClusterKeyValueSync](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/jetstream_cluster_4_test.go#L2882)
  * [TestJetStreamClusterRestartThenScaleStreamReplicas](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/jetstream_cluster_3_test.go#L5787)
- * [TestJetStreamClusterRestartThenScaleStreamReplicas](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/filestore_test.go#L6549)
+ * [TestFileStoreWriteFullStateHighSubjectCardinality](https://github.com/nats-io/nats-server/blob/2faea26f63ce7a6e14b3fa577025c47009d87d11/server/filestore_test.go#L6549)
 
 However, addressing these would have the additional benefit of creating a new path for more long-running tests to be created in the future.
 
