@@ -5,7 +5,14 @@
 | Date     | 2022-11-23                                                     |
 | Author   | @aricart, @derekcollison, @tbeets, @scottf, @Jarema, @piotrpio |
 | Status   | Approved                                                       |
-| Tags     | jetstream, client                                              |
+| Tags     | jetstream, client, spec                                        |
+
+## Release History
+
+| Revision | Date       | Description                                         |
+|----------|------------|-----------------------------------------------------|
+| 1        | 2023-05-30 | Initial stable release                              |
+| 2        | 2024-06-07 | Change server reconnect behavior during `consume()` |
 
 ## Context and Problem Statement
 
@@ -46,8 +53,10 @@ Example set of methods on JetStreamContext:
   - `deleteStream(streamName)`
   - `listStreams()`
 - Consumer operations:
-  - `addConsumer(streamName, consumerConfig)`
   - `getConsumer(streamName, consumerName)`
+  - `createConsumer(streamName, consumerConfig)`
+  - `updateConsumer(streamName, consumerConfig)`
+  - `createOrUpdateConsumer(streamName, consumerConfig)`
   - `deleteConsumer(streamName, consumerName)`
 - `accountInfo()`
 
@@ -61,8 +70,10 @@ messages. Streams also allow for and managing consumers.
 Example set of methods on Stream:
 
 - operations on consumers:
-  - `addConsumer(consumerConfig)`
   - `getConsumer(consumerName)`
+  - `createConsumer(consumerConfig)`
+  - `updateConsumer(consumerConfig)`
+  - `createOrUpdateConsumer(consumerConfig)`
   - `deleteConsumer(consumerName)`
 - operations a stream:
   - `purge(purgeOpts)`
@@ -288,6 +299,10 @@ Not Telegraphed:
 - 408 Request Timeout
 - 409 Message Size Exceeds MaxBytes
 
+Calls to `next()` and `fetch()` should be concluded when the pull is terminated. On the other hand `consume()` should recover
+while maintaing its state (e.g. pending counts) by issuing a new pull request unless the status is `409 Consumer Deleted` or `409 Consumer is push based` in
+which case `consume()` call should conclude in an implementation specific way idiomatic to the language being used.
+
 ###### Idle heartbeats
 
 `Consume()` should always utilize idle heartbeats. Heartbeat values are calculated as follows:
@@ -305,15 +320,16 @@ Clients should detect server disconnect and reconnect.
 
 When a disconnect event is received, client should:
 
-- Reset the heartbeat timer.
 - Pause the heartbeat timer.
+- Stop publishing new pull requests.
 
 When a reconnect event is received, client should:
 
-- Resume the heartbeat timer.
-- Check if consumer exists (fetch consumer info). If consumer is not available, terminate `Consume()` execution with error.
-This operation may have to be retried several times as JetStream may not be immediately available.
+- Reset the heartbeat timer.
 - Publish a new pull request.
+
+Clients should never terminate the `Consume()` call on disconnect and reconnect
+events and should not check if consumer is still available after reconnect.
 
 ###### Message processing algorithm
 
@@ -339,7 +355,7 @@ was described in previous sections.
 6. Verify error type:
    - if message contains `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, go to #7
    - verify if error should be terminal based on [Status handling](#status-handling),
-   then issue a warning/error (if required) and terminate if necessary.
+   then issue a warning/error (if required) and conclude the call if necessary.
 7. Read the values of `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
 8. Subtract the values from pending messages count and pending bytes count respectively.
 9. Go to #1.

@@ -1,18 +1,30 @@
 # JetStream based Key-Value Stores
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2021-06-30|
-|Author  |@ripienaar|
-|Status  |Implemented|
-|Tags    |jetstream, client, kv|
+| Metadata | Value                       |
+|----------|-----------------------------|
+| Date     | 2021-06-30                  |
+| Author   | @ripienaar                  |
+| Status   | Implemented                 |
+| Tags     | jetstream, client, kv, spec |
+
+## Release History
+
+| Revision | Date       | Description                                         |
+|----------|------------|-----------------------------------------------------|
+| 1        | 2021-12-15 | Initial stable release of version 1.0 specification |
+| 2        | 2023-10-16 | Document NATS Server 2.10 sourced buckets           |
+| 2        | 2023-10-16 | Document read replica mirrors buckets               |
+| 2        | 2023-10-16 | Document consistency guarantees                     |
+| 3        | 2023-10-19 | Formalize initial bucket topologies                 |
+| 4        | 2023-10-25 | Support compression                                 |
+| 5        | 2024-06-05 | Add KV management                                   |
+| 6        | 2024-06-05 | Add Keys listers with filters                       |
+
 
 ## Context
 
-This document describes a design and initial implementation of a JetStream backed key-value store. The initial implementation
-is available in the CLI as `nats kv` with the reference client implementation being the `nats.go` repository.
-
-This document aims to guide client developers in implementing this feature in the language clients we maintain.
+This document describes a design and initial implementation of a JetStream backed key-value store. All tier-1 clients
+support KV.
 
 ## Status and Roadmap
 
@@ -38,19 +50,22 @@ additional behaviors will come during the 1.x cycle.
  * Key starting with `_kv` is reserved for internal use
  * CLI tool to manage the system as part of `nats`, compatible with client implementations
  * Accept arbitrary application prefixes, as outlined in [ADR-19](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-19.md)
+ * Data Compression for NATS Server 2.10
 
 ### 1.1
 
- * Encoders and Decoders for keys and values
- * Additional Operation that indicates server limits management deleted messages
+ * Merged buckets using NATS Server 2.10 subject transforms
+ * Read replicas facilitated by Stream Mirrors
+ * Replica auto discovery for mirror based replicas
+ * Formalized Multi-cluster and Leafnode Topologies
 
 ### 1.2
 
- * Read replicas facilitated by Stream Mirrors
  * Read-only operation mode
- * Replica auto discovery
  * Read cache against with replica support
  * Ranged operations
+ * Encoders and Decoders for keys and values
+ * Additional Operation that indicates server limits management deleted messages
 
 ### 1.3
 
@@ -110,8 +125,21 @@ type Status interface {
 	// TTL is how long the bucket keeps values for
 	TTL() time.Duration
 
-	// Keys return a list of all keys in the bucket - not possible now except in caches
+	// Keys return a list of all keys in the bucket.
+	// Historically this method returned a complete slice of all keys in the bucket,
+	// however clients should return interable result.
 	Keys() ([]string, error)
+
+	// KeysWithFilters returns a filtered list of keys in the bucket.
+	// Historically this method returned a complete slice of all keys in the bucket,
+	// however clients should return interable result.
+	// Languages can implement the list of filters in most idiomatic way - as an iterator, variadic argument, slice, etc.
+	// When multiple filters are passed, client library should check `consumer info` from `consumer create method` if the filters are matching,
+	// as nats-server < 2.10 would ignore them.
+	KeysWithFilters(filter []string) ([]string, error)
+
+	// IsCompressed indicates if the data is compressed on disk
+	IsCompressed() bool
 
 	// BackingStore is a name indicating the kind of backend
 	BackingStore() string
@@ -127,14 +155,17 @@ Languages can choose to expose additional information about the bucket along wit
 the `Status` interface is above but the `JetStream` specific implementation can be cast to gain access to `StreamInfo()`
 for full access to JetStream state.
 
+The choice of `IsCompressed()` as a method name is idiomatic for Go, language maintainers can make a similar idiomatic
+choice.
+
 Other languages do not have a clear 1:1 match of the above idea so maintainers are free to do something idiomatic.
 
 ## RoKV
 
 **NOTE:** Out of scope for version 1.0
 
-This is a read-only KV store handle, I call this out here to demonstrate that we need to be sure to support a read-only 
-variant of the client. One that will only function against a read replica and cannot support `Put()` etc. 
+This is a read-only KV store handle, I call this out here to demonstrate that we need to be sure to support a read-only
+variant of the client. One that will only function against a read replica and cannot support `Put()` etc.
 
 That capability is important, how you implement this in your language is your choice. You can throw exceptions on `Put()`
 when read-only or whatever you like.
@@ -164,6 +195,8 @@ type RoKV interface {
 	Status() (Status, error)
 }
 ```
+
+Regarding `Keys`, optionally the client can provide a method that provides the keys in an iterable or consumable form.
 
 ## KV
 
@@ -195,6 +228,48 @@ type KV interface {
 }
 ```
 
+## KV Management
+
+This is set of operations on the KV buckets from the JetStream context.
+
+```go
+// KeyValueManager is used to manage KeyValue buckets. It provides methods to
+// create, delete, and retrieve.
+type KeyValueManager interface {
+    // KeyValue will lookup and bind to an existing KeyValue bucket.
+    // Name can be `get_key_value`, or whatever name is idiomatic in given language.
+    KeyValue(ctx context.Context, bucket string) (KeyValue, error)
+
+    // CreateKeyValue will create a KeyValue bucket with the given
+    // configuration.
+    CreateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
+
+    // UpdateKeyValue will update an existing KeyValue bucket with the given
+    // configuration.
+    UpdateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
+
+    // CreateOrUpdateKeyValue will create a KeyValue bucket if it does not
+    // exist or update an existing KeyValue bucket with the given
+    // configuration (if possible).
+    CreateOrUpdateKeyValue(ctx context.Context, cfg KeyValueConfig) (KeyValue, error)
+
+    // DeleteKeyValue will delete given KeyValue bucket.
+    DeleteKeyValue(ctx context.Context, bucket string) error
+
+    // KeyValueBucketNames is used to retrieve a list of key value bucket
+    // names. The KeyValueNamesLister should behave in a similar fashion
+	// to the language implementation of Get Stream Names. If not already some sort of iterable,
+    // an iterable form of the api is acceptable as well.
+    KeyValueBucketNames(ctx context.Context) KeyValueNamesLister
+
+    // KeyValueBuckets is used to retrieve a list of key value bucket
+    // statuses. The KeyValueNamesLister should behave in a similar fashion
+    // to the language implementation of Get Stream Infos. If not already some sort of iterable,
+    // an iterable form of the api is acceptable as well.
+    KeyValueBuckets(ctx context.Context) KeyValueStatusLister
+}
+```
+
 ## Storage Backends
 
 We do have plans to support, and provide, commercial KV as part of our NGS offering, however there will be value in an
@@ -210,19 +285,28 @@ later.
 
 The features to support KV is in NATS Server 2.6.0.
 
+#### Consistency Guarantees
+
+By default, we do not provide read-after-write consistency.  Reads are performed directly to any replica, including out
+of date ones.  If those replicas do not catch up multiple reads of the same key can give different values between
+reads. If the cluster is healthy and performing well most reads would result in consistent values, but this should not
+be relied on to be true.
+
+If `allow_direct` is disabled on a bucket configuration read-after-write consistency is achieved at the expense of
+performance.  It is then also not possible to use the mirror based read replicas.
+
 #### Buckets
 
 A bucket is a Stream with these properties:
 
  * The main write bucket must be called `KV_<Bucket Name>`
  * The 'ingest' subjects must be `$KV.<Bucket Name>.>`
- * The bucket history or 'max history per key' is achieved by setting `max_msgs_per_subject` to the desired history level. 
+ * The bucket history or 'max history per key' is achieved by setting `max_msgs_per_subject` to the desired history level.
    * The maximum allowed size is 64.
-   * The minimum allowed size is 1. When creating a stream, 1 should be used when the user does not supply a value. 
+   * The minimum allowed size is 1. When creating a stream, 1 should be used when the user does not supply a value.
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Key TTL is managed using the `max_age` key
- * Duplicate window must be same as `max_age` when `max_age` is less than 2 minutes
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
  * Overall bucket size can be limited using `max_bytes`
@@ -232,8 +316,9 @@ A bucket is a Stream with these properties:
  * Allow Direct is always set to `true`. (It can be modified out-of-band only if desired, but not through KV bucket update.)
  * Placement is allowed
  * Republish is allowed
+ * If compression is requested in the configuration set `compression` to `s2`
 
-Here is a full example of the `CONFIGURATION` bucket:
+Here is a full example of the `CONFIGURATION` bucket with compression enabled:
 
 ```json
 {
@@ -251,10 +336,10 @@ Here is a full example of the `CONFIGURATION` bucket:
   "storage": "file",
   "discard": "new",
   "num_replicas": 1,
-  "duplicate_window": 120000000000,
   "rollup_hdrs": true,
   "deny_delete": true,
   "allow_direct": true,
+  "compression": "s2",
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
@@ -267,6 +352,9 @@ Here is a full example of the `CONFIGURATION` bucket:
 }
 ```
 
+Note: Previous revisions of this document noted that "Duplicate window must be same as `max_age` when `max_age` is less than 2 minutes".
+This behavior requires no code on the client. As long as `duplicate_window` is not supplied in the configuration, the server will supply this logic.
+
 #### Storing Values
 
 Writing a key to the bucket is a basic JetStream request.
@@ -274,11 +362,11 @@ Writing a key to the bucket is a basic JetStream request.
 The KV key `auth.username` in the `CONFIGURATION` bucket is written sent, using a request, to `$KV.CONFIGURATION.auth.username`.
 
 To implement the feature that would accept a write only if the revision of the current value of a key has a specific revision
-we use the new `Nats-Expected-Last-Subject-Sequence` header. The special value `0` for this header would indicate that the message 
-should only be accepted if it's the first message on a subject. This is purge aware, ie. if a value is in and the subject is purged 
+we use the new `Nats-Expected-Last-Subject-Sequence` header. The special value `0` for this header would indicate that the message
+should only be accepted if it's the first message on a subject. This is purge aware, ie. if a value is in and the subject is purged
 again a `0` value will be accepted.
 
-This can be implemented as a `PutOption` ie. `Put("x.y", val, UpdatesRevision(10))`, `Put("x.y", val, MustCreate())` or 
+This can be implemented as a `PutOption` ie. `Put("x.y", val, UpdatesRevision(10))`, `Put("x.y", val, MustCreate())` or
 by adding the `Create()` and `Update()` helpers, or both. Other options might be `UpdatesEntry(e)`, language implementations
 can add what makes sense in addition.
 
@@ -293,14 +381,21 @@ There are different situations where messages will be retrieved using different 
 In all cases we return a generic `Entry` type.
 
 Deleted data - (see later section on deletes) - has the `KV-Operation` header set to `DEL` or `PURGE`, really any value other than unset
-- a value received from either of these methods with this header set indicates the data has been deleted. A delete operation is turned 
-into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history. 
+- a value received from either of these methods with this header set indicates the data has been deleted. A delete operation is turned
+into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history.
 
 ##### Get Operation
 
+###### When allow_direct is false
+
 We have extended the `io.nats.jetstream.api.v1.stream_msg_get_request` API to support loading the latest value for a specific
-subject.  Thus a read for `CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request` with the
-`last_by_subj` set to `$KV.CONFIGURATION.auth.username`.
+subject.  Thus, a read for `$KV.CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request`
+with the `last_by_subj` set to `$KV.CONFIGURATION.auth.username`.
+
+###### When allow_direct is true
+
+We have introduced a new direct API that allows retrieving the last message for a subject via `$JS.APIDIRECT.GET.
+<STREAM>.<SUBJECT>`. This should be used for performing all gets on a bucket if direct is enabled.
 
 ##### History
 
@@ -310,9 +405,9 @@ and read the entire value list in using `deliver_all`. Use an Ordered Consumer t
 JetStream will report the Pending count for each message, the latest value from the available history would have a pending of `0`.
 When constructing historic values, dumping all values etc we ensure to only return pending 0 messages as the final value
 
-##### Watch 
+##### Watch
 
-A watch, like History, is based on ephemeral consumers reading values using Ordered Consumers, but now we start with the new 
+A watch, like History, is based on ephemeral consumers reading values using Ordered Consumers, but now we start with the new
 `last_per_subject` initial start, this means we will get all matching latest values for all keys.
 
 Watch can take options to allow including history, sending only new updates or sending headers only. Using a Watch end users
@@ -331,7 +426,7 @@ return no key error etc.
 Purge is like delete but history is not preserved. This is achieved by publishing a message in the same manner as Delete using the
 `KV-Operation: PURGE` header but adding the header `Nats-Rollup: sub` in addition.
 
-This will instruct the server to place the purge operation message in the stream and then delete all messages for that key up to 
+This will instruct the server to place the purge operation message in the stream and then delete all messages for that key up to
 before the delete operation.
 
 #### List of known keys
@@ -349,25 +444,229 @@ Remove the stream entirely.
 Watchers support sending received `PUT`, `DEL` and `PURGE` operations across a channel or language specific equivalent.
 
 Watchers support accepting simple keys or ranges, for example watching on `auth.username` will get just operations on that key,
-but watching `auth.>` will get operations for everything below `auth.`, the entire bucket can be watched using an empty key or a 
+but watching `auth.>` will get operations for everything below `auth.`, the entire bucket can be watched using an empty key or a
 key with wildcard `>`.
 
 We need to signal when we reach the end of the initial data set to facilitate use cases such as dumping a bucket, iterating keys etc.
 Languages can implement an End Of Initial Data signal in a language idiomatic manner. Internal to the watcher you reach this state the
-first time any message has a `Pending==0`. This signal must also be sent if no data is present - either by checking for messages using 
+first time any message has a `Pending==0`. This signal must also be sent if no data is present - either by checking for messages using
 `GetLastMsg()` on the watcher range or by inspecting the Pending+Delivered after creating the consumer. The signal must always be sent.
 
 Whatchers should support at least the following options. Languages can choose to support more models if they wish, as long as that
 is clearly indicated as a language specific extension. Names should be language idiomatic but close to these below.
 
-|Name|Description|
-|----|-----------|
-|`IncludeHistory`|Send all available history rather than just the latest entries|
-|`IgnoreDeletes`|Only sends `PUT` operation entries|
-|`MetaOnly`|Does not send any values, only metadata about those values|
-|`UpdatesOnly`|Only sends new updates made, no current or historical values are sent. The End Of Initial Data marker is sent as soon as the watch starts.|
+| Name             | Description                                                                                                                                |
+|------------------|--------------------------------------------------------------------------------------------------------------------------------------------|
+| `IncludeHistory` | Send all available history rather than just the latest entries                                                                             |
+| `IgnoreDeletes`  | Only sends `PUT` operation entries                                                                                                         |
+| `MetaOnly`       | Does not send any values, only metadata about those values                                                                                 |
+| `UpdatesOnly`    | Only sends new updates made, no current or historical values are sent. The End Of Initial Data marker is sent as soon as the watch starts. |
 
 The default behavior with no options set is to send all the `last_per_subject` values, including delete/purge operations.
+
+#### Multi-Cluster and Leafnode topologies
+
+A bucket, being backed by a Stream, lives in one Cluster only. To make buckets available elsewhere we have to use
+JetStream Sources and Mirrors.
+
+In KV we call these `Toplogies` and adding *Topology Buckets* require using different APIs than the main Bucket API
+allowing us to codify patterns and options that we support at a higher level than the underlying Stream options.
+
+For example, we want to be able to expose a single boolean that says an Aggregate is read-only which would potentially
+influence numerous options in the Stream Configuration.
+
+![KV Topologies](images/0008-topologies.png)
+
+To better communicate the intent than the word Source we will use `Aggregate` in KV terms:
+
+ **Mirror**: Copy of exactly 1 other bucket. Used primarily for scaling out the `Get()` operations.
+
+ * It is always Read-Only
+ * It can hold a filtered subset of keys
+ * Replicas are automatically picked using a RTT-nearest algorithm without any configuration
+ * Additional replicas can be added and removed at run-time without any re-configuration of already running KV clients
+ * Writes and Watchers are transparently sent to the origin bucket
+ * Can replicate buckets from other accounts and domains
+
+**Aggregate**: A `Source` that combines one or many buckets into 1 new bucket. Used to provide a full local copy of
+other buckets that support watchers and gets locally in edge scenarios.
+
+ * Requires being accessed specifically by its name used in a `KeyValue()` call
+ * Can be read-only or read-write
+ * It can hold a subset of keys from the origin buckets to limit data exposure or size
+ * Can host watchers
+ * Writes are not transparently sent to the origin Bucket as with Replicas, they either fail (default) or succeed and
+   modify the Aggregate (opt-in)
+ * Can combine buckets from multiple other accounts and domains into a single Aggregate
+ * Additional Sources can be added after initially creating the Aggregate
+
+Experiments:
+
+These items we will add in future iterations of the Topology concept:
+
+ * Existing Sources can be removed from an Aggregate. Optionally, but by default, purge the data out of the bucket
+   for the Source being removed
+ * Watchers could be supported against a Replica and would support auto-discovery of nearest replica but would
+  minimise the ability to add and remove Replicas at runtime
+
+*Implementation Note*: While this says Domains are supported, we might decide not to implement support for them at
+this point as we know we will revisit the concept of a domain. The existing domain based mirrors that are supported
+in KeyValueConfig will be deprecated but supported for the foreseeable future for those requiring domain support.
+
+#### Creation of Aggregates
+
+Since NATS Server 2.10 we support transforming messages as a stream configuration item. This allows us to source one
+bucket from another and rewrite the keys in the new bucket to have the correct name.
+
+We will model this using a few API functions and specific structures:
+
+```go
+// KVAggregateConfig configures an aggregate
+//
+// This one is quite complex because are buckets in their own right and so inevitably need
+// to have all the options that are in buckets today (minus the deprecated ones).
+type KVAggregateConfig struct {
+    Bucket       string
+    Writable     bool
+    Description  string
+    Replicas     int
+    MaxValueSize int32
+    History      uint8
+    TTL          time.Duration
+    MaxBytes     int64
+    Storage      KVStorageType // a new kv specific storage struct, for now identical to normal one
+    Placement    *KVPlacement // a new kv specific placement struct, for now identical to normal one
+    RePublish    *KVRePublish // a new kv specific replacement struct, for now identical to normal one
+    Origins      []*KVAggregateOrigin
+}
+
+type KVAggregateOrigin struct {
+    Stream   string   // note this is Stream and not Bucket since the origin may be a mirror which may not be a bucket
+    Bucket   string   // in the case where we are aggregating from a mirror, we need to know the bucket name to construct mappings
+    Keys     []string // optional filter defaults to >
+    External *ExternalStream
+}
+
+// CreateAggregate creates a new read-only Aggregate bucket with one or more sources
+CreateAggregate(ctx context.Context, cfg KVAggregateOrigin) (KeyValue, error) {}
+
+// AddAggregateOrigin updates bucket by adding new origin cfg, errors if bucket is not an Aggregate
+AddAggregateOrigin(ctx context.Context, bucket KeyValue, cfg KVAggregateOrigin) error {}
+```
+
+To copy the keys `NEW.>` from bucket `ORDERS` into `NEW_ORDERS`:
+
+```go
+bucket, _ := CreateAggregate(ctx, KVAggregateConfig{
+    Name: "NEW_ORDERS",
+    Writable: false,
+    Origins: []KVAggregateOrigin{
+        {
+            Stream: "KV_ORDERS",
+            Keys: []string{"NEW.>"}
+        }
+    }
+})
+```
+
+We create the new stream with the following partial config, rest as per any other KV, if the `orders` handle :
+
+```json
+    "subjects": []string{},
+    "deny_delete": true,
+    "deny_purge": true,
+    "sources": [
+      {
+        "name": "KV_ORDERS",
+        "subject_transforms": [
+          {
+            "src": "$KV.ORDERS.NEW.>",
+            "dest": "$KV.NEW_ORDERS.>"
+          }
+        ]
+      }
+    ],
+```
+
+When writable, configure as normal just add the sources.
+
+This results in all messages from `ORDERS` keys `NEW.>` to be copied into `NEW_ORDERS` and the subjects rewritten on
+write to the new bucket so that a unmodified KV client on `NEW_ORDERS` would just work.
+
+#### Creation of Mirrors
+
+Replicas can be built using the standard mirror feature by setting `mirror_direct` to true as long as the origin bucket
+also has `allow_direct`. When adding a mirror it should be confirmed that the origin bucket has `allow_direct` set.
+
+We will model this using a few API functions and specific structures:
+
+```go
+type KVMirrorConfig struct {
+    Name         string // name, not bucket, as this may not be accessed as a bucket
+    Description  string
+    Replicas     int
+    History      uint8
+    TTL          time.Duration
+    MaxBytes     int64
+    Storage      StorageType
+    Placement    *Placement
+
+    Keys         []string // mirrors only subsets of keys
+    OriginBucket string
+    External     *External
+}
+
+// CreateMirror creates a new read-only Mirror bucket from an origin bucket
+CreateMirror(ctx context.Context, cfg KVMirrorConfig)  error {}
+```
+
+These mirrors are not called `Bucket` and may not have the `KV_` string name prefix as they are not buckets and cannot
+be used as buckets without significant changes in how a KV client constructs its key names etc, we have done this in
+the leafnode mode and decided it's not a good pattern.
+
+When creating a replica of `ORDERS` to `MIRROR_ORDERS_NYC` we do:
+
+```go
+err := CreateMirror(ctx, origin, KVMirrorConfig{
+    Name: "MIRROR_ORDERS_NYC",
+    // ...
+    OriginStream: "ORDERS"
+})
+```
+
+When a direct read is done the response will be from the rtt-nearest mirror.  With a mirror added the `nats` command
+can be used to verify that a alternative location is set:
+
+```
+$ nats s info KV_ORDERS
+...
+State:
+
+            Alternates: MIRROR_ORDERS_NYC: Cluster: nyc Domain: hub
+                                KV_ORDERS: Cluster: lon Domain: hub
+
+```
+
+Here we see a RTT-sorted list of alternatives, the `MIRROR_ORDERS_NYC` is nearest to me in the RTT sorted list.
+
+When doing a direct get the headers will confirm the mirror served the request:
+
+```
+$ nats req '$JS.API.DIRECT.GET.KV_ORDERS.$KV.ORDERS.NEW.123' ''
+13:26:06 Sending request on "JS.API.DIRECT.GET.KV_ORDERS.$KV.ORDERS.NEW.123"
+13:26:06 Received with rtt 1.319085ms
+13:26:06 Nats-Stream: MIRROR_ORDERS_NYC
+13:26:06 Nats-Subject: $KV.ORDERS.NEW.123
+13:26:06 Nats-Sequence: 12
+13:26:06 Nats-Time-Stamp: 2023-10-16T12:54:19.409051084Z
+
+{......}
+```
+
+As mirrors support subject filters these replicas can hold region specific keys.
+
+As this is a `Mirror` this stream does not listen on a subject and so the only way to get data into it is via the origin
+bucket.  We should also set the options to deny deletes and purges.
 
 #### API Design notes
 
@@ -422,4 +721,3 @@ ditto for service registeries and so forth.
 On the name `Entry` for the returned result. `Value` seemed a bit generic and I didn't want to confuse matters mainly in the go client
 that has the unfortunate design of just shoving everything and the kitchen sink into a single package. `KVValue` is a stutter and so
 settled on `Entry`.
-

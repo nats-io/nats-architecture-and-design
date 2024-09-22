@@ -5,13 +5,14 @@
 |Date    |2021-11-03|
 |Author  |@scottf|
 |Status  |Partially Implemented|
-|Tags    |jetstream, client, objectstore|
+|Tags    |jetstream, client, objectstore, spec|
 
 
 |Revision|Date|Author|Info|
 |--------|----|------|----|
 |1       |2021-11-03|@scottf|Initial design|
 |2       |2023-06-14|@Jarema|Add metadata|
+|3       |2024-02-05|@Jarema|Add Compression|
 
 ## Context
 
@@ -21,16 +22,17 @@ This document describes a design of a JetStream backed object store. This ADR is
 
 We intend to hit a basic initial feature set as below, with some future facing goals as indicated:
 
-Initial feature list:
+Current feature list:
 
 - Represent an object store.
 - Store a large quantity of related bytes in chunks as a single object.
 - Retrieve all the bytes from a single object
 - Store metadata regarding each object
-- Store multiple objects in a single store  
+- Store multiple objects in a single store
 - Ability to specify chunk size
 - Ability to delete an object
-- Ability to understand the state of the object store.
+- Ability to understand the state of the object store
+- Data Compression of Object Stores for NATS Server 2.10
 
 Possible future features
 
@@ -39,10 +41,10 @@ Possible future features
 - Archiving (tiered storage)
 - Searching/Indexing (tagging)
 - Versioning / Revisions
-- Overriding digest algorithm 
+- Overriding digest algorithm
 - Capturing Content-Type (mime type)
 - Per chunk Content-Encoding (i.e. gzip)
-- Read an individual chunk. 
+- Read an individual chunk.
 
 ## Basic Design
 
@@ -57,7 +59,7 @@ Possible future features
 Protocol Naming Conventions are fully defined in [ADR-6](ADR-6.md)
 
 ### Object Store
-The object store name or bucket name (`bucket`) will be used to formulate a stream name 
+The object store name or bucket name (`bucket`) will be used to formulate a stream name
 and is specified as: `restricted-term` (1 or more of `A-Z, a-z, 0-9, dash, underscore`)
 
 ### Object Id
@@ -71,9 +73,9 @@ Currently `SHA-256` is the only supported digest. Please use the uppercase form 
 when specifying the digest as in `SHA-256=IdgP4UYMGt47rgecOqFoLrd24AXukHf5-SVzqQ5Psg8=`.
 
 ### Modified Time
-Modified time is never stored. 
+Modified time is never stored.
 * When putting an object or link into the store, the client should populate the ModTime with the current UTC time before returning it to the user.
-* When getting an object or getting an object or link's info, the client should populate the ModTime with message time from the server. 
+* When getting an object or getting an object or link's info, the client should populate the ModTime with message time from the server.
 
 ### Default Settings
 
@@ -98,8 +100,12 @@ type ObjectStoreConfig struct {
 	Storage     StorageType		// stream storate_type
 	Replicas    int			// stream replicas
 	Placement   Placement		// stream placement
+	Compression bool		// stream compression
 }
 ```
+
+* If Compression is requested in the configuration, set its value in the Stream config to `s2`.
+Object Store does not expose internals of Stream config, therefore the bool value is used.
 
 ### Stream Configuration and Subject Templates
 
@@ -132,7 +138,8 @@ type ObjectStoreConfig struct {
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
-  }
+  },
+  compression: "s2"
 }
 ```
 
@@ -144,7 +151,7 @@ type ObjectStoreConfig struct {
 type ObjectLink struct {
     // Bucket is the name of the other object store.
     Bucket string `json:"bucket"`
-    
+
     // Name can be used to link to a single object.
     // If empty means this is a link to the whole store, like a directory.
     Name string `json:"name,omitempty"`
@@ -160,7 +167,7 @@ type ObjectMetaOptions struct {
 }
 ```
 
-### ObjectMeta 
+### ObjectMeta
 
 Object Meta is high level information about an object.
 
@@ -176,31 +183,24 @@ type ObjectMeta struct {
 }
 ```
 
-### ObjectInfo 
+### ObjectInfo
 
-Object Info is meta plus instance information. 
-The fields in ObjectMeta are serialized in line as if they were 
-direct fields of ObjectInfo 
+Object Info is meta plus instance information.
+The fields in ObjectMeta are serialized in line as if they were
+direct fields of ObjectInfo
 
 ```go
 type ObjectInfo struct {
     ObjectMeta
-    
     Bucket  string    `json:"bucket"`
-    
     NUID    string    `json:"nuid"`
-    
     // the total object size in bytes
     Size    uint64    `json:"size"`
-    
     ModTime time.Time `json:"mtime"`
-    
     // the total number of chunks
     Chunks  uint32    `json:"chunks"`
-    
     // as in http, <digest-algorithm>=<digest-value>
     Digest  string    `json:"digest,omitempty"`
-    
     Deleted bool      `json:"deleted,omitempty"`
 }
 ```
@@ -248,37 +248,43 @@ The status of an object
 type ObjectStoreStatus interface {
     // Bucket is the name of the bucket
     Bucket() string
-    
+
     // Description is the description supplied when creating the bucket
     Description() string
 
     // Bucket-level metadata
     Metadata() map[string]string
-    
+
     // TTL indicates how long objects are kept in the bucket
     TTL() time.Duration
-    
+
     // Storage indicates the underlying JetStream storage technology used to store data
     Storage() StorageType
-    
+
     // Replicas indicates how many storage replicas are kept for the data in the bucket
     Replicas() int
-    
+
     // Sealed indicates the stream is sealed and cannot be modified in any way
     Sealed() bool
-    
+
     // Size is the combined size of all data in the bucket including metadata, in bytes
     Size() uint64
-    
-    // BackingStore provides details about the underlying storage. 
+
+    // BackingStore provides details about the underlying storage.
     // Currently the only supported value is `JetStream`
     BackingStore() string
-}    
+
+    // IsCompressed indicates if the data is compressed on disk
+    IsCompressed() bool
+}
 ```
+
+The choice of `IsCompressed()` as a method name is idiomatic for Go, language maintainers can make a similar idiomatic
+choice.
 
 ## Functional Interfaces
 
-### ObjectStoreManager 
+### ObjectStoreManager
 
 Object Store Manager creates, loads and deletes Object Stores
 
@@ -295,7 +301,7 @@ CreateObjectStore(cfg ObjectStoreConfig) -> ObjectStore
 DeleteObjectStore(bucket string)
 ```
 
-### ObjectStore 
+### ObjectStore
 
 Storing large objects efficiently. API are required unless noted as "Optional/Convenience".
 
@@ -320,7 +326,7 @@ PutFile(file [string/file reference]) -> ObjectInfo
 _Notes_
 
 On convenience methods accepting file information only, consider that the reference could have
-operating specific path information that is not transferable. One solution would be to only 
+operating specific path information that is not transferable. One solution would be to only
 use the actual file name as the object name and discard any path information.
 
 **Get**
@@ -347,8 +353,8 @@ GetFile(name string, file string)
 
 **GetInfo**
 
-GetInfo will retrieve the current information for the object. 
-* Do not return info for deleted objects, except with optional convenience methods. 
+GetInfo will retrieve the current information for the object.
+* Do not return info for deleted objects, except with optional convenience methods.
 
 ```
 GetInfo(name string) -> ObjectInfo
@@ -424,11 +430,11 @@ Status() -> ObjectStoreStatus
 
 ### ObjectStore Links
 
-Links are currently under discussion whether they are necessary. 
+Links are currently under discussion whether they are necessary.
 Here is the required API as proposed.
-Please note that in this version of the api, it is possible that 
+Please note that in this version of the api, it is possible that
 `obj ObjectInfo` or `bucket ObjectStore` could be stale, meaning their state
-has changed since they were read, i.e. the object was deleted after it's info was read. 
+has changed since they were read, i.e. the object was deleted after it's info was read.
 
 **AddLink**
 
