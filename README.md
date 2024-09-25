@@ -7,34 +7,35 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 # Architecture Decision Records
 ## Client
 
-|Index|Tags|Description|
-|-----|----|-----------|
-|[ADR-1](adr/ADR-1.md)|jetstream, client, server|JetStream JSON API Design|
-|[ADR-2](adr/ADR-2.md)|jetstream, server, client|NATS Typed Messages|
-|[ADR-4](adr/ADR-4.md)|server, client|NATS Message Headers|
-|[ADR-5](adr/ADR-5.md)|server, client|Lame Duck Notification|
-|[ADR-6](adr/ADR-6.md)|server, client|Naming Rules|
-|[ADR-7](adr/ADR-7.md)|server, client, jetstream|NATS Server Error Codes|
-|[ADR-8](adr/ADR-8.md)|jetstream, client, kv, spec|JetStream based Key-Value Stores|
-|[ADR-9](adr/ADR-9.md)|server, client, jetstream|JetStream Consumer Idle Heartbeats|
-|[ADR-10](adr/ADR-10.md)|server, client, jetstream|JetStream Extended Purge|
-|[ADR-11](adr/ADR-11.md)|client|Hostname resolution|
-|[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
-|[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
-|[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
-|[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
-|[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
-|[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore, spec|JetStream based Object Stores|
-|[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
-|[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
-|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
-|[ADR-32](adr/ADR-32.md)|client, spec|Service API|
-|[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
-|[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
-|[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
-|[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
-|[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
-|[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
+| Index                   |Tags|Description|
+|-------------------------|----|-----------|
+| [ADR-1](adr/ADR-1.md)   |jetstream, client, server|JetStream JSON API Design|
+| [ADR-2](adr/ADR-2.md)   |jetstream, server, client|NATS Typed Messages|
+| [ADR-4](adr/ADR-4.md)   |server, client|NATS Message Headers|
+| [ADR-5](adr/ADR-5.md)   |server, client|Lame Duck Notification|
+| [ADR-6](adr/ADR-6.md)   |server, client|Naming Rules|
+| [ADR-7](adr/ADR-7.md)   |server, client, jetstream|NATS Server Error Codes|
+| [ADR-8](adr/ADR-8.md)   |jetstream, client, kv, spec|JetStream based Key-Value Stores|
+| [ADR-9](adr/ADR-9.md)   |server, client, jetstream|JetStream Consumer Idle Heartbeats|
+| [ADR-10](adr/ADR-10.md) |server, client, jetstream|JetStream Extended Purge|
+| [ADR-11](adr/ADR-11.md) |client|Hostname resolution|
+| [ADR-13](adr/ADR-13.md) |jetstream, client|Pull Subscribe internals|
+| [ADR-14](adr/ADR-14.md) |client, security|JWT library free jwt user generation|
+| [ADR-17](adr/ADR-17.md) |jetstream, client|Ordered Consumer|
+| [ADR-18](adr/ADR-18.md) |client|URL support for all client options|
+| [ADR-19](adr/ADR-19.md) |jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
+| [ADR-20](adr/ADR-20.md) |jetstream, client, objectstore, spec|JetStream based Object Stores|
+| [ADR-21](adr/ADR-21.md) |client|NATS Configuration Contexts|
+| [ADR-22](adr/ADR-22.md) |jetstream, client|JetStream Publish Retries on No Responders|
+| [ADR-31](adr/ADR-31.md) |jetstream, client, server|JetStream Direct Get|
+| [ADR-32](adr/ADR-32.md) |client, spec|Service API|
+| [ADR-33](adr/ADR-33.md) |jetstream, client, server|Metadata for Stream and Consumer|
+| [ADR-34](adr/ADR-34.md) |jetstream, client, server|JetStream Consumers Multiple Filters|
+| [ADR-36](adr/ADR-36.md) |jetstream, client, server|Subject Mapping Transforms in Streams|
+| [ADR-37](adr/ADR-37.md) |jetstream, client, spec|JetStream Simplification|
+| [ADR-40](adr/ADR-40.md) |client, server, spec|NATS Connection|
+| [ADR-43](adr/ADR-43.md) |jetstream, client, server|JetStream Per-Message TTL|
+| [ADR-45](adr/ADR-45.md) |client|Request Many|
 
 ## Jetstream
 
