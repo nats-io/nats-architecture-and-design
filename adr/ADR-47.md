@@ -129,6 +129,9 @@ while (timeLeftNanos > 0) {
         return; // null represents a timeout in java
     }
 
+    // the workflow of this calcuation is in question. Some languages might handle it better
+    // but if the handoff to the client to check the sentinel is a blocking call,
+    // time is spent on that user's code and will affect the time available.
     timeLeftNanos = totalWaitTimeNanos - (System.nanoTime() - start);
     
     if (message is a status message) {
