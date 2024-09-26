@@ -69,7 +69,7 @@ Each client must determine how to give messages to the user.
 ### End of Data
 
 The developer should notify the user when the request has stopped processing
-for completion, sentinel or error conditions but maybe not on if the user cancelled or terminates.
+for completion, sentinel or error conditions (but maybe not if the user cancelled or terminates.)
 Implementation is language specific based on control flow.
 
 Examples would be sending a marker of some sort to a queue, terminating an iterator, returning a collection, erroring.
