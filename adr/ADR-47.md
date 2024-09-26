@@ -2,10 +2,14 @@
 
 | Metadata | Value                      |
 |----------|----------------------------|
-| Date     | 2023-06-26                 |
+| Date     | 2024-09-26                 |
 | Author   | @aricart, @scottf, @Jarema |
 | Status   | Partially Implemented      |
 | Tags     | client                     |
+
+| Revision | Date       | Author    | Info                    |
+|----------|------------|-----------|-------------------------|
+| 1        | 2024-09-26 | @scottf   | Document Initial Design |
 
 ## Problem Statement
 Have the client support receiving multiple replies from a single request, instead of limiting the client to the first reply.
