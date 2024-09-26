@@ -117,7 +117,7 @@ export enum RequestStrategy {
 
 ### Pseudocode
 
-Here is the loop from Java mixed with pseudocode. Java uses nanos since they are always relative, unlike millis that could change if the system date changes
+Here is the loop from Java mixed with pseudocode.
 
 ```
 long resultsLeft = maxResponses;
