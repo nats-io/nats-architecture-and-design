@@ -43,7 +43,7 @@ Considered "stalled" if this timeout is reached, the request is complete.
 * Optional
 * Less than 1 or greater than or equal to the total timeout is the same as not supplied.
 * When supplied, subsequent waits are the lesser of the stall time or the calculated remaining time. 
-This allows the total timeout to be considered and for the stall to not extend the loop past the total timeout.
+This allows the total timeout to be honored and for the stall to not extend the loop past the total timeout.
 
 ### Max messages
 
