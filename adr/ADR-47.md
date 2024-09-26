@@ -76,7 +76,7 @@ Examples would be sending a marker of some sort to a queue, terminating an itera
 
 ### Status Messages / Server Errors
 
-If a status or error comes in place of a user message, this is terminal.
+If a status (like a 503) or an error comes in place of a user message, this is terminal.
 This is probably useful information for the user and can be conveyed as part of the end of data.
 
 #### Callback timing
@@ -85,18 +85,18 @@ If callbacks are made in a blocking fashion, the client must account for the tim
 
 ### Sentinel
 
-If the client supports a sentinel, for instance with a callback predicate that accepts the message and returns a boolean, 
+If the client supports a sentinel with a callback predicate that accepts the message and returns a boolean, 
 a return of true would mean continue to process and false would mean stop processing.
 
 ### Cancelling
 
-Wherever possible, the user should be able to cancel the request. This is not the sentinel.
+If possible, the user should be able to cancel the request. This is not the sentinel.
 
 ## Disconnection
 
-It's possible that there is a connectivity issue that prevents messages from reaching the requestor,
-so it might be difficult to differentiate from a total or stall timeout. 
-If possible and useful in the client, this can be conveyed as part of the end of data. 
+It's possible that there is a connectivity issue that prevents messages from reaching the requester,
+It might be difficult to differentiate that timeout from a total or stall timeout. 
+If possible to know the difference, this could be conveyed as part of the end of data. 
 
 ## Strategies
 It's acceptable to make "strategies" via enum / api / helpers / builders / whatever.
@@ -115,7 +115,7 @@ export enum RequestStrategy {
 }
 ```
 
-### Example
+### Pseudocode
 
 Here is the loop from Java mixed with pseudocode. Java uses nanos since they are always relative, unlike millis that could change if the system date changes
 
