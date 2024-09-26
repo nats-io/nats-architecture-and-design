@@ -35,7 +35,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 | [ADR-37](adr/ADR-37.md) |jetstream, client, spec|JetStream Simplification|
 | [ADR-40](adr/ADR-40.md) |client, server, spec|NATS Connection|
 | [ADR-43](adr/ADR-43.md) |jetstream, client, server|JetStream Per-Message TTL|
-| [ADR-45](adr/ADR-45.md) |client|Request Many|
+| [ADR-46](adr/ADR-46.md) |client|Request Many|
 
 ## Jetstream
 
