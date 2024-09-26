@@ -29,7 +29,7 @@ and provide the user the ability to directly stop the processing.
 ### Total timeout
 
 The maximum amount of time to wait for responses. When the time is expired, the process is complete.
-The wait for the first message is always made with the total timeout, since at least one message must come in within the total time.
+The wait for the first message is always made with the total timeout since at least one message must come in within the total time.
 
 * Always used
 * Defaults to the connection or system request timeout.
@@ -42,7 +42,8 @@ Considered "stalled" if this timeout is reached, the request is complete.
 
 * Optional
 * Less than 1 or greater than or equal to the total timeout is the same as not supplied.
-* When supplied, subsequent waits are the lesser of the stall time or the calculated remaining time
+* When supplied, subsequent waits are the lesser of the stall time or the calculated remaining time. 
+This allows the total timeout to be considered and for the stall to not extend the loop past the total timeout.
 
 ### Max messages
 
