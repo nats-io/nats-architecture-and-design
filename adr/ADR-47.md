@@ -114,37 +114,3 @@ export enum RequestStrategy {
   SentinelMsg = "sentinelMsg",
 }
 ```
-
-### Pseudocode
-
-Here is the loop from Java mixed with pseudocode.
-
-```
-long resultsLeft = maxResponses;
-long timeLeftNanos = totalWaitTimeNanos;
-long timeoutNanos = totalWaitTimeNanos; // first time we wait the whole timeout
-long start = System.nanoTime();
-while (timeLeftNanos > 0) {
-    Message msg = Get the next message or status using timeout of timeoutNanos
-    if (msg == null) {
-        return; // null represents a timeout in java
-    }
-
-    // the workflow of this calcuation is in question. Some languages might handle it better
-    // but if the handoff to the client to check the sentinel is a blocking call,
-    // time is spent on that user's code and will affect the time available.
-    timeLeftNanos = totalWaitTimeNanos - (System.nanoTime() - start);
-    
-    if (message is a status message) {
-        // let the user know we reached the end via status. For instance could be a 503
-        return;
-    }
-
-    // give the message to the user
-    // A. If they return that it was the sentinel, the loop is done
-    // B. If we reached max responses, the loop is done
-
-    // subsequent times we wait the shortest of the time left vs the max stall
-    timeoutNanos = Math.min(timeLeftNanos, maxStallNanos); 
-}
-```
