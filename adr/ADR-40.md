@@ -11,6 +11,7 @@
 | -------- | ---------- | -------- | ---------------------------- |
 | 1        | 2023-10-12 | @Jarema  | Initial draft                |
 | 2        | 2024-6-24  | @aricart | Added protocol error section |
+| 3        | 2024-9-30  | @Jarema  | Add connection Statistics    |
 
 ## Summary
 
@@ -388,7 +389,7 @@ server. The client will follow its reconnect logic.
 `Secure Connection - TLS Required` is sent if the client is trying to connect on
 a server that requires TLS.
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > The client should have done extensive ServerInfo investigation
 > and determined that this would have been a failure when initiating the
 > connection.
@@ -434,7 +435,7 @@ disconnected. Reconnect was greeted with a `Authorization Error`.
 `invalid client protocol` sent to the client if the protocol version from the
 client doesn't match. Client is disconnected when this error is sent.
 
-> [!NOTE] 
+> [!NOTE]
 > Currently, this is not a concern since presumably, a server will be
 > able to deal with protocol version 1 when protocol upgrades.
 
@@ -445,7 +446,7 @@ responder, but rejects headers. Client is disconnected when this error is sent.
 Current clients hardcode `headers: true`, so this error shouldn't be seen by
 clients.
 
-> [!IMPORTANT] 
+> [!IMPORTANT]
 > `headers` connect option shouldn't be exposed by the clients -
 > this is a holdover from when clients opted in to `headers`.
 
@@ -472,6 +473,24 @@ a command. This is followed by a disconnect.
 
 - `maximum account active connections exceeded` not notified to the client, the
   client connecting will be disconnected (seen as a connection refused.)
+
+### Client Statistics
+Clients should implement statistics gathered throughout the lifetime of the client (persisted between connections):
+
+#### Bytes In
+Should account for everything received from the server, a record of bytes received on the socket.
+
+#### Bytes Out
+Should account for everything sent to the server, a record of bytes sent on the socket.
+
+#### Messages In
+Every message (`MSG` and `HMSG`) received from the server.
+
+#### Messages out
+Every message (`PUB` and `HPUB`) sent to the server.
+
+#### Connects
+Total number of connections (first connection and any successful reconnection) made by the client.
 
 ### Security Considerations
 
