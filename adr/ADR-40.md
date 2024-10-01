@@ -489,8 +489,9 @@ Every message (`MSG` and `HMSG`) received from the server.
 #### Messages out
 Every message (`PUB` and `HPUB`) sent to the server.
 
-#### Connects
-Total number of connections (first connection and any successful reconnection) made by the client.
+#### Connects / Reconnects
+Total number of connections (first connection and any successful reconnection) or reconnections made by client.
+We allow both variants here, as languages have some variance in how they handle connections around option `retry_on_failed_connect`.
 
 ### Security Considerations
 
