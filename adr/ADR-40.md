@@ -493,6 +493,13 @@ Every message (`PUB` and `HPUB`) sent to the server.
 Total number of connections (first connection and any successful reconnection) or reconnections made by client.
 We allow both variants here, as languages have some variance in how they handle connections around option `retry_on_failed_connect`.
 
+#### Handling inconsistencies across clients
+
+As `Statistics` has been added before we had a concept of ADRs and parity, each client differs in what and how it counts.
+To achieve parity without introducing breaking changes, new fields should use appropriate names.
+For example, Go could add `TotalBytesIn` and `TotalBytesOut`.
+Old fields should be kept with added comments describing what they are counting.
+
 ### Security Considerations
 
 Discuss any additional security considerations pertaining to the TLS
