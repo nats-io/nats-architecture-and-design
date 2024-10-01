@@ -42,6 +42,7 @@ Considered "stalled" if this timeout is reached, the request is complete.
 
 * Optional
 * Less than 1 or greater than or equal to the total timeout is the same as not supplied.
+* Defaults to not applicable.
 * When supplied, subsequent waits are the lesser of the stall time or the calculated remaining time. 
 This allows the total timeout to be honored and for the stall to not extend the loop past the total timeout.
 
@@ -50,12 +51,14 @@ This allows the total timeout to be honored and for the stall to not extend the 
 The maximum number of messages to wait for. 
 * Optional
 * If this number of messages is received, the request is complete.
+* If this number is supplied and both total timeout and stall timeout are not set, total timeout defaults to the connection or system timeout.
 
 ### Sentinel
 
 While processing the messages, the user should have the ability to indicate that it no longer wants to receive any more messages.
 * Optional
-* Language specific implementation   
+* Language specific implementation
+* If this number is supplied and both total timeout and stall timeout are not set, total timeout defaults to the connection or system timeout.
 
 ## Notes
 
@@ -102,15 +105,8 @@ If possible to know the difference, this could be conveyed as part of the end of
 It's acceptable to make "strategies" via enum / api / helpers / builders / whatever.
 Strategies are just pre-canned configurations.
 
-**Strategies are not specified yet, this is just an example**
-
-Here is an example from Javascript. Jitter was the original term for stall.
-
-```js
-export enum RequestStrategy {
-  Timer = "timer",
-  Count = "count",
-  JitterTimer = "jitterTimer",
-  SentinelMsg = "sentinelMsg",
-}
-```
+#### Examples
+Timeout - this is the default strategy where on the total timeout is used.
+Max Responses plus Total Time - the user wants a certain number of responses, but they also don't want to wait too long
+Stall Only - this strategy, only a stall is used. Problematic if stall is less then the time it takes to get the very first message
+Max Responses Only - wait forever for a number of responses. Problematic to have no total wait time.
