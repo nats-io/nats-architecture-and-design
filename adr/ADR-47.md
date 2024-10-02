@@ -12,7 +12,8 @@
 | 1        | 2024-09-26 | @scottf   | Document Initial Design |
 
 ## Problem Statement
-Have the client support receiving multiple replies from a single request, instead of limiting the client to the first reply.
+Have the client support receiving multiple replies from a single request, instead of limiting the client to the first reply,
+and support patterns like scatter-gather and sentinel.
 
 ## Basic Design
 
@@ -23,6 +24,7 @@ The client handles the requests and subscriptions and provides the messages to t
 * The various configuration options are there to manage and short circuit the length of the wait, 
 and provide the user the ability to directly stop the processing.
 * Request Many is not a recoverable operation, but it could be wrapped in a retry pattern.
+* The client should communicate status whenever possible, for instance if it gets a 503 No Responders
 
 ## Config
 
@@ -33,16 +35,15 @@ The wait for the first message is always made with the total timeout since at le
 
 * Always used
 * Defaults to the connection or system request timeout.
-* A user could provide a very large value, there has been no discussion of validating. Might be used in a sentinel case or where a user can cancel. Not recommended? Should be discouraged?
 
 ### Stall timer
 
-The amount time before to wait for subsequent messages. 
-Considered "stalled" if this timeout is reached, the request is complete.
+The amount time to wait for messages other than the first (subsequent waits). 
+Considered "stalled" if this timeout is reached, indicating the request is complete.
 
 * Optional
-* Less than 1 or greater than or equal to the total timeout is the same as not supplied.
-* Defaults to not applicable.
+* Less than 1 or greater than or equal to the total timeout behaves the same as if not supplied.
+* Defaults to not supplied.
 * When supplied, subsequent waits are the lesser of the stall time or the calculated remaining time. 
 This allows the total timeout to be honored and for the stall to not extend the loop past the total timeout.
 
@@ -51,14 +52,14 @@ This allows the total timeout to be honored and for the stall to not extend the 
 The maximum number of messages to wait for. 
 * Optional
 * If this number of messages is received, the request is complete.
-* If this number is supplied and both total timeout and stall timeout are not set, total timeout defaults to the connection or system timeout.
+* If this number is supplied and total timeout is not set, total timeout defaults to the connection or system timeout.
 
 ### Sentinel
 
 While processing the messages, the user should have the ability to indicate that it no longer wants to receive any more messages.
 * Optional
 * Language specific implementation
-* If this number is supplied and both total timeout and stall timeout are not set, total timeout defaults to the connection or system timeout.
+* If sentinel is supplied and total timeout is not set, total timeout defaults to the connection or system timeout.
 
 ## Notes
 
@@ -71,11 +72,9 @@ Each client must determine how to give messages to the user.
 
 ### End of Data
 
-The developer should notify the user when the request has stopped processing
-for completion, sentinel or error conditions (but maybe not if the user cancelled or terminates.)
+The developer should notify the user when the request has stopped processing and the receiving mechanism is not fixed like a list
+or iterator that termination is obvious. A queue or a callback for instance, should get a termination message.
 Implementation is language specific based on control flow.
-
-Examples would be sending a marker of some sort to a queue, terminating an iterator, returning a collection, erroring.
 
 ### Status Messages / Server Errors
 
@@ -84,12 +83,16 @@ This is probably useful information for the user and can be conveyed as part of 
 
 #### Callback timing
 
-If callbacks are made in a blocking fashion, the client must account for the time it takes for the user to process the message.
+If callbacks are made in a blocking fashion, 
+the client must account for the time it takes for the user to process the message 
+and not consider that time against the timeouts.
 
 ### Sentinel
 
-If the client supports a sentinel with a callback predicate that accepts the message and returns a boolean, 
+If the client supports a sentinel with a callback/predicate that accepts the message and returns a boolean, 
 a return of true would mean continue to process and false would mean stop processing.
+
+If possible, the client should support the "standard sentienl", which is a message with a null/nil or empty payload.
 
 ### Cancelling
 
@@ -103,10 +106,10 @@ If possible to know the difference, this could be conveyed as part of the end of
 
 ## Strategies
 It's acceptable to make "strategies" via enum / api / helpers / builders / whatever.
-Strategies are just pre-canned configurations.
+Strategies are just pre-canned configurations, for example:
 
-#### Examples
-Timeout - this is the default strategy where on the total timeout is used.
-Max Responses plus Total Time - the user wants a certain number of responses, but they also don't want to wait too long
-Stall Only - this strategy, only a stall is used. Problematic if stall is less then the time it takes to get the very first message
-Max Responses Only - wait forever for a number of responses. Problematic to have no total wait time.
+**Timeout or Wait** - this is the default strategy where only the total timeout is used.
+
+**Stall** - the stall defaults to the lessor of 1/10th of the total wait time (if provided) or the default connection timeout.
+
+**Max Responses** - accepts a max response number and uses the default timeout.
