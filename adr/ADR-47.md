@@ -96,7 +96,8 @@ If possible, the client should support the "standard sentinel", which is a messa
 
 ### Cancelling
 
-If possible, the user should be able to cancel the request. This is not the sentinel.
+If possible, the user should be able to cancel the request. This is another pathway besides sentinel
+allowing that the dev can cancel the entire request-many arbitrarily.
 
 ## Disconnection
 
