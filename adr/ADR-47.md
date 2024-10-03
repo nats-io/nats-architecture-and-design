@@ -92,7 +92,7 @@ and not consider that time against the timeouts.
 If the client supports a sentinel with a callback/predicate that accepts the message and returns a boolean, 
 a return of true would mean continue to process and false would mean stop processing.
 
-If possible, the client should support the "standard sentienl", which is a message with a null/nil or empty payload.
+If possible, the client should support the "standard sentinel", which is a message with a null/nil or empty payload.
 
 ### Cancelling
 
@@ -113,3 +113,10 @@ Strategies are just pre-canned configurations, for example:
 **Stall** - the stall defaults to the lessor of 1/10th of the total wait time (if provided) or the default connection timeout.
 
 **Max Responses** - accepts a max response number and uses the default timeout.
+
+### Max Responses Optimization
+On requests that specify max responses, and when not using mux inboxes, the client can unsubscribe with a count immediately after subscribing.
+Theoretically this unsub could be processed after a reply has come in and out of the server, so you still must check the count manually.
+
+### Best Practice
+Since the client is in charge of the subscription, it should always unsubscribe upon completion of the request handling instead of leaving it up to the server to time it out.
