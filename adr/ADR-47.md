@@ -5,7 +5,7 @@
 | Date     | 2024-09-26                 |
 | Author   | @aricart, @scottf, @Jarema |
 | Status   | Partially Implemented      |
-| Tags     | client                     |
+| Tags     | client,spec,orbit         |
 
 | Revision | Date       | Author    | Info                    |
 |----------|------------|-----------|-------------------------|
@@ -96,7 +96,7 @@ If possible, the client should support the "standard sentinel", which is a messa
 
 ### Cancelling
 
-If possible, the user should be able to cancel the request. This is another pathway besides sentinel
+A client can offer other ways for the user to be able to cancel the request. This is another pathway besides sentinel
 allowing that the dev can cancel the entire request-many arbitrarily.
 
 ## Disconnection
@@ -115,9 +115,14 @@ Strategies are just pre-canned configurations, for example:
 
 **Max Responses** - accepts a max response number and uses the default timeout.
 
-### Max Responses Optimization
+### Subscription Management
+Since the client is in charge of the subscription, it should always unsubscribe upon completion of the request handling instead of leaving it up to the server to time it out.
+
+#### Max Responses Optimization
 On requests that specify max responses, and when not using mux inboxes, the client can unsubscribe with a count immediately after subscribing.
 Theoretically this unsub could be processed after a reply has come in and out of the server, so you still must check the count manually.
 
-### Best Practice
-Since the client is in charge of the subscription, it should always unsubscribe upon completion of the request handling instead of leaving it up to the server to time it out.
+#### Mux Inbox
+If possible, the implementation can offer the use of the mux inbox. 
+Consider that the implementation of managing the subscription will differ from a non-mux inbox, 
+for instance not closing the subscription and not implementing a max response optimization.   
