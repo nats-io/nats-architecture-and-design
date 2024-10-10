@@ -35,6 +35,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
+|[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 
 ## Jetstream
 
@@ -83,6 +84,12 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
 |[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
 
+## Orbit
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
+
 ## Security
 
 |Index|Tags|Description|
@@ -128,6 +135,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
+|[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 
 ## Deprecated
 
@@ -147,6 +155,6 @@ We want to move away from using these to document individual minor decisions, mo
 
 ## Template
 
-Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However the initial Table of metadata and header format is required to match.
+Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However, the initial Table of metadata and header format is required to match.
 
 After editing / adding a ADR please run `go run main.go > README.md` to update the embedded index. This will also validate the header part of your ADR.
