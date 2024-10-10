@@ -35,7 +35,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
-|[ADR-47](adr/ADR-47.md)|client,spec,orbit|Request Many|
+|[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 
 ## Jetstream
 
@@ -129,13 +129,13 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
-|[ADR-47](adr/ADR-47.md)|client,spec,orbit|Request Many|
+|[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 
 ## Orbit
 
 |Index|Tags|Description|
 |-----|----|-----------|
-|[ADR-47](adr/ADR-47.md)|client,spec,orbit|Request Many|
+|[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 
 ## Deprecated
 
