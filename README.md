@@ -155,6 +155,6 @@ We want to move away from using these to document individual minor decisions, mo
 
 ## Template
 
-Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However the initial Table of metadata and header format is required to match.
+Please see the [template](adr-template.md). The template body is a guideline. Feel free to add sections as you feel appropriate. Look at the other ADRs for examples. However, the initial Table of metadata and header format is required to match.
 
 After editing / adding a ADR please run `go run main.go > README.md` to update the embedded index. This will also validate the header part of your ADR.
