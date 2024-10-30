@@ -109,13 +109,11 @@ API level only needs to be incremented once and not for every new feature.
 We'll store current server and asset related information in the existing `metadata` field allowing us to expand this in 
 time, today we propose the following:
 
-| Name                             | Description                                               |
-|----------------------------------|-----------------------------------------------------------|
-| `_nats.server.version`           | The current server version hosting an asset               |
-| `_nats.server.api_level`         | The current server API level hosting an asset             |
-| `_nats.server.require.api_level` | The required API level to start an asset                  |
-| `_nats.created.server.version`   | The version of the server that first created this asset   |
-| `_nats.created.server.api_level` | The API level of the server that first created this asset |
+| Name              | Description                                   |
+|-------------------|-----------------------------------------------|
+| `_nats.ver`       | The current server version hosting an asset   |
+| `_nats.level`     | The current server API level hosting an asset |
+| `_nats.req.level` | The required API level to start an asset      |
 
 We intend to store some client hints in here to help us track what client language and version created assets.
 

@@ -52,19 +52,6 @@ The `Nats-Limit-Applied` field is there to support future expansion of this feat
 
 This behaviour is off by default unless opted in on the Stream Configuration.
 
-## Publish Acknowledgements
-
-We could optionally extend the `PubAck` as follows:
-
-```golang
-type PubAck struct {
-	MsgTTL    uint64 `json:"msg_ttl,omitempty"`
-}
-```
-
-This gives clients a chance to confirm, without Stream Info or should the Stream be edited after Info, if the TTL 
-got applied.
-
 ## Stream Configuration
 
 Weather or not a stream support this behavior should be a configuration opt-in. We want clients to definitely know 
