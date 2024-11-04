@@ -115,6 +115,30 @@ After the batch is sent a zero length payload message will be sent with the `Nat
 
 When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. Old servers can be detected by the absence of the `Nats-Num-Pending` header in the first reply.
 
+There are 4 viable api calls for a batch. All require a batch amount greater than 0 and a subject which may include a wildcard.
+They also require a start sequence -or- a start time. 
+There is a server issue under consideration requesting that if neither start sequence nor a start time is supplied that it defaults to start sequence of 1.
+For now the client can optionally provide the 2 additional calls which provide the start sequence of 1 for the user. 
+
+1. get up to batch number of messages >= than sequence 1
+    * API: `batch: number, subject: string`
+    * Request: `{"batch":3,"seq":1,"next_by_subj":"foo.>"}`
+1. get up to batch number of messages >= than sequence that has specified subject
+    * API: `batch: number, sequence: number, subject: string`
+    * Request: `{"batch":3,"seq":4,"next_by_subj":"foo.>"}`
+1. gets up to batch number of messages >= than start time that has specified subject 
+    * API: `batch: number, start time: time, subject: string`
+    * Request: `{"batch":3,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
+1. get up to batch number of messages >= than sequence 1, limited by max bytes
+    * API: `batch: number, max_bytes: number, sequence: number, subject: string`
+    * Request: `{"batch":3,"max_bytes":2002,"seq":1,"next_by_subj":"foo.>"}`
+1. get up to batch number of messages >= than sequence that has specified subject, limited by max bytes
+    * API: `batch: number, max_bytes: number, sequence: number, subject: string`
+    * Request: `{"batch":3,"max_bytes":2002,"seq":4,"next_by_subj":"foo.>"}`
+1. gets up to batch number of messages >= than start time that has specified subject, limited by max bytes
+    * API: `batch: number, max_bytes: number, start time: time, subject: string`
+    * Request: `{"batch":3,"max_bytes":2002,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
+
 #### Multi-subject requests
 
 Multiple subjects can be requested in the same manner that a Batch can be requested. In this mode we support consistent point in time reads by allowing for a group of subjects to be read as they were at a point in time - assuming the stream holds enough historical data.
