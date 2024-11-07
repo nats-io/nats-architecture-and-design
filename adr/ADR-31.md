@@ -166,17 +166,26 @@ A `batch` parameter can be added to restrict the result set to a certain size, o
 
 When the server cannot send any more data it will respond, like the above Batch, with a zero-length payload message including the `Nats-Num-Pending` and `Nats-Last-Sequence` headers enabling clients to determine if further batch calls are needed. In addition, it would also have the `Status` header set to `204` with the `Description` header being `EOB`. The `Nats-UpTo-Sequence` header will be set indicating the last message in the stream that matched criteria. This number would be used in subsequent requests as the `up_to_seq` value to ensure batches of multi-gets are done around a consistent point in time.
 
-For the multi last API, we can make 3 distinct calls:
+For the multi last API, we can make 6 distinct calls:
 
 1. get the last messages for the subjects specified subject
    * API: `subjects: []string`
    * Request: `{"multi_last":["foo.A","foo.D"]}`
-1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence. 
+1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence.
    * API: `subjects: []string, up_to_sequence: number`
    * Request: `{"multi_last":["foo.A","foo.D"],"up_to_seq":23}`
 1. get the last messages for the subjects, where the last message is less than or equal to the up to time.
    * API: `subject: []string, up_to_time: time`
    * Request: `{"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
+1. get the last messages for the subjects specified subject, limited by batch size
+   * API: `batch: number, subjects: []string`
+   * Request: `{"batch":2,"multi_last":["foo.A","foo.D"]}`
+1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence, limited by batch size.
+   * API: `batch: number, subjects: []string, up_to_sequence: number`
+   * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_seq":23}`
+1. get the last messages for the subjects, where the last message is less than or equal to the up to time, limited by batch size.
+   * API: `batch: number, subject: []string, up_to_time: time`
+   * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
 
 #### Response Format 
 
