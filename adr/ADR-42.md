@@ -58,6 +58,8 @@ In the initial implementation we should limit `PriorityGroups` to one per consum
 multiple groups. In future iterations multiple groups will be supported along with dynamic partitioning of stream
 data.
 
+Valid `PriorityGroups` values must match `limited-term` (`(A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals)+`) from ADR-6 and may not exceed 16 characters.
+
 This is only supported on Pull Consumers, configuring this on a Push consumer must raise an error.
 
 > [!NOTE]
