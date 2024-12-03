@@ -1,11 +1,11 @@
 # NATS Configuration Contexts
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2021-12-14|
-|Author  |@ripienaar|
-|Status  |Partially Implemented|
-|Tags    |client|
+| Metadata | Value                 |
+|----------|-----------------------|
+| Date     | 2021-12-14            |
+| Author   | @ripienaar            |
+| Status   | Partially Implemented |
+| Tags     | client                |
 
 ## Background
 
@@ -17,11 +17,12 @@ The intention of the ADR is to document the storage of these contexts so that cl
 
 ## Version History
 
-|Date|Revision|
-|----|--------|
-|2020-08-12|Initial basic design|
-|2020-05-07|JetStream Domains|
-|2021-12-13|Custom Inbox Prefix|
+| Date       | Revision                                   |
+|------------|--------------------------------------------|
+| 2020-08-12 | Initial basic design                       |
+| 2020-05-07 | JetStream Domains                          |
+| 2021-12-13 | Custom Inbox Prefix                        |
+| 2024-12-03 | Windows Cert Store, User JWT and TLS First |
 
 This reflects a current implementation in use widely via the CLI as such it's a stable release.  Only non breaking additions will be considered.
 
@@ -48,23 +49,29 @@ While this is Linux centered it does work on Windows, we might want to consider 
 
 The `~/.config/nats/context/ngs.json` file has the following JSON fields:
 
-|Key|Default|Description|
-|---|-------|-----------|
-|`description`| |A human friendly description for the specific context|
-|`url`|`nats://localhost:4222`|Comma seperated list of server urls|
-|`token`| |Authentication token|
-|`user`| |The username to connect with, requires a password|
-|`password`| |Password to connect with|
-|`creds`| |Path to a NATS Credentials file|
-|`nkey`| |Path to a NATS Nkey file|
-|`cert`| |Path to the x509 public certificate|
-|`key`| |Path to the x509 private key|
-|`ca`| |Path to the x509 Certificate Authority|
-|`nsc`| |A `nsc` resolve url for loading credentials and server urls|
-|`jetstream_domain`| |The JetStream Domain to use|
-|`jetstream_api_prefix`| |The JetStream API Prefix to use|
-|`jetstream_event_prefix`| |The JetStream Event Prefix|
-|`inbox_prefix`| |A prefix to use when generating inboxes|
+| Key                      | Default                 | Description                                                                                              |
+|--------------------------|-------------------------|----------------------------------------------------------------------------------------------------------|
+| `description`            |                         | A human friendly description for the specific context                                                    |
+| `url`                    | `nats://localhost:4222` | Comma seperated list of server urls                                                                      |
+| `token`                  |                         | Authentication token                                                                                     |
+| `user`                   |                         | The username to connect with, requires a password                                                        |
+| `password`               |                         | Password to connect with                                                                                 |
+| `creds`                  |                         | Path to a NATS Credentials file                                                                          |
+| `nkey`                   |                         | Path to a NATS Nkey file                                                                                 |
+| `cert`                   |                         | Path to the x509 public certificate                                                                      |
+| `key`                    |                         | Path to the x509 private key                                                                             |
+| `ca`                     |                         | Path to the x509 Certificate Authority                                                                   |
+| `nsc`                    |                         | A `nsc` resolve url for loading credentials and server urls                                              |
+| `jetstream_domain`       |                         | The JetStream Domain to use                                                                              |
+| `jetstream_api_prefix`   |                         | The JetStream API Prefix to use                                                                          |
+| `jetstream_event_prefix` |                         | The JetStream Event Prefix                                                                               |
+| `inbox_prefix`           |                         | A prefix to use when generating inboxes                                                                  |
+| `user_jwt`               |                         | The user JWT token                                                                                       |
+| `tls_first`              |                         | Enables the use of TLS on Connect rather than historical INFO first approach                             |
+| `windows_cert_store`     |                         | The Windows cert store to use for access to the TLS files, `windowscurrentuser` or `windowslocalmachine` |
+| `windows_cert_match_by`  |                         | Which certificate to use inside the store                                                                |
+| `windows_cert_match`     |                         | How certificates are searched for in the store, `subject` or `issuer`                                    |
+| `windows_ca_certs_match` |                         | Which Certificate Authority to use inside the store                                                      |
 
 All fields are optional, none are marked as `omitempty`, users wishing to edit these with an editor should known all valid key names.
 
