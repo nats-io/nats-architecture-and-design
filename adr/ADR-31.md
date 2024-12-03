@@ -115,6 +115,30 @@ After the batch is sent a zero length payload message will be sent with the `Nat
 
 When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. Old servers can be detected by the absence of the `Nats-Num-Pending` header in the first reply.
 
+There are 4 viable API calls for a batch. All require a batch amount greater than 0 and a subject which may include a wildcard.
+They also require a start sequence -or- a start time. 
+There is a server issue under consideration requesting that if neither start sequence nor a start time is supplied that it defaults to start sequence of 1.
+For now the client can optionally provide the 2 additional calls which provide the start sequence of 1 for the user. 
+
+1. get up to batch number of messages >= than sequence 1
+    * API: `batch: number, subject: string`
+    * Request: `{"batch":3,"seq":1,"next_by_subj":"foo.>"}`
+1. get up to batch number of messages >= than sequence that has specified subject
+    * API: `batch: number, sequence: number, subject: string`
+    * Request: `{"batch":3,"seq":4,"next_by_subj":"foo.>"}`
+1. gets up to batch number of messages >= than start time that has specified subject 
+    * API: `batch: number, start time: time, subject: string`
+    * Request: `{"batch":3,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
+1. get up to batch number of messages >= than sequence 1, limited by max bytes
+    * API: `batch: number, max_bytes: number, sequence: number, subject: string`
+    * Request: `{"batch":3,"max_bytes":2002,"seq":1,"next_by_subj":"foo.>"}`
+1. get up to batch number of messages >= than sequence that has specified subject, limited by max bytes
+    * API: `batch: number, max_bytes: number, sequence: number, subject: string`
+    * Request: `{"batch":3,"max_bytes":2002,"seq":4,"next_by_subj":"foo.>"}`
+1. gets up to batch number of messages >= than start time that has specified subject, limited by max bytes
+    * API: `batch: number, max_bytes: number, start time: time, subject: string`
+    * Request: `{"batch":3,"max_bytes":2002,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
+
 #### Multi-subject requests
 
 Multiple subjects can be requested in the same manner that a Batch can be requested. In this mode we support consistent point in time reads by allowing for a group of subjects to be read as they were at a point in time - assuming the stream holds enough historical data.
@@ -141,6 +165,27 @@ If we did a normal multi read using `{"multi_last":["$KV.USERS.1234.>"]}` we wou
 A `batch` parameter can be added to restrict the result set to a certain size, otherwise the server will decide when to end the batch using the same `EOB` marker message seen in Batched Mode with the addition of the `Nats-UpTo-Sequence` header.
 
 When the server cannot send any more data it will respond, like the above Batch, with a zero-length payload message including the `Nats-Num-Pending` and `Nats-Last-Sequence` headers enabling clients to determine if further batch calls are needed. In addition, it would also have the `Status` header set to `204` with the `Description` header being `EOB`. The `Nats-UpTo-Sequence` header will be set indicating the last message in the stream that matched criteria. This number would be used in subsequent requests as the `up_to_seq` value to ensure batches of multi-gets are done around a consistent point in time.
+
+For the multi last API, we can make 6 distinct calls:
+
+1. get the last messages for the subjects specified subject
+   * API: `subjects: []string`
+   * Request: `{"multi_last":["foo.A","foo.D"]}`
+1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence.
+   * API: `subjects: []string, up_to_sequence: number`
+   * Request: `{"multi_last":["foo.A","foo.D"],"up_to_seq":23}`
+1. get the last messages for the subjects, where the last message is less than or equal to the up to time.
+   * API: `subject: []string, up_to_time: time`
+   * Request: `{"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
+1. get the last messages for the subjects specified subject, limited by batch size
+   * API: `batch: number, subjects: []string`
+   * Request: `{"batch":2,"multi_last":["foo.A","foo.D"]}`
+1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence, limited by batch size.
+   * API: `batch: number, subjects: []string, up_to_sequence: number`
+   * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_seq":23}`
+1. get the last messages for the subjects, where the last message is less than or equal to the up to time, limited by batch size.
+   * API: `batch: number, subject: []string, up_to_time: time`
+   * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
 
 #### Response Format 
 
