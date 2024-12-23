@@ -22,7 +22,7 @@ Related issues [#3268](https://github.com/nats-io/nats-server/issues/3268)
 
 ## Per-Message TTL
 
-We will allow a message to supply a TTL using a header called `Nats-TTL` followed by the duration as seconds.
+We will allow a message to supply a TTL using a header called `Nats-TTL` followed by the duration as seconds or as a Go duration string like `1h`.
 
 The duration will be used by the server to calculate the deadline for removing the message based on its Stream 
 timestamp and the stated duration.
@@ -34,6 +34,8 @@ Setting the header `Nats-No-Expire` to `1` will result in a message that will ne
 
 A TTL of zero will be ignored, any other unparsable value will result in a error reported in the Pub Ack and the message
 being discarded.
+
+When a message with the `Nats-TTL` header is published to a stream with the feature disabled the message will be rejected with an error.
 
 ## Limit Tombstones
 
@@ -70,3 +72,5 @@ type StreamConfig struct {
 	LimitsTTL   time.Duration `json:"limits_ttl"`
 }
 ```
+
+When either these settings are set the Stream should require API level `1`.
