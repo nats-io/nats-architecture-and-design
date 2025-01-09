@@ -12,6 +12,7 @@
 | 1        | 2024-09-26 | @scottf   | Document Initial Design |
 
 ## Problem Statement
+
 Have the client support receiving multiple replies from a single request, instead of limiting the client to the first reply,
 and support patterns like scatter-gather and sentinel.
 
