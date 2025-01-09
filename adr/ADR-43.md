@@ -73,4 +73,6 @@ type StreamConfig struct {
 }
 ```
 
+The `AllowMsgTTL` field must not be updatable, `LimitsTTL` may be updated.
+
 When either these settings are set the Stream should require API level `1`.
