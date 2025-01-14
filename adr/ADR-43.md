@@ -27,9 +27,6 @@ We will allow a message to supply a TTL using a header called `Nats-TTL` followe
 The duration will be used by the server to calculate the deadline for removing the message based on its Stream 
 timestamp and the stated duration.
 
-The TTL may not exceed the Stream MaxAge. The shortest allowed TTL would be 1 second. When no specific TTL is given
-the MaxAge will apply.
-
 Setting the header `Nats-TTL` to `never` will result in a message that will never be expired.
 
 A TTL of zero will be ignored, any other unparsable value will result in a error reported in the Pub Ack and the message
