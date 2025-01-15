@@ -5,7 +5,7 @@
 | Date     | 2022-08-03                                                |
 | Author   | @mh, @ivan, @derekcollison, @alberto, @tbeets, @ripienaar |
 | Status   | Implemented                                               |
-| Tags     | jetstream, client, server                                 |
+| Tags     | jetstream, client, server, 2.11                           |
 
 | Revision | Date       | Author     | Info                                           |
 |----------|------------|------------|------------------------------------------------|

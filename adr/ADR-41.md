@@ -1,12 +1,12 @@
 # NATS Message Path Tracing
 
 
-| Metadata | Value                 |
-|----------|-----------------------|
-| Date     | 2024-02-22            |
-| Author   | @ripienaar, @kozlovic |
-| Status   | Implemented           |
-| Tags     | observability, server |
+| Metadata | Value                       |
+|----------|-----------------------------|
+| Date     | 2024-02-22                  |
+| Author   | @ripienaar, @kozlovic       |
+| Status   | Implemented                 |
+| Tags     | observability, server, 2.11 |
 
 
 | Revision | Date       | Author     | Info           |

@@ -1,11 +1,11 @@
 # Versioning for JetStream Assets
 
-| Metadata | Value                 |
-|----------|-----------------------|
-| Date     | 2024-07-22            |
-| Author   | @ripienaar            |
-| Status   | Partially Implemented |
-| Tags     | jetstream, server     |
+| Metadata | Value                   |
+|----------|-------------------------|
+| Date     | 2024-07-22              |
+| Author   | @ripienaar              |
+| Status   | Partially Implemented   |
+| Tags     | jetstream, server, 2.11 |
 
 # Context and Problem Statement
 

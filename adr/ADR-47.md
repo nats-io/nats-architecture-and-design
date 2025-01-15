@@ -5,7 +5,7 @@
 | Date     | 2024-09-26                 |
 | Author   | @aricart, @scottf, @Jarema |
 | Status   | Partially Implemented      |
-| Tags     | client,spec,orbit         |
+| Tags     | client, spec, orbit        |
 
 | Revision | Date       | Author    | Info                    |
 |----------|------------|-----------|-------------------------|

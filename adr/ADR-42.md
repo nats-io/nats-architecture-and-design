@@ -1,16 +1,16 @@
 # Pull Consumer Priority Groups
 
-| Metadata | Value             |
-|----------|-------------------|
-| Date     | 2024-05-14        |
-| Author   | @ripienaar        |
-| Status   | Approved          |
-| Tags     | jetstream, server |
+| Metadata | Value                   |
+|----------|-------------------------|
+| Date     | 2024-05-14              |
+| Author   | @ripienaar              |
+| Status   | Approved                |
+| Tags     | jetstream, server, 2.11 |
 
 
-| Revision | Date       | Author     | Info           |
-|----------|------------|------------|----------------|
-| 1        | 2024-05-14 | @ripienaar | Initial design |
+| Revision | Date       | Author     | Info                              |
+|----------|------------|------------|-----------------------------------|
+| 1        | 2024-05-14 | @ripienaar | Initial design                    |
 | 2        | 2024-10-15 | @jarema    | Add client implementation details |
 
 ## Context and Problem Statement
