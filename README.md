@@ -3,8 +3,6 @@
 # NATS Architecture And Design
 
 This repository captures Architecture, Design Specifications and Feature Guidance for the NATS ecosystem.
-
-# Architecture Decision Records
 ## 2.11
 
 |Index|Tags|Description|
