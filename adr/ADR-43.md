@@ -1,11 +1,11 @@
 # JetStream Per-Message TTL
 
-| Metadata | Value                     |
-|----------|---------------------------|
-| Date     | 2024-07-11                |
-| Author   | @ripienaar                |
-| Status   | Approved                  |
-| Tags     | jetstream, client, server |
+| Metadata | Value                           |
+|----------|---------------------------------|
+| Date     | 2024-07-11                      |
+| Author   | @ripienaar                      |
+| Status   | Approved                        |
+| Tags     | jetstream, client, server, 2.11 |
 
 ## Context and motivation
 

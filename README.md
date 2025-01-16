@@ -3,8 +3,16 @@
 # NATS Architecture And Design
 
 This repository captures Architecture, Design Specifications and Feature Guidance for the NATS ecosystem.
+## 2.11
 
-# Architecture Decision Records
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server, 2.11|JetStream Direct Get|
+|[ADR-41](adr/ADR-41.md)|observability, server, 2.11|NATS Message Path Tracing|
+|[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
+|[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11|Versioning for JetStream Assets|
+
 ## Client
 
 |Index|Tags|Description|
@@ -27,14 +35,14 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore, spec|JetStream based Object Stores|
 |[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
-|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server, 2.11|JetStream Direct Get|
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
-|[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
+|[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
 |[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 
 ## Jetstream
@@ -54,14 +62,14 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore, spec|JetStream based Object Stores|
 |[ADR-22](adr/ADR-22.md)|jetstream, client|JetStream Publish Retries on No Responders|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
-|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server, 2.11|JetStream Direct Get|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
-|[ADR-42](adr/ADR-42.md)|jetstream, server|Pull Consumer Priority Groups|
-|[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
-|[ADR-44](adr/ADR-44.md)|jetstream, server|Versioning for JetStream Assets|
+|[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
+|[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11|Versioning for JetStream Assets|
 
 ## Kv
 
@@ -82,7 +90,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-3](adr/ADR-3.md)|observability, server|NATS Service Latency Distributed Tracing Interoperability|
-|[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
+|[ADR-41](adr/ADR-41.md)|observability, server, 2.11|NATS Message Path Tracing|
 
 ## Orbit
 
@@ -114,17 +122,17 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-26](adr/ADR-26.md)|server|NATS Authorization Callouts|
 |[ADR-28](adr/ADR-28.md)|jetstream, server|JetStream RePublish|
 |[ADR-30](adr/ADR-30.md)|server|Subject Transform|
-|[ADR-31](adr/ADR-31.md)|jetstream, client, server|JetStream Direct Get|
+|[ADR-31](adr/ADR-31.md)|jetstream, client, server, 2.11|JetStream Direct Get|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 |[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
-|[ADR-41](adr/ADR-41.md)|observability, server|NATS Message Path Tracing|
-|[ADR-42](adr/ADR-42.md)|jetstream, server|Pull Consumer Priority Groups|
-|[ADR-43](adr/ADR-43.md)|jetstream, client, server|JetStream Per-Message TTL|
-|[ADR-44](adr/ADR-44.md)|jetstream, server|Versioning for JetStream Assets|
+|[ADR-41](adr/ADR-41.md)|observability, server, 2.11|NATS Message Path Tracing|
+|[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
+|[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11|Versioning for JetStream Assets|
 
 ## Spec
 
