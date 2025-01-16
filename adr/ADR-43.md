@@ -4,7 +4,7 @@
 |----------|---------------------------------|
 | Date     | 2024-07-11                      |
 | Author   | @ripienaar                      |
-| Status   | Approved                        |
+| Status   | Implemented                     |
 | Tags     | jetstream, client, server, 2.11 |
 
 ## Context and motivation
@@ -22,6 +22,8 @@ Related issues [#3268](https://github.com/nats-io/nats-server/issues/3268)
 
 ## Per-Message TTL
 
+### General Behavior
+
 We will allow a message to supply a TTL using a header called `Nats-TTL` followed by the duration as seconds or as a Go duration string like `1h`.
 
 The duration will be used by the server to calculate the deadline for removing the message based on its Stream 
@@ -33,6 +35,14 @@ A TTL of zero will be ignored, any other unparsable value will result in a error
 being discarded.
 
 When a message with the `Nats-TTL` header is published to a stream with the feature disabled the message will be rejected with an error.
+
+### Sources and Mirrors
+
+When messages arrive over a Source or a Mirror processing is a little bit different: Where for a normal client-published message we would reject it if the stream lacks the feature from a Source/Mirror we would accept it.
+
+This allow one to make archives of record that would include these messages, however if the Source or Mirror has the `AllowMsgTTL` set those message with the header will be processed as above.
+
+Sources may set the `LimitsTTL` option but Mirrors may not since the `LimitsTTL` behavior will insert new messages into the Stream it might make it impossible to match sequences in the 2 Mirrors.
 
 ## Limit Tombstones
 
@@ -71,5 +81,6 @@ type StreamConfig struct {
 ```
 
 The `AllowMsgTTL` field must not be updatable, `LimitsTTL` may be updated and must have a minimum value of 1 second.
+The `LimitsTTL` setting may not be set on a Mirror Stream.
 
 When either these settings are set the Stream should require API level `1`.
