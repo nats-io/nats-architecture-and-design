@@ -4,7 +4,7 @@
 |----------|---------------------------------|
 | Date     | 2024-07-11                      |
 | Author   | @ripienaar                      |
-| Status   | Approved                        |
+| Status   | Implemented                     |
 | Tags     | jetstream, client, server, 2.11 |
 
 ## Context and motivation
@@ -22,18 +22,19 @@ Related issues [#3268](https://github.com/nats-io/nats-server/issues/3268)
 
 ## Per-Message TTL
 
-We will allow a message to supply a TTL using a header called `Nats-TTL` followed by the duration as seconds.
+### General Behavior
+
+We will allow a message to supply a TTL using a header called `Nats-TTL` followed by the duration as seconds or as a Go duration string like `1h`.
 
 The duration will be used by the server to calculate the deadline for removing the message based on its Stream 
 timestamp and the stated duration.
 
-The TTL may not exceed the Stream MaxAge. The shortest allowed TTL would be 1 second. When no specific TTL is given
-the MaxAge will apply.
-
-Setting the header `Nats-No-Expire` to `1` will result in a message that will never be expired.
+Setting the header `Nats-TTL` to `never` will result in a message that will never be expired.
 
 A TTL of zero will be ignored, any other unparsable value will result in a error reported in the Pub Ack and the message
 being discarded.
+
+When a message with the `Nats-TTL` header is published to a stream with the feature disabled the message will be rejected with an error.
 
 ## Limit Tombstones
 
@@ -51,6 +52,14 @@ Nats-TTL: 1
 The `Nats-Limit-Applied` field is there to support future expansion of this feature.
 
 This behaviour is off by default unless opted in on the Stream Configuration.
+
+### Sources and Mirrors
+
+Sources and Mirrors will always accept and store messages with `Nats-TTL` header present, even if the `AllowMsgTTL` setting is disabled in the Stream settings.
+
+If the `AllowMsgTTL` setting is enabled then processing continues as outlined in the General Behavior section with messages removed after the TTL. With the setting disabled the messages are just stored.
+
+Sources may set the `LimitsTTL` option and processing of messages with the `Nats-TTL` will place tombstones, but, Mirrors may not enable `LimitsTTL` since it would insert new messages into the Stream it might make it impossible to match sequences from the Mirrored Stream.
 
 ## Stream Configuration
 
@@ -70,3 +79,8 @@ type StreamConfig struct {
 	LimitsTTL   time.Duration `json:"limits_ttl"`
 }
 ```
+
+The `AllowMsgTTL` field must not be updatable, `LimitsTTL` may be updated and must have a minimum value of 1 second.
+The `LimitsTTL` setting may not be set on a Mirror Stream.
+
+When either these settings are set the Stream should require API level `1`.
