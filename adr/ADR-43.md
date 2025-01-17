@@ -36,14 +36,6 @@ being discarded.
 
 When a message with the `Nats-TTL` header is published to a stream with the feature disabled the message will be rejected with an error.
 
-### Sources and Mirrors
-
-When messages arrive over a Source or a Mirror processing is a little bit different: Where for a normal client-published message we would reject it if the stream lacks the feature from a Source/Mirror we would accept it.
-
-This allow one to make archives of record that would include these messages, however if the Source or Mirror has the `AllowMsgTTL` set those message with the header will be processed as above.
-
-Sources may set the `LimitsTTL` option but Mirrors may not since the `LimitsTTL` behavior will insert new messages into the Stream it might make it impossible to match sequences in the 2 Mirrors.
-
 ## Limit Tombstones
 
 Several scenarios for server-created tombstones can be imagined, the most often requested one though is when MaxAge
@@ -60,6 +52,14 @@ Nats-TTL: 1
 The `Nats-Limit-Applied` field is there to support future expansion of this feature.
 
 This behaviour is off by default unless opted in on the Stream Configuration.
+
+### Sources and Mirrors
+
+Sources and Mirrors will always accept and store messages with `Nats-TTL` header present, even if the `AllowMsgTTL` setting is disabled in the Stream settings.
+
+If the `AllowMsgTTL` setting is enabled then processing continues as outlined in the General Behavior section with messages removed after the TTL. With the setting disabled the messages are just stored.
+
+Sources may set the `LimitsTTL` option and processing of messages with the `Nats-TTL` will place tombstones, but, Mirrors may not enable `LimitsTTL` since it would insert new messages into the Stream it might make it impossible to match sequences from the Mirrored Stream.
 
 ## Stream Configuration
 
