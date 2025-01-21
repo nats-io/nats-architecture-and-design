@@ -9,8 +9,7 @@
 
 ## Context and motivation
 
-Streams support a one-size-fits-all approach to message TTL based on the MaxAge setting. This causes any message in the 
-Stream to expire at that age.
+Streams support a one-size-fits-all approach to message TTL based on the MaxAge setting. This causes any message in the Stream to expire at that age.
 
 There are numerous uses for a per-message version of this limit, some listed below:
 
@@ -26,8 +25,7 @@ Related issues [#3268](https://github.com/nats-io/nats-server/issues/3268)
 
 We will allow a message to supply a TTL using a header called `Nats-TTL` followed by the duration as seconds or as a Go duration string like `1h`.
 
-The duration will be used by the server to calculate the deadline for removing the message based on its Stream 
-timestamp and the stated duration.
+The duration will be used by the server to calculate the deadline for removing the message based on its Stream timestamp and the stated duration.
 
 Setting the header `Nats-TTL` to `never` will result in a message that will never be expired.
 
@@ -38,11 +36,9 @@ When a message with the `Nats-TTL` header is published to a stream with the feat
 
 ## Limit Tombstones
 
-Several scenarios for server-created tombstones can be imagined, the most often requested one though is when MaxAge
-removes last value (ie. the current value) for a Key.
+Several scenarios for server-created tombstones can be imagined, the most often requested one though is when MaxAge removes last value (ie. the current value) for a Key.
 
-In this case when the server removes a message and the message is the last in the subject it would place a message 
-with a TTL matching the Stream configuration value.  The following headers would be placed:
+In this case when the server removes a message and the message is the last in the subject it would place a message with a TTL matching the Stream configuration value.  The following headers would be placed:
 
 ```
 Nats-Applied-Limit: MaxAge
@@ -59,28 +55,33 @@ Sources and Mirrors will always accept and store messages with `Nats-TTL` header
 
 If the `AllowMsgTTL` setting is enabled then processing continues as outlined in the General Behavior section with messages removed after the TTL. With the setting disabled the messages are just stored.
 
-Sources may set the `LimitsTTL` option and processing of messages with the `Nats-TTL` will place tombstones, but, Mirrors may not enable `LimitsTTL` since it would insert new messages into the Stream it might make it impossible to match sequences from the Mirrored Stream.
+Sources may set the `SubjectDeleteMarkers` option and processing of messages with the `Nats-TTL` will place tombstones, but, Mirrors may not enable `SubjectDeleteMarkers` since it would insert new messages into the Stream it might make it impossible to match sequences from the Mirrored Stream.
 
 ## Stream Configuration
 
-Weather or not a stream support this behavior should be a configuration opt-in. We want clients to definitely know 
-when this is supported which the opt-in approach with a boolean on the configuration would make clear.
+Weather or not a stream support this behavior should be a configuration opt-in. We want clients to definitely know when this is supported which the opt-in approach with a boolean on the configuration would make clear.
 
-We have to assume someone will want to create a replication topology where at some point in the topology these tombstone
-type messages are retained for an audit trail. So a Stream with this feature enabled can replicate to one with it 
-disabled and all the messages that would have been TTLed will be retained.
+We have to assume someone will want to create a replication topology where at some point in the topology these tombstone type messages are retained for an audit trail. So a Stream with this feature enabled can replicate to one with it disabled and all the messages that would have been TTLed will be retained.
 
 ```golang
 type StreamConfig struct {
 	// AllowMsgTTL allows header initiated per-message TTLs
 	AllowMsgTTL bool          `json:"allow_msg_ttl"`
 
-	// LimitsTTL activates writing of messages when limits are applied with a specific TTL
-	LimitsTTL   time.Duration `json:"limits_ttl"`
+	// Enables placing markers in the stream for certain message delete operations
+	SubjectDeleteMarkers   bool   `json:"subject_delete_markers,omitempty"`
+	// When placing a marker, how long should it be valid, defaults to 15m
+	SubjectDeleteMarkerTTL string `json:"subject_delete_marker_ttl,omitempty"`
 }
 ```
 
-The `AllowMsgTTL` field must not be updatable, `LimitsTTL` may be updated and must have a minimum value of 1 second.
-The `LimitsTTL` setting may not be set on a Mirror Stream.
+Restrictions:
 
-When either these settings are set the Stream should require API level `1`.
+ * The `AllowMsgTTL` field must not be updatable.
+ * The `AllowMsgTTL` and `SubjectDeleteMarkerTTL` has a minimum value of 1 second.
+ * The `SubjectDeleteMarkers` setting may not be set on a Mirror Stream.
+ * The `SubjectDeleteMarkers` setting requires `AllowMsgTTL` and must error when not set.
+ * The `SubjectDeleteMarkerTTL` may only be set when `SubjectDeleteMarkers` is set.
+ * When `SubjectDeleteMarkerTTL` is unset the server will use `15m` as the default and will not update the supplied configuration, future info requests will show the setting blank. This will have the effect of updating already deployed Streams should we change the default.
+ * When  `AllowMsgTTL` or `SubjectDeleteMarkers` are set the Stream should require API level `1`.
+
