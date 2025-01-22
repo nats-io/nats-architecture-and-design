@@ -39,7 +39,8 @@ Service configuration relies on the following:
 - `description` - a human-readable description about the service (optional)
 - `metadata` - (optional) an object of strings holding free form metadata about
   the deployed instance implemented consistently with
-  [Metadata for Stream and Consumer ADR-33](ADR-33.md). Must be immutable once set.
+  [Metadata for Stream and Consumer ADR-33](ADR-33.md). Must be immutable once
+  set.
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`

@@ -47,7 +47,7 @@ The following validation rules for RePublish option apply:
 * A single token as `>` wildcard is allowed as the Source with meaning taken as any stream-ingested subject.
 * Destination MUST have at least 1 non-wildcard token
 * Destination MAY not match or subset the subject filter(s) of the stream 
-* Source and Destination must otherwise comply with requirements specified in [ADR-30 Subject Transform](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-30.md). 
+* Source and Destination must otherwise comply with requirements specified in [ADR-30 Subject Transform](ADR-30.md).
 
 Here is an example of a stream configuration with the RePublish option specified:
 ```text
@@ -77,7 +77,7 @@ RePublish Destination, taken together with RePublish Source, form a valid subjec
 transform is applied to each ingested message (that matches Source configuration) to determine the the concrete 
 RePublish Subject.
 
-See [ADR-30 Subject Transform](https://github.com/nats-io/nats-architecture-and-design/blob/main/adr/ADR-30.md) for
+See [ADR-30 Subject Transform](ADR-30.md) for
 description of subject transformation as used by RePublish.
  
 ### RePublish Headers
