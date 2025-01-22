@@ -22,7 +22,7 @@ the following JSON:
 }
 ```
 
-The `error` field is an [ApiError](0007-error-codes.md). The `success` field will be set to `true` if the request
+The `error` field is an [ApiError](ADR-7.md). The `success` field will be set to `true` if the request
 succeeded. The `purged` field will be set to the number of messages that were
 purged from the stream.
 

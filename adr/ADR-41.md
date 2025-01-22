@@ -23,7 +23,7 @@ This describes a feature of the NATS Server 2.11 that allows messages to be trac
 
 ## Prior Work
 
-NATS supports tracking latency of Request-Reply service interactions, this is documented in [ADR-3](adr/ADR-3.md).
+NATS supports tracking latency of Request-Reply service interactions, this is documented in [ADR-3](ADR-3.md).
 
 ## Design
 

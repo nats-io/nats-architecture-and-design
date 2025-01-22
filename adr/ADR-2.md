@@ -134,7 +134,7 @@ Advisories must include additional fields:
 Any `message` can have an optional `error` property if needed and can be specified in the JSON Schema,
 they are not a key part of the type hint system which this ADR focus on.
 
-In JetStream [ADR 0001](0001-jetstream-json-api-design.md) we define an error message as this:
+In JetStream [ADR 0001](ADR-1.md) we define an error message as this:
 
 ```
 {
