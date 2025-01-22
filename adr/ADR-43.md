@@ -82,6 +82,7 @@ Restrictions:
  * The `SubjectDeleteMarkers` setting may not be set on a Mirror Stream.
  * The `SubjectDeleteMarkers` setting requires `AllowMsgTTL` and must error when not set.
  * The `SubjectDeleteMarkerTTL` may only be set when `SubjectDeleteMarkers` is set.
- * When `SubjectDeleteMarkerTTL` is unset the server will use `15m` as the default and will not update the supplied configuration, future info requests will show the setting blank. This will have the effect of updating already deployed Streams should we change the default.
+ * When `SubjectDeleteMarkerTTL` is unset the server will use `15m` as the default and will update the supplied configuration.
+ * When `SubjectDeleteMarkerTTL` is not given with `SubjectDeleteMarkers` set in Pedantic mode no default will be set and the request will fail.
  * When  `AllowMsgTTL` or `SubjectDeleteMarkers` are set the Stream should require API level `1`.
 
