@@ -9,16 +9,17 @@
 
 ## Release History
 
-| Revision | Date       | Description                                         |
-|----------|------------|-----------------------------------------------------|
-| 1        | 2021-12-15 | Initial stable release of version 1.0 specification |
-| 2        | 2023-10-16 | Document NATS Server 2.10 sourced buckets           |
-| 2        | 2023-10-16 | Document read replica mirrors buckets               |
-| 2        | 2023-10-16 | Document consistency guarantees                     |
-| 3        | 2023-10-19 | Formalize initial bucket topologies                 |
-| 4        | 2023-10-25 | Support compression                                 |
-| 5        | 2024-06-05 | Add KV management                                   |
-| 6        | 2024-06-05 | Add Keys listers with filters                       |
+| Revision | Date       | Description                                         | Server Requirement |
+|----------|------------|-----------------------------------------------------|--------------------|
+| 1        | 2021-12-15 | Initial stable release of version 1.0 specification | 2.6.0              |
+| 2        | 2023-10-16 | Document NATS Server 2.10 sourced buckets           | 2.10.0             |
+| 2        | 2023-10-16 | Document read replica mirrors buckets               |                    |
+| 2        | 2023-10-16 | Document consistency guarantees                     |                    |
+| 3        | 2023-10-19 | Formalize initial bucket topologies                 |                    |
+| 4        | 2023-10-25 | Support compression                                 | 2.10.0             |
+| 5        | 2024-06-05 | Add KV management                                   |                    |
+| 6        | 2024-06-05 | Add Keys listers with filters                       |                    |
+| 7        | 2025-02-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
 
 
 ## Context
@@ -58,6 +59,7 @@ additional behaviors will come during the 1.x cycle.
  * Read replicas facilitated by Stream Mirrors
  * Replica auto discovery for mirror based replicas
  * Formalized Multi-cluster and Leafnode Topologies
+ * Support [ADR-43](ADR-43.md) Max Age markers and TTLs on `Create()` and `Purge()`
 
 ### 1.2
 
@@ -125,14 +127,17 @@ type Status interface {
 	// TTL is how long the bucket keeps values for
 	TTL() time.Duration
 
+	// LimitMarkerTTL is how long the bucket keeps markers when keys are removed by the TTL setting, 0 meaning markers are not supported
+	LimitMarkerTTL() time.Duration
+
 	// Keys return a list of all keys in the bucket.
 	// Historically this method returned a complete slice of all keys in the bucket,
-	// however clients should return interable result.
+	// however clients should return iterable result.
 	Keys() ([]string, error)
 
 	// KeysWithFilters returns a filtered list of keys in the bucket.
 	// Historically this method returned a complete slice of all keys in the bucket,
-	// however clients should return interable result.
+	// however clients should return iterable result.
 	// Languages can implement the list of filters in most idiomatic way - as an iterator, variadic argument, slice, etc.
 	// When multiple filters are passed, client library should check `consumer info` from `consumer create method` if the filters are matching,
 	// as nats-server < 2.10 would ignore them.
@@ -287,13 +292,12 @@ The features to support KV is in NATS Server 2.6.0.
 
 #### Consistency Guarantees
 
-By default, we do not provide read-after-write consistency.  Reads are performed directly to any replica, including out
+We do not provide read-after-write consistency.  Reads are performed directly to any replica, including out
 of date ones.  If those replicas do not catch up multiple reads of the same key can give different values between
 reads. If the cluster is healthy and performing well most reads would result in consistent values, but this should not
 be relied on to be true.
 
-If `allow_direct` is disabled on a bucket configuration read-after-write consistency is achieved at the expense of
-performance.  It is then also not possible to use the mirror based read replicas.
+Historically we had read-after-write consistency, this has been deprecated and retained here for historical record only.
 
 #### Buckets
 
@@ -317,6 +321,9 @@ A bucket is a Stream with these properties:
  * Placement is allowed
  * Republish is allowed
  * If compression is requested in the configuration set `compression` to `s2`
+ * If limit markers are requested the `allow_msg_ttl` and `subject_delete_markers` settings must be true and `subject_delete_marker_ttl` must be a duration string longer than 1 second
+
+Enabling Limit Markers requires NATS Server with API level 1 or newer support (2.11+) and clients should assert this using the `$JS.API.INFO` call or similar means (not connected server version).
 
 Here is a full example of the `CONFIGURATION` bucket with compression enabled:
 
@@ -340,6 +347,9 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   "deny_delete": true,
   "allow_direct": true,
   "compression": "s2",
+  "allow_msg_ttl": true,
+  "subject_delete_markers": true,
+  "subject_delete_marker_ttl": "15m",
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
@@ -374,6 +384,10 @@ To use this header correctly with KV when a value of `0` is given, on failure th
 should attempt to load the current value and if that's a delete do an update with `Nats-Expected-Last-Subject-Sequence` equalling
 to the value of the deleted message that was retrieved.
 
+When using the `Create()` behavior and the `allow_msg_ttl` setting is enabled on the Bucket clients can accept a duration for how long
+the created value should stay in the bucket.  We cannot accept this on the Put operation as that might have the effect of surfacing
+history once the latest value is removed using Per-Message TTLs.
+
 #### Retrieving Values
 
 There are different situations where messages will be retrieved using different APIs, below describes the different models.
@@ -384,18 +398,24 @@ Deleted data - (see later section on deletes) - has the `KV-Operation` header se
 - a value received from either of these methods with this header set indicates the data has been deleted. A delete operation is turned
 into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history.
 
+When the bucket supports MarkerTTLs (`subject_delete_markers` in JetStream configuration) clients will receive messages with a header
+`Nats-Applied-Limit: MaxAge`, this should be treated as a `PURGE` operation.
+
 ##### Get Operation
 
-###### When allow_direct is false
+###### Direct GET based
+
+We have introduced a new direct API that allows retrieving the last message for a subject via `$JS.API.DIRECT.GET.
+<STREAM>.<SUBJECT>`. This should be used for performing all gets on a bucket if direct is enabled.
+
+###### non-Direct GET based
+
+> [!WARNING]
+> This mode of operation is supported for legacy buckets, we do not support disabling direct get on any buckets.
 
 We have extended the `io.nats.jetstream.api.v1.stream_msg_get_request` API to support loading the latest value for a specific
 subject.  Thus, a read for `$KV.CONFIGURATION.username` becomes a `io.nats.jetstream.api.v1.stream_msg_get_request`
 with the `last_by_subj` set to `$KV.CONFIGURATION.auth.username`.
-
-###### When allow_direct is true
-
-We have introduced a new direct API that allows retrieving the last message for a subject via `$JS.APIDIRECT.GET.
-<STREAM>.<SUBJECT>`. This should be used for performing all gets on a bucket if direct is enabled.
 
 ##### History
 
@@ -428,6 +448,11 @@ Purge is like delete but history is not preserved. This is achieved by publishin
 
 This will instruct the server to place the purge operation message in the stream and then delete all messages for that key up to
 before the delete operation.
+
+Users can opt into a TTL on the purge, clients should do this in a language idiomatic way, in go something like
+`kv.Purge(ctx, "key", jetstream.PurgeTTL(time.Hour))`. This will place the purge exactly as in the preceding paragraphs but will
+ensure the message goes away after 1 hour. Such a purge would have the `KV-Operation: PURGE`, `Nats-Rollup: sub` and `Nats-TTL: 1h`
+headers set.
 
 #### List of known keys
 
