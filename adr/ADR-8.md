@@ -77,7 +77,6 @@ additional behaviors will come during the 1.x cycle.
 
  * Formalise leader election against keys
  * Set management against key ranges to enable service discovery and membership management
- * Per value TTLs
  * Distributed locks against a key
  * Pluggable storage backends
 
@@ -310,7 +309,8 @@ A bucket is a Stream with these properties:
    * The minimum allowed size is 1. When creating a stream, 1 should be used when the user does not supply a value.
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
- * Key TTL is managed using the `max_age` key
+ * Overall Key TTL is managed using the `max_age` key
+ * If limit markers are requested the `allow_msg_ttl` and `subject_delete_markers` settings must be true and `subject_delete_marker_ttl` must be a duration longer than 1 second
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
  * Overall bucket size can be limited using `max_bytes`
@@ -321,7 +321,6 @@ A bucket is a Stream with these properties:
  * Placement is allowed
  * Republish is allowed
  * If compression is requested in the configuration set `compression` to `s2`
- * If limit markers are requested the `allow_msg_ttl` and `subject_delete_markers` settings must be true and `subject_delete_marker_ttl` must be a duration string longer than 1 second
 
 Enabling Limit Markers requires NATS Server with API level 1 or newer support (2.11+) and clients should assert this using the `$JS.API.INFO` call or similar means (not connected server version).
 
@@ -349,7 +348,7 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   "compression": "s2",
   "allow_msg_ttl": true,
   "subject_delete_markers": true,
-  "subject_delete_marker_ttl": "15m",
+  "subject_delete_marker_ttl": 900000000000,
   "placement": {
     "cluster": "clstr",
     "tags": ["tag1", "tag2"]
