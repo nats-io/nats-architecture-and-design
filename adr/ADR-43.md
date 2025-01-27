@@ -70,8 +70,8 @@ type StreamConfig struct {
 
 	// Enables placing markers in the stream for certain message delete operations
 	SubjectDeleteMarkers   bool   `json:"subject_delete_markers,omitempty"`
-	// When placing a marker, how long should it be valid, defaults to 15m
-	SubjectDeleteMarkerTTL string `json:"subject_delete_marker_ttl,omitempty"`
+	// When placing a marker, how long should it be valid, defaults to 15m when <= 0 or unset
+	SubjectDeleteMarkerTTL time.Duration `json:"subject_delete_marker_ttl,omitempty"`
 }
 ```
 
@@ -82,7 +82,7 @@ Restrictions:
  * The `SubjectDeleteMarkers` setting may not be set on a Mirror Stream.
  * The `SubjectDeleteMarkers` setting requires `AllowMsgTTL` and must error when not set.
  * The `SubjectDeleteMarkerTTL` may only be set when `SubjectDeleteMarkers` is set.
- * When `SubjectDeleteMarkerTTL` is unset the server will use `15m` as the default and will update the supplied configuration.
+ * When `SubjectDeleteMarkerTTL` is unset the server will use `900000000000` (15 minutes) as the default and will update the supplied configuration.
  * When `SubjectDeleteMarkerTTL` is not given with `SubjectDeleteMarkers` set in Pedantic mode no default will be set and the request will fail.
  * When  `AllowMsgTTL` or `SubjectDeleteMarkers` are set the Stream should require API level `1`.
 
