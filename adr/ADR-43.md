@@ -34,20 +34,63 @@ being discarded.
 
 When a message with the `Nats-TTL` header is published to a stream with the feature disabled the message will be rejected with an error.
 
-## Limit Tombstones
+## Limit Markers
 
-Several scenarios for server-created tombstones can be imagined, the most often requested one though is when MaxAge removes last value (ie. the current value) for a Key.
+Several scenarios for server-created markers can be imagined, the most often requested one though is when MaxAge removes last value (ie. the current value) for a Key.
 
 In this case when the server removes a message and the message is the last in the subject it would place a message with a TTL matching the Stream configuration value.  The following headers would be placed:
 
 ```
-Nats-Applied-Limit: MaxAge
+Nats-Marker-Reason: MaxAge
 Nats-TTL: 1
 ```
 
-The `Nats-Limit-Applied` field is there to support future expansion of this feature.
+This behaviour is off by default unless opted in on the `SubjectDeleteMarkerTTL` Stream Configuration.
 
-This behaviour is off by default unless opted in on the Stream Configuration.
+### Delete API Call Marker
+
+When someone calls the delete message API of a stream the server will place a the following headers:
+
+```
+Nats-Marker-Reason: Remove
+Nats-TTL: 1
+```
+
+To ensure that emergency deletes of messages can be performed without the markers an opt-in option is being added to
+the `JSApiMsgDeleteRequest`:
+
+```
+// JSApiMsgDeleteRequest delete message request.
+type JSApiMsgDeleteRequest struct {
+  Seq      uint64 `json:"seq"`
+  NoErase  bool   `json:"no_erase,omitempty"`
+  NoMarker bool   `json:"no_marker,omitempty"`
+}
+```
+
+This behaviour is off by default unless opted in on the `SubjectDeleteMarkerTTL` Stream Configuration.
+
+### Purge API Call Marker
+
+When someone calls the purge subject API of a stream the server will place a the following headers:
+
+```
+Nats-Marker-Reason: Purge
+Nats-TTL: 1
+```
+
+To ensure that emergency purges of messages can be performed without the markers an opt-in option is being added to
+the `JSApiStreamPurgeRequest`:
+
+```
+type JSApiStreamPurgeRequest struct {
+	Sequence uint64 `json:"seq,omitempty"`
+	Subject string `json:"filter,omitempty"`
+	Keep uint64 `json:"keep,omitempty"`
+	NoMarker bool   `json:"no_marker,omitempty"`
+}
+```
+This behaviour is off by default unless opted in on the `SubjectDeleteMarkerTTL` Stream Configuration.
 
 ### Sources and Mirrors
 
@@ -68,9 +111,7 @@ type StreamConfig struct {
 	// AllowMsgTTL allows header initiated per-message TTLs
 	AllowMsgTTL bool          `json:"allow_msg_ttl"`
 
-	// Enables placing markers in the stream for certain message delete operations
-	SubjectDeleteMarkers   bool   `json:"subject_delete_markers,omitempty"`
-	// When placing a marker, how long should it be valid, defaults to 15m when <= 0 or unset
+	// Enables and sets a duration for adding server markers for delete, purge and max age limits
 	SubjectDeleteMarkerTTL time.Duration `json:"subject_delete_marker_ttl,omitempty"`
 }
 ```
@@ -79,10 +120,6 @@ Restrictions:
 
  * The `AllowMsgTTL` field must not be updatable.
  * The `AllowMsgTTL` and `SubjectDeleteMarkerTTL` has a minimum value of 1 second.
- * The `SubjectDeleteMarkers` setting may not be set on a Mirror Stream.
- * The `SubjectDeleteMarkers` setting requires `AllowMsgTTL` and must error when not set.
- * The `SubjectDeleteMarkerTTL` may only be set when `SubjectDeleteMarkers` is set.
- * When `SubjectDeleteMarkerTTL` is unset the server will use `900000000000` (15 minutes) as the default and will update the supplied configuration.
- * When `SubjectDeleteMarkerTTL` is not given with `SubjectDeleteMarkers` set in Pedantic mode no default will be set and the request will fail.
+ * The `SubjectDeleteMarkerTTL` setting may not be set on a Mirror Stream.
  * When  `AllowMsgTTL` or `SubjectDeleteMarkers` are set the Stream should require API level `1`.
 
