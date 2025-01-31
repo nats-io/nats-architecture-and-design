@@ -75,23 +75,30 @@ When Allow Direct is true, each of the stream's servers configures a responder a
 Clients may make requests with the same payload as the Get message API populating the following server struct:
 
  ```text
-Seq       uint64      `json:"seq,omitempty"`
-LastFor   string     `json:"last_by_subj,omitempty"`
-NextFor   string     `json:"next_by_subj,omitempty"`
-Batch     int        `json:"batch,omitempty"`
-MaxBytes  int        `json:"max_bytes,omitempty"`
-StartTime *time.Time `json:"start_time,omitempty"`
+Seq          uint64     `json:"seq,omitempty"`
+LastFor      string     `json:"last_by_subj,omitempty"`
+NextFor      string     `json:"next_by_subj,omitempty"`
+Batch        int        `json:"batch,omitempty"`
+MaxBytes     int        `json:"max_bytes,omitempty"`
+StartTime    *time.Time `json:"start_time,omitempty"`
+MultiLastFor []string   `json:"multi_last,omitempty"`
+UpToSeq      uint64     `json:"up_to_seq,omitempty"`
+UpToTime     *time.Time `json:"up_to_time,omitempty"`
 ```
 
 Example request payloads:
 
-* `{seq: number}` - get a message by sequence
-* `{last_by_subj: string}` - get the last message having the subject
-* `{next_by_subj: string}` - get the first message (lowest seq) having the specified subject
-* `{start_time: string}` - get the first message at or newer than the time specified in RFC 3339 format (since server 2.11)
-* `{seq: number, next_by_subj: string}` - get the first message with a seq >= to the input seq that has the specified subject
-* `{seq: number, batch: number, next_by_subj: string}` - gets up to batch number of messages >= than seq that has specified subject
-* `{seq: number, batch: number, next_by_subj: string, max_bytes: number}` - as above but limited to a maximum size of messages received in bytes
+- `{seq: number}` - get a message by sequence
+- `{last_by_subj: string}` - get the last message having the subject
+- `{next_by_subj: string}` - get the first message (lowest seq) having the specified subject
+- `{start_time: string}` - get the first message at or newer than the time specified in RFC 3339 format (since server 2.11)
+- `{seq: number, next_by_subj: string}` - get the first message with a seq >= to the input seq that has the specified subject
+- `{seq: number, batch: number, next_by_subj: string}` - gets up to batch number of messages >= than seq that has specified subject
+- `{seq: number, batch: number, next_by_subj: string, max_bytes: number}` - as above but limited to a maximum size of messages received in bytes
+- `{multi_last: [string]}` - get the last message for each subject in the list (subjects can include wildcards)
+- `{multi_last: [string], up_to_seq: number}` - get the last message for each subject in the list up to the sequence number
+- `{multi_last: [string], up_to_time: string}` - get the last message for each subject in the list up to the time specified in RFC 3339 format
+- `{multi_last: [string], batch: number}` - get the last message for each subject in the list up to the batch size
 
 #### Subject-Appended Direct Get API
 
