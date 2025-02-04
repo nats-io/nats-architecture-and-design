@@ -310,7 +310,7 @@ A bucket is a Stream with these properties:
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Overall Key TTL is managed using the `max_age` key
- * If limit markers are requested the `allow_msg_ttl` and `subject_delete_markers` settings must be true and `subject_delete_marker_ttl` must be a duration longer than 1 second
+ * If limit markers are requested the `allow_msg_ttl` and `subject_delete_marker_ttl` settings must be true and `subject_delete_marker_ttl` must be a duration longer than 1 second
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
  * Overall bucket size can be limited using `max_bytes`
@@ -347,7 +347,6 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   "allow_direct": true,
   "compression": "s2",
   "allow_msg_ttl": true,
-  "subject_delete_markers": true,
   "subject_delete_marker_ttl": 900000000000,
   "placement": {
     "cluster": "clstr",
@@ -384,8 +383,10 @@ should attempt to load the current value and if that's a delete do an update wit
 to the value of the deleted message that was retrieved.
 
 When using the `Create()` behavior and the `allow_msg_ttl` setting is enabled on the Bucket clients can accept a duration for how long
-the created value should stay in the bucket.  We cannot accept this on the Put operation as that might have the effect of surfacing
-history once the latest value is removed using Per-Message TTLs.
+the created value should stay in the bucket like `kv.Create(ctx, "key", jetstream.CreateTTL(time.Hour))`. Clients can offer a idiomatic
+way to set a default `CreateTTL()` that would default to the value set in `subject_delete_marker_ttl`
+
+We cannot accept TTLs on the Put operation as that might have the effect of surfacing history once the latest value is removed using Per-Message TTLs.
 
 #### Retrieving Values
 
@@ -398,7 +399,11 @@ Deleted data - (see later section on deletes) - has the `KV-Operation` header se
 into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history.
 
 When the bucket supports MarkerTTLs (`subject_delete_markers` in JetStream configuration) clients will receive messages with a header
-`Nats-Applied-Limit: MaxAge`, this should be treated as a `PURGE` operation.
+`Nats-Marker-Reason: MaxAge` or `Nats-Marker-Reason: Remove`, this should be treated as a `DEL` operation.,
+
+When the bucket supports MarkerTTLs clients will receive messages with a header `Nats-Marker-Reason: Purge`, this should be treated as 
+a `PURGE` operation.
+
 
 ##### Get Operation
 
@@ -448,10 +453,11 @@ Purge is like delete but history is not preserved. This is achieved by publishin
 This will instruct the server to place the purge operation message in the stream and then delete all messages for that key up to
 before the delete operation.
 
-Users can opt into a TTL on the purge, clients should do this in a language idiomatic way, in go something like
-`kv.Purge(ctx, "key", jetstream.PurgeTTL(time.Hour))`. This will place the purge exactly as in the preceding paragraphs but will
-ensure the message goes away after 1 hour. Such a purge would have the `KV-Operation: PURGE`, `Nats-Rollup: sub` and `Nats-TTL: 1h`
-headers set.
+When `allow_msg_ttl` is enabled in the configuration Users can opt into a TTL on the purge, clients should do this in a 
+language idiomatic way, in go something like `kv.Purge(ctx, "key", jetstream.PurgeTTL(time.Hour))`. This will place the purge 
+exactly as in the preceding paragraphs but will ensure the message goes away after 1 hour. Such a purge would have the `KV-Operation: PURGE`, 
+`Nats-Rollup: sub` and `Nats-TTL: 1h` headers set. Clients can offer a idiomatic way to set a default `PurgeTTL()` that 
+would default to the value set in `subject_delete_marker_ttl`
 
 #### List of known keys
 
