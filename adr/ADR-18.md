@@ -1,11 +1,22 @@
 # URL support for all client options
 
-| Metadata | Value                     |
-|----------|---------------------------|
-| Date     | 2021-07-21            |
-| Author   | philpennock           |
-| Status   | Partially Implemented |
-| Tags     | client         |
+| Metadata | Value       |
+|----------|-------------|
+| Date     | 2021-07-21  |
+| Author   | philpennock |
+| Status   | Deprecated  |
+| Tags     | deprecated  |
+
+## Deprecation Note
+
+We discussed this among client authors and felt that we would not implement this for, among others, these reasons:
+
+ * Server lists holds many server urls but the client has just one set of options, UX allowing options on each seem sub optimal
+ * These parameters could expose sensitive information in logs and more
+ * Getting exact parity between all the clients would be hard, we would need to pick specific list of supported options but it would be forever churn to support more on all clients
+ * It would be difficult to always do the right thing wrt priority, in some cases you would want the URL to set defaults, in others you would want the URL to override settings
+
+Overall we recognise this would be useful but decided against it for now.
 
 ## Motivation
 

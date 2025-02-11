@@ -30,7 +30,6 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-13](adr/ADR-13.md)|jetstream, client|Pull Subscribe internals|
 |[ADR-14](adr/ADR-14.md)|client, security|JWT library free jwt user generation|
 |[ADR-17](adr/ADR-17.md)|jetstream, client|Ordered Consumer|
-|[ADR-18](adr/ADR-18.md)|client|URL support for all client options|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore, spec|JetStream based Object Stores|
 |[ADR-21](adr/ADR-21.md)|client|NATS Configuration Contexts|
@@ -150,6 +149,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-15](adr/ADR-15.md)|deprecated|JetStream Subscribe Workflow|
+|[ADR-18](adr/ADR-18.md)|deprecated|URL support for all client options|
 
 ## When to write an ADR
 
