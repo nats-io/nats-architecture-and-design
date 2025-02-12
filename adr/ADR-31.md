@@ -198,7 +198,7 @@ For the multi last API, we can make 6 distinct calls:
 
 Responses may include these status codes:
 
-- `204` indicates the the end of a batch of messages, the description header would have value `EOB`
+- `204` indicates the end of a batch of messages, the description header would have value `EOB`
 - `404` if the request is valid but no matching message found in stream 
 - `408` if the request is empty or invalid
 - `413` when a multi subject get matches too many subjects
