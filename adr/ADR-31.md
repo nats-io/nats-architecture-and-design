@@ -127,22 +127,22 @@ They also require a start sequence -or- a start time.
 There is a server issue under consideration requesting that if neither start sequence nor a start time is supplied that it defaults to start sequence of 1.
 For now the client can optionally provide the 2 additional calls which provide the start sequence of 1 for the user. 
 
-1. get up to batch number of messages >= than sequence 1
+1. get up to batch number of messages where the message sequence is >= 1 and for the specified subject
     * API: `batch: number, subject: string`
     * Request: `{"batch":3,"seq":1,"next_by_subj":"foo.>"}`
-1. get up to batch number of messages >= than sequence that has specified subject
+1. get up to batch number of messages where the message sequence is >= the specified sequence and for the specified subject
     * API: `batch: number, sequence: number, subject: string`
     * Request: `{"batch":3,"seq":4,"next_by_subj":"foo.>"}`
-1. gets up to batch number of messages >= than start time that has specified subject 
+1. get up to batch number of messages where the message timestamp is >= than start time and for the specified subject 
     * API: `batch: number, start time: time, subject: string`
     * Request: `{"batch":3,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
-1. get up to batch number of messages >= than sequence 1, limited by max bytes
+1. get up to batch number of messages where the message sequence is >= than 1, for the specified subject, and limited by max bytes
     * API: `batch: number, max_bytes: number, sequence: number, subject: string`
     * Request: `{"batch":3,"max_bytes":2002,"seq":1,"next_by_subj":"foo.>"}`
-1. get up to batch number of messages >= than sequence that has specified subject, limited by max bytes
+1. get up to batch number of messages where the message sequence is >= than the specified sequence, for the specified subject and limited by max bytes
     * API: `batch: number, max_bytes: number, sequence: number, subject: string`
     * Request: `{"batch":3,"max_bytes":2002,"seq":4,"next_by_subj":"foo.>"}`
-1. gets up to batch number of messages >= than start time that has specified subject, limited by max bytes
+1. get up to batch number of messages where the message timestamp is >= than start time, for the specified subject and limited by max bytes
     * API: `batch: number, max_bytes: number, start time: time, subject: string`
     * Request: `{"batch":3,"max_bytes":2002,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
 
@@ -175,22 +175,22 @@ When the server cannot send any more data it will respond, like the above Batch,
 
 For the multi last API, we can make 6 distinct calls:
 
-1. get the last messages for the subjects specified subject
+1. get the last messages for the specified subject(s)
    * API: `subjects: []string`
    * Request: `{"multi_last":["foo.A","foo.D"]}`
-1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence.
+1. get the last messages for the specified subject(s), where the last message is less than or equal to the up to sequence.
    * API: `subjects: []string, up_to_sequence: number`
    * Request: `{"multi_last":["foo.A","foo.D"],"up_to_seq":23}`
-1. get the last messages for the subjects, where the last message is less than or equal to the up to time.
+1. get the last messages for the specified subject(s), where the last message is less than or equal to the up to time.
    * API: `subject: []string, up_to_time: time`
    * Request: `{"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
-1. get the last messages for the subjects specified subject, limited by batch size
+1. get the last messages for the specified subject(s) specified subject, limited by batch size
    * API: `batch: number, subjects: []string`
    * Request: `{"batch":2,"multi_last":["foo.A","foo.D"]}`
-1. get the last messages for the subjects, where the last message is less than or equal to the up to sequence, limited by batch size.
+1. get the last messages for the specified subject(s), where the last message is less than or equal to the up to sequence, limited by batch size.
    * API: `batch: number, subjects: []string, up_to_sequence: number`
    * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_seq":23}`
-1. get the last messages for the subjects, where the last message is less than or equal to the up to time, limited by batch size.
+1. get the last messages for the specified subject(s), where the last message is less than or equal to the up to time, limited by batch size.
    * API: `batch: number, subject: []string, up_to_time: time`
    * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
 
