@@ -19,7 +19,7 @@
 | 4        | 2023-10-25 | Support compression                                 | 2.10.0             |
 | 5        | 2024-06-05 | Add KV management                                   |                    |
 | 6        | 2024-06-05 | Add Keys listers with filters                       |                    |
-| 7        | 2025-02-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
+| 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
 
 
 ## Context
