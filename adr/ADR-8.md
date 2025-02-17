@@ -45,7 +45,6 @@ additional behaviors will come during the 1.x cycle.
  * Key deletes preserves history
  * Keys can be expired from the bucket based on a TTL, TTL is set for the entire bucket
  * Watching a specific key, ranges based on NATS wildcards, or the entire bucket for live updates
- * Read-after-write safety
  * Valid keys are `\A[-/_=\.a-zA-Z0-9]+\z`, additionally they may not start or end in `.`
  * Valid buckets are `\A[a-zA-Z0-9_-]+\z`
  * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
