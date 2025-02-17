@@ -9,13 +9,14 @@
 
 ## Release History
 
-| Revision | Date       | Description                               |
-|----------|------------|-------------------------------------------|
-| 1        | 2022-11-23 | Initial release                           |
-| 2        | 2023-09-12 | Configurable queue group                  |
-| 3        | 2023-10-07 | Add version regex info                    |
-| 4        | 2023-11-10 | Explicit naming                           |
-| 5        | 2024-08-08 | Optional queue groups, immutable metadata |
+| Revision | Date       | Description                                     |
+|----------|------------|-------------------------------------------------|
+| 1        | 2022-11-23 | Initial release                                 |
+| 2        | 2023-09-12 | Configurable queue group                        |
+| 3        | 2023-10-07 | Add version regex info                          |
+| 4        | 2023-11-10 | Explicit naming                                 |
+| 5        | 2024-08-08 | Optional queue groups, immutable metadata       |
+| 6        | 2025-02-17 | Clarify adding endpoints after service creation |
 
 ## Context and Problem Statement
 
@@ -266,6 +267,8 @@ The type for this is `io.nats.micro.v1.stats_response`.
 ## Adding groups and endpoints
 
 A service can be extended by adding additional groups and endpoints.
+Endpoints can be added after the service has been created and started.
+For now, there is no option to remove an endpoint or a group.
 
 ### Groups
 
