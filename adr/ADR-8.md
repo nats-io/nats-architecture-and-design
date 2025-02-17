@@ -20,6 +20,7 @@
 | 5        | 2024-06-05 | Add KV management                                   |                    |
 | 6        | 2024-06-05 | Add Keys listers with filters                       |                    |
 | 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
+| 8        | 2025-02-17 | Add Metadata                                        | 2.10.0             |
 
 
 ## Context
@@ -320,6 +321,7 @@ A bucket is a Stream with these properties:
  * Allow Direct is always set to `true`. (It can be modified out-of-band only if desired, but not through KV bucket update.)
  * Placement is allowed
  * Republish is allowed
+ * Stream Metadata is allowed
  * If compression is requested in the configuration set `compression` to `s2`
 
 Enabling Limit Markers requires NATS Server with API level 1 or newer support (2.11+) and clients should assert this using the `$JS.API.INFO` call or similar means (not connected server version).
@@ -357,6 +359,9 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
     "src": "repub.>",
     "dest": "dest.>",
     "headers_only": true
+  },
+  "metadata": {
+    "encoding": "base64"
   }
 }
 ```
