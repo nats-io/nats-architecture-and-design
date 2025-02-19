@@ -4,7 +4,7 @@
 |--------|-----|
 |Date    |2021-11-03|
 |Author  |@scottf|
-|Status  |Partially Implemented|
+|Status  |Implemented|
 |Tags    |jetstream, client, objectstore, spec|
 
 
@@ -16,7 +16,7 @@
 
 ## Context
 
-This document describes a design of a JetStream backed object store. This ADR is still considered Beta/Experimental and may be subject to change.
+This document describes a design of a JetStream backed object store.
 
 ## Overview
 
