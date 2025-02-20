@@ -402,7 +402,13 @@ Deleted data - (see later section on deletes) - has the `KV-Operation` header se
 into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history.
 
 When the bucket supports MarkerTTLs (`subject_delete_markers` in JetStream configuration) clients will receive messages with a header
-`Nats-Applied-Limit: MaxAge`, this should be treated as a `PURGE` operation.
+`Nats-Marker-Reason` with these possible values and behaviors:
+
+| Value    | Behavior         |
+|----------|------------------|
+| `MaxAge` | Treat as `PURGE` |
+| `Purge`  | Treat as `PURGE` |
+| `Remove` | Treat as `DEL`   |
 
 ##### Get Operation
 
