@@ -310,7 +310,7 @@ A bucket is a Stream with these properties:
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Overall Key TTL is managed using the `max_age` key
- * If limit markers are requested the `allow_msg_ttl` and `subject_delete_markers` settings must be true and `subject_delete_marker_ttl` must be a duration longer than 1 second
+ * If limit markers are requested the `allow_msg_ttl` must be true and `subject_delete_marker_ttl` must be a duration longer than a second
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
  * Overall bucket size can be limited using `max_bytes`
@@ -348,7 +348,6 @@ Here is a full example of the `CONFIGURATION` bucket with compression enabled:
   "allow_direct": true,
   "compression": "s2",
   "allow_msg_ttl": true,
-  "subject_delete_markers": true,
   "subject_delete_marker_ttl": 900000000000,
   "placement": {
     "cluster": "clstr",
@@ -401,8 +400,7 @@ Deleted data - (see later section on deletes) - has the `KV-Operation` header se
 - a value received from either of these methods with this header set indicates the data has been deleted. A delete operation is turned
 into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history.
 
-When the bucket supports MarkerTTLs (`subject_delete_markers` in JetStream configuration) clients will receive messages with a header
-`Nats-Marker-Reason` with these possible values and behaviors:
+When the bucket supports MarkerTTLs clients will receive messages with a header`Nats-Marker-Reason` with these possible values and behaviors:
 
 | Value    | Behavior         |
 |----------|------------------|
