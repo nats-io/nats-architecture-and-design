@@ -56,19 +56,7 @@ Nats-Marker-Reason: Remove
 Nats-TTL: 1
 ```
 
-To ensure that emergency deletes of messages can be performed without the markers an opt-in option is being added to
-the `JSApiMsgDeleteRequest`:
-
-```
-// JSApiMsgDeleteRequest delete message request.
-type JSApiMsgDeleteRequest struct {
-  Seq      uint64 `json:"seq"`
-  NoErase  bool   `json:"no_erase,omitempty"`
-  NoMarker bool   `json:"no_marker,omitempty"`
-}
-```
-
-This behaviour is off by default unless opted in on the `SubjectDeleteMarkerTTL` Stream Configuration.
+The server feature for this will land after 2.11.0.
 
 ### Purge API Call Marker
 
@@ -79,18 +67,7 @@ Nats-Marker-Reason: Purge
 Nats-TTL: 1
 ```
 
-To ensure that emergency purges of messages can be performed without the markers an opt-in option is being added to
-the `JSApiStreamPurgeRequest`:
-
-```
-type JSApiStreamPurgeRequest struct {
-	Sequence uint64 `json:"seq,omitempty"`
-	Subject string `json:"filter,omitempty"`
-	Keep uint64 `json:"keep,omitempty"`
-	NoMarker bool   `json:"no_marker,omitempty"`
-}
-```
-This behaviour is off by default unless opted in on the `SubjectDeleteMarkerTTL` Stream Configuration.
+The server feature for this will land after 2.11.0.
 
 ### Sources and Mirrors
 
@@ -98,7 +75,7 @@ Sources and Mirrors will always accept and store messages with `Nats-TTL` header
 
 If the `AllowMsgTTL` setting is enabled then processing continues as outlined in the General Behavior section with messages removed after the TTL. With the setting disabled the messages are just stored.
 
-Sources may set the `SubjectDeleteMarkers` option and processing of messages with the `Nats-TTL` will place tombstones, but, Mirrors may not enable `SubjectDeleteMarkers` since it would insert new messages into the Stream it might make it impossible to match sequences from the Mirrored Stream.
+Sources may set the `SubjectDeleteMarkerTTL` option and processing of messages with the `Nats-TTL` will place tombstones, but, Mirrors may not enable `SubjectDeleteMarkerTTL` since it would insert new messages into the Stream it might make it impossible to match sequences from the Mirrored Stream.
 
 ## Stream Configuration
 
@@ -121,5 +98,5 @@ Restrictions:
  * The `AllowMsgTTL` field must not be updatable.
  * The `AllowMsgTTL` and `SubjectDeleteMarkerTTL` has a minimum value of 1 second.
  * The `SubjectDeleteMarkerTTL` setting may not be set on a Mirror Stream.
- * When  `AllowMsgTTL` or `SubjectDeleteMarkers` are set the Stream should require API level `1`.
+ * When  `AllowMsgTTL` or `SubjectDeleteMarkerTTL` are set the Stream should require API level `1`.
 
