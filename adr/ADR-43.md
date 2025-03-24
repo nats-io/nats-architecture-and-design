@@ -45,9 +45,14 @@ Nats-Marker-Reason: MaxAge
 Nats-TTL: 1
 ```
 
+This marker will also be placed for a message removed by the `Nats-TTL` timer.
+
 This behaviour is off by default unless opted in on the `SubjectDeleteMarkerTTL` Stream Configuration.
 
 ### Delete API Call Marker
+
+> [!IMPORTANT]
+> This feature will come either later in 2.11.x series or in 2.12.
 
 When someone calls the delete message API of a stream the server will place a the following headers:
 
@@ -56,9 +61,11 @@ Nats-Marker-Reason: Remove
 Nats-TTL: 1
 ```
 
-The server feature for this will land after 2.11.0.
-
 ### Purge API Call Marker
+
+> [!IMPORTANT]
+> This feature will come either later in 2.11.x series or in 2.12.
+
 
 When someone calls the purge subject API of a stream the server will place a the following headers:
 
@@ -66,8 +73,6 @@ When someone calls the purge subject API of a stream the server will place a the
 Nats-Marker-Reason: Purge
 Nats-TTL: 1
 ```
-
-The server feature for this will land after 2.11.0.
 
 ### Sources and Mirrors
 
@@ -95,8 +100,11 @@ type StreamConfig struct {
 
 Restrictions:
 
- * The `AllowMsgTTL` field must not be updatable.
+ * The `AllowMsgTTL` field can be enabled on existing streams but not disabled.
  * The `AllowMsgTTL` and `SubjectDeleteMarkerTTL` has a minimum value of 1 second.
  * The `SubjectDeleteMarkerTTL` setting may not be set on a Mirror Stream.
  * When  `AllowMsgTTL` or `SubjectDeleteMarkerTTL` are set the Stream should require API level `1`.
+ * `AllowRollup` must be `true`, stream update and create should set this unless pedantic mode is enabled.
+ * `DenyPurge` must be `false`, stream update and create should set this unless pedantic mode is enabled.
+ * The server should treat `SubjectDeleteMarkerTTL` as the minimum for `Nats-TTL` but not reject messages that do not satisfy that. This might be changed in 2.12 depending on some internal implementation fixes in the server.
 
