@@ -162,7 +162,8 @@ to deliver that in a future iteration.
 Clients can expose call-back notifications when they become pinned (first message with `Nats-Pin-Id` header is received) and
 when they lose the pin (they receive the 4xx error when doing a pull with a old ID).
 
-A new API, `$JS.API.CONSUMER.UNPIN.<STREAM>.<CONSUMER>.<GROUP>`, can be called which will clear the ID and trigger a client switch as above.
+A new API, `$JS.API.CONSUMER.UNPIN.<STREAM>.<CONSUMER>`, can be called which will clear the ID and trigger a client switch as above.
+The payload of the message should be the JSON `{"group": "groupName"}`
 
 Consumer state to include a new field `PriorityGroups` of type `[]PriorityGroupState`:
 
