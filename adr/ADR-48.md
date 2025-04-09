@@ -1,12 +1,12 @@
 # TTL Support for Key-Value Buckets
 
-| Metadata | Value                             |
-|----------|-----------------------------------|
-| Date     | 2025-04-09                        |
-| Author   | @ripienaar                        |
-| Status   | Implemented                       |
-| Tags     | jetstream, client, kv, refinement |
-| Updates  | ADR-8                             |
+| Metadata | Value                                   |
+|----------|-----------------------------------------|
+| Date     | 2025-04-09                              |
+| Author   | @ripienaar                              |
+| Status   | Implemented                             |
+| Tags     | jetstream, client, kv, refinement, 2.11 |
+| Updates  | ADR-8                                   |
 
 ## Context
 

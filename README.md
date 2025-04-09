@@ -12,6 +12,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
 |[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11|Versioning for JetStream Assets|
+|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 
 ## Client
 
@@ -43,7 +44,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
 |[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
-|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement|TTL Support for Key-Value Buckets|
+|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 
 ## Jetstream
 
@@ -70,7 +71,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
 |[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11|Versioning for JetStream Assets|
-|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement|TTL Support for Key-Value Buckets|
+|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 
 ## Kv
 
@@ -78,7 +79,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |-----|----|-----------|
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv, spec|JetStream based Key-Value Stores|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
-|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement|TTL Support for Key-Value Buckets|
+|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 
 ## Objectstore
 
@@ -104,7 +105,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 
 |Index|Tags|Description|
 |-----|----|-----------|
-|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement|TTL Support for Key-Value Buckets|
+|[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 
 ## Security
 
