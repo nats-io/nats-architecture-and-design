@@ -1,11 +1,12 @@
 # Title
 
-| Metadata | Value                                                           |
-|----------|-----------------------------------------------------------------|
-| Date     | YYYY-MM-DD                                                      |
-| Author   | @<github user>, @<github user>                                  |
-| Status   | `Approved` `Partially Implemented`, `Implemented`, `Deprecated` |
-| Tags     | jetstream, client, server                                       |
+| Metadata | Value                                                                                |
+|----------|--------------------------------------------------------------------------------------|
+| Date     | YYYY-MM-DD                                                                           |
+| Author   | @<github user>, @<github user>                                                       |
+| Status   | `Approved` `Partially Implemented`, `Implemented`, `Deprecated`                      |
+| Tags     | jetstream, client, server                                                            |
+| Updates  | ADR-XX (Add this line when this ADR is a refinement to an earlier spec, else remove) |
 
 | Revision | Date       | Author  | Info           |
 |----------|------------|---------|----------------|
