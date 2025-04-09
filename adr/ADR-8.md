@@ -9,19 +9,19 @@
 
 ## Release History
 
-| Revision | Date       | Description                                         | Server Requirement |
-|----------|------------|-----------------------------------------------------|--------------------|
-| 1        | 2021-12-15 | Initial stable release of version 1.0 specification | 2.6.0              |
-| 2        | 2023-10-16 | Document NATS Server 2.10 sourced buckets           | 2.10.0             |
-| 2        | 2023-10-16 | Document read replica mirrors buckets               |                    |
-| 2        | 2023-10-16 | Document consistency guarantees                     |                    |
-| 3        | 2023-10-19 | Formalize initial bucket topologies                 |                    |
-| 4        | 2023-10-25 | Support compression                                 | 2.10.0             |
-| 5        | 2024-06-05 | Add KV management                                   |                    |
-| 6        | 2024-06-05 | Add Keys listers with filters                       |                    |
-| 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
-| 8        | 2025-02-17 | Add Metadata                                        | 2.10.0             |
-| 9        | 2025-04-09 | max_age and duplicate_window notes                  | 2.10.0             |
+| Revision | Date       | Description                                         | Refinement | Server Requirement |
+|----------|------------|-----------------------------------------------------|------------|--------------------|
+| 1        | 2021-12-15 | Initial stable release of version 1.0 specification |            | 2.6.0              |
+| 2        | 2023-10-16 | Document NATS Server 2.10 sourced buckets           |            | 2.10.0             |
+| 2        | 2023-10-16 | Document read replica mirrors buckets               |            |                    |
+| 2        | 2023-10-16 | Document consistency guarantees                     |            |                    |
+| 3        | 2023-10-19 | Formalize initial bucket topologies                 |            |                    |
+| 4        | 2023-10-25 | Support compression                                 |            | 2.10.0             |
+| 5        | 2024-06-05 | Add KV management                                   |            |                    |
+| 6        | 2024-06-05 | Add Keys listers with filters                       |            |                    |
+| 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | ADR-48     | 2.11.0             |
+| 8        | 2025-02-17 | Add Metadata                                        |            | 2.10.0             |
+| 9        | 2025-04-09 | Document max_age and duplicate_window requirements  |            |                    |
 
 ## Context
 
