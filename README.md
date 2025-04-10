@@ -21,6 +21,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
+|[ADR-51](adr/ADR-51.md)|jetstream, 2.12|JetStream Message Scheduler|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|
 
@@ -88,6 +89,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
+|[ADR-51](adr/ADR-51.md)|jetstream, 2.12|JetStream Message Scheduler|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 
 ## Kv
