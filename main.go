@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -20,6 +21,7 @@ type ADRMeta struct {
 	Status  string
 	Tags    []string
 	Path    string
+	Updates []string
 }
 
 type ADR struct {
@@ -95,6 +97,9 @@ func parseADR(adrPath string) (*ADR, error) {
 			case curHdrKey == "Tags":
 				adr.Meta.Tags = parseCommaList(tok.Content)
 
+			case curHdrKey == "Updates":
+				adr.Meta.Updates = parseCommaList(tok.Content)
+
 			case in1stTbl:
 				curHdrKey = tok.Content
 			}
@@ -137,17 +142,19 @@ func parseADR(adrPath string) (*ADR, error) {
 		return nil, fmt.Errorf("tags is required in %s", adr.Meta.Path)
 	}
 
+	if len(adr.Meta.Updates) > 0 {
+		list := []string{}
+		for _, u := range adr.Meta.Updates {
+			list = append(list, fmt.Sprintf("[%s](adr/%s.md)", u, u))
+		}
+		adr.Heading = fmt.Sprintf("%s (updating %s)", adr.Heading, strings.Join(list, ", "))
+	}
+
 	return &adr, nil
 }
 
 func isValidStatus(status string) bool {
-	for _, s := range validStatus {
-		if status == s {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(validStatus, status)
 }
 
 func verifyUniqueIndexes(adrs []*ADR) error {
@@ -171,17 +178,14 @@ func renderIndexes(adrs []*ADR) error {
 		}
 	}
 
-	tagsList := []string{}
-	hasDeprecated := false
+	var tagsList []string
 	for k := range tags {
-		if k == "deprecated" {
-			hasDeprecated = true
-			continue
-		}
 		tagsList = append(tagsList, k)
 	}
+
 	sort.Strings(tagsList)
-	if hasDeprecated {
+	if slices.Contains(tagsList, "deprecated") {
+		tagsList = slices.DeleteFunc(tagsList, func(s string) bool { return s == "deprecated" })
 		tagsList = append(tagsList, "deprecated")
 	}
 
@@ -190,8 +194,7 @@ func renderIndexes(adrs []*ADR) error {
 		Adrs []*ADR
 	}
 
-	renderList := []tagAdrs{}
-
+	var renderList []tagAdrs
 	for _, tag := range tagsList {
 		matched := []*ADR{}
 		for _, adr := range adrs {
