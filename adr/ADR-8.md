@@ -310,7 +310,7 @@ A bucket is a Stream with these properties:
    * The minimum allowed size is 1. When creating a stream, 1 should be used when the user does not supply a value.
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
-* Overall Key TTL is managed using the `max_age` key
+ * Overall Key TTL is managed using the `max_age` key
     * If Key TTL is supplied (greater than zero), the client should set `duplicate_window` like so:
         1. if `max_age` is greater than 2 minutes, `duplicate_window` must be set to 2 minutes.
         2. if `max_age` is less than or equal to 2 minutes, `duplicate_window` must be set the same as `max_age`
