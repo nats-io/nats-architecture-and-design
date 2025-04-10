@@ -22,7 +22,6 @@
 | 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
 | 8        | 2025-02-17 | Add Metadata                                        | 2.10.0             |
 | 9        | 2025-04-09 | max_age and duplicate_window notes                  | 2.10.0             |
-| 8a      | 2025-02-17 | Add Metadata | | 2.10.0 |
 
 ## Context
 
