@@ -21,7 +21,7 @@
 | 6        | 2024-06-05 | Add Keys listers with filters                       |                    |
 | 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | 2.11.0             |
 | 8        | 2025-02-17 | Add Metadata                                        | 2.10.0             |
-
+| 9        | 2025-04-09 | max_age and duplicate_window notes                  | 2.10.0             |
 
 ## Context
 
@@ -310,6 +310,10 @@ A bucket is a Stream with these properties:
  * Safe key purges that deletes history requires rollup to be enabled for the stream using `rollup_hdrs`
  * Write replicas are File backed and can have a varying R value
  * Overall Key TTL is managed using the `max_age` key
+    * If Key TTL is supplied (greater than zero), the client should set `duplicate_window` like so:
+        1. if `max_age` is greater than 2 minutes, `duplicate_window` must be set to 2 minutes.
+        2. if `max_age` is less than or equal to 2 minutes, `duplicate_window` must be set the same as `max_age`
+    * If Key TTL is not supplied, is acceptable to either not set `duplicate_window` or set it to 2 minutes. The server will set it to 2 minutes if not supplied.
  * If limit markers are requested the `allow_msg_ttl` must be true and `subject_delete_marker_ttl` must be a duration longer than a second
  * Maximum value sizes can be capped using `max_msg_size`
  * Maximum number of keys cannot currently be limited
@@ -400,7 +404,7 @@ Deleted data - (see later section on deletes) - has the `KV-Operation` header se
 - a value received from either of these methods with this header set indicates the data has been deleted. A delete operation is turned
 into a `key not found` error in basic gets and into a `Entry` with the correct operation value set in watchers or history.
 
-When the bucket supports MarkerTTLs clients will receive messages with a header`Nats-Marker-Reason` with these possible values and behaviors:
+When the bucket supports Marker TTLs clients will receive messages with a header`Nats-Marker-Reason` with these possible values and behaviors:
 
 | Value    | Behavior         |
 |----------|------------------|
@@ -748,7 +752,7 @@ use `get()` wherever possible augmented by other get helpers.
 
 Regarding `Put`, these other APIs do not tend to add other functions like `Create()` or `Update()`, they accept put options, like we do.
 Cases where they want to build for example a CAS wrapper around their KV they will write a wrapper with CAS specific function names and more,
-ditto for service registeries and so forth.
+ditto for service registries and so forth.
 
 On the name `Entry` for the returned result. `Value` seemed a bit generic and I didn't want to confuse matters mainly in the go client
 that has the unfortunate design of just shoving everything and the kitchen sink into a single package. `KVValue` is a stutter and so
