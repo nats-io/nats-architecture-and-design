@@ -8,15 +8,14 @@ jobs:
       GO111MODULE: "on"
     steps:
       - name: Checkout code
-        uses: actions/checkout@v1
+        uses: actions/checkout@v4
         with:
           ref: ${{ github.ref }}
-          path: src/github.com/nats-io/nats-architecture-and-design
 
       - name: Setup Go
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v5
         with:
-          go-version: "1.22"
+          go-version-file: "go.mod"
 
       - name: Valid metadata and readme updated
         shell: bash --noprofile --norc -x -eo pipefail {0}
