@@ -1,11 +1,12 @@
 # Title
 
-| Metadata | Value                                                           |
-|----------|-----------------------------------------------------------------|
-| Date     | YYYY-MM-DD                                                      |
-| Author   | @<github user>, @<github user>                                  |
-| Status   | `Approved` `Partially Implemented`, `Implemented`, `Deprecated` |
-| Tags     | jetstream, client, server                                       |
+| Metadata | Value                                                                        |
+|----------|------------------------------------------------------------------------------|
+| Date     | YYYY-MM-DD                                                                   |
+| Author   | @<github user>, @<github user>                                               |
+| Status   | `Proposed`, `Approved`, `Partially Implemented`, `Implemented`, `Deprecated` |
+| Tags     | jetstream, client                                                            |
+| Updates  | ADR-XX in the case of a refinement, else remove                              |
 
 | Revision | Date       | Author  | Info           |
 |----------|------------|---------|----------------|

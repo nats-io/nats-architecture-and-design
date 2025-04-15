@@ -20,6 +20,7 @@ type ADRMeta struct {
 	Status  string
 	Tags    []string
 	Path    string
+	Updates []string
 }
 
 type ADR struct {
@@ -28,7 +29,7 @@ type ADR struct {
 }
 
 var (
-	validStatus = []string{"Approved", "Partially Implemented", "Implemented", "Deprecated"}
+	validStatus = []string{"Proposed", "Approved", "Partially Implemented", "Implemented", "Deprecated"}
 )
 
 func parseCommaList(l string) []string {
@@ -95,6 +96,9 @@ func parseADR(adrPath string) (*ADR, error) {
 			case curHdrKey == "Tags":
 				adr.Meta.Tags = parseCommaList(tok.Content)
 
+			case curHdrKey == "Updates":
+				adr.Meta.Updates = parseCommaList(tok.Content)
+
 			case in1stTbl:
 				curHdrKey = tok.Content
 			}
@@ -135,6 +139,14 @@ func parseADR(adrPath string) (*ADR, error) {
 	}
 	if len(adr.Meta.Tags) == 0 {
 		return nil, fmt.Errorf("tags is required in %s", adr.Meta.Path)
+	}
+
+	if len(adr.Meta.Updates) > 0 {
+		list := []string{}
+		for _, u := range adr.Meta.Updates {
+			list = append(list, fmt.Sprintf("[%s](adr/%s.md)", u, u))
+		}
+		adr.Heading = fmt.Sprintf("%s (updating %s)", adr.Heading, strings.Join(list, ", "))
 	}
 
 	return &adr, nil
