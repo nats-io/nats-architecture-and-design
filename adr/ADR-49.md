@@ -7,9 +7,11 @@
 | Status   | Approved              |
 | Tags     | jetstream, spec, 2.12 |
 
-| Revision | Date       | Author     | Info                    |
-|----------|------------|------------|-------------------------|
-| 1        | 2025-04-14 | @ripienaar | Document Initial Design |
+## Revision History
+
+| Revision | Date       | Description             | Refinement | Server Requirement |
+|----------|------------|-------------------------|------------|--------------------|
+| 1        | 2025-04-14 | Document Initial Design |            | 1.12.0             |
 
 ## Context and Motivation
 
@@ -23,8 +25,8 @@ Related:
 
 ## Solution Overview
 
-A Stream can opt-in to supporting Counters which will allow any subject to be a counter. Not all subjects have to be counters,
-but there could be a performance hit over and above a normal Stream when publishing non counter messages.
+A Stream can opt-in to supporting Counters which will allow any subject to be a counter. All subjects in the stream must
+be counters.
 
 Publishing a message to such a Stream will load the most recent message on the subject, increment its value and save 
 the new message with the latest value in the body. The header is preserved for downstream processing by Sources and for 
@@ -50,7 +52,7 @@ Headers:
 
 ## Design and Behavior
 
-The goal is to support addition and subtraction only and that a Stream that Sources 10s of other Streams all with 
+The goal is to support addition and subtraction only and so that a Stream that Sources 10s of other Streams all with 
 counters will effectively create a big combined counter holding totals contributed to by all sources.
 
 Handling published messages has the follow behavior and constraints:
@@ -62,42 +64,35 @@ Handling published messages has the follow behavior and constraints:
    the body is parsed, incremented and written into the new message body. The headers are all preserved
  * When rewrites are in place on the Stream, the rewritten subject should be used to perform the calculation
  * If the result will overflow an `int64` in either direction the message will be rejected with an error
- * When publishing a message and the previous message do not have a `Nats-Incr` header it means the subject is not a 
-   counter, an error is returned to the user and the message is rejected
- * When a message has a `Nats-Rollup`, `Nats-Expected-Last-Sequence`, `Nats-Expected-Subject-Last-Sequence`, `Nats-Expected-Stream` or `Nats-Expected-Last-Msg-Id` header in addition to a `Nats-Incr` header it should be rejected
+ * A Stream with the option set will reject all messages without `Nats-Incr`
+ * When a message has a `Nats-Rollup`, `Nats-Expected-Last-Sequence`, `Nats-Expected-Subject-Last-Sequence`, `Nats-Expected-Stream` or `Nats-Expected-Last-Msg-Id` header must be rejected
  * When a message with the header is published to a Stream without the option set the message is rejected with an error
  * When a message with the header is received over a Source, that has the configuration setting enabled, processing is 
-   done as above otherwise the message is stored verbatim
+   done as above otherwise the message is dropped
  * When a message with the header is received over a Mirror the message is stored verbatim
- * When a message without the header is received and the previous message is a counter this will be rejected since 
-   the subject is then treated as being a counter only. This could be very expensive on Streams with many non-counter messages being written to them
 
 The value in the body is stored in a struct with the following layout:
 
 ```go
 type CounterValue struct {
 	Value string `json:"val"`
-	Base string `json:"base,omitempty"`
 }
 ```
 
-We use a `string` value since JSON spec would only allow up to `2^53` for number, we might want to support BigInt kind of numbers.
-
-The `base` value holds `"int64"` or `""` the intention is that additional types such as BigInts can be supported in 
-future. Today any of those 2 values mean `int64`.
+We use a `string` value since JavaScript would only support up to `2^53` for number, we might want to support BigInt and others in future.
 
 ## Recounts and Audit
 
 It's important in many scenarios that counter values can be audited and recounts can happen. We preserve the `Nats-Incr` 
-header separate from the body so given streams with limits applied one can manually recount the entire stream.
+header separate from the body so given streams with no limits applied one can manually recount the entire stream.
 
-In the case of sourced streams the various headers that sourcing adds will provide further providence for a specific click.
+In the case of sourced streams the headers that sourcing adds will provide further providence for a specific click.
 
 ## Counter Resets
 
 It's important that counters can be reset to zero, in a simple standalone counter this is easily done with a subject purge. 
-In a topology where multiple regions contribute to a total a regional reset might require a negative value to be published 
-equal to the current total.
+In a topology where multiple regions contribute to a total via sourcing a regional reset might require a negative value to 
+be published equal to the current total.
 
 The preferred method for Reset should be a negative value being published followed by a purge up to the message holding 
 the negative value, with subject purge being used only for entire counter deletes.
@@ -109,14 +104,16 @@ seen in the diagram below:
 
 ![Replicated Counters](images/0049-sources.png)
 
-When the counter is read at any location in the tree the value shown should be returned.
+When the counter is read at any location in the tree the value shown should be returned - the total of all messages that
+flowed through a particular server.
 
 To achieve this topology we create sources that copy a subject between location and regions. The problem here would be 
 that in order to get a fully global counter we end up with the same subject in all these Streams and locations and might 
-end up with doube writes etc. 
+end up with double writes if all Streams listen on the same subject. 
 
-We might say the regions listen on subjects like `count.es.hits` and we use rewriting during the sourcing to turn that 
-into `count.eu.hits` and eventually `count.hits` with the aggregate streams not listening on any subject. 
+To solve this problem we configure regions to listen on subjects like `count.es.hits` and we use rewriting during the 
+sourcing to turn that into `count.eu.hits` and eventually `count.hits` with the aggregate streams possibly not listening 
+on any subject. 
 
 In this scenario we lose the ability to access the `count.es.hits` value anywhere other than in the `es` location - not 
 ideal. One could mirror from ES -> EU cluster and then Source in the EU cluster into an aggregate counter thus retaining 
@@ -124,21 +121,23 @@ the source and total.
 
 Replicated counters further complicates matter wrt counter resets. In a standalone counter one can just purge the subject 
 to reset it. In the replicated case a purge will not replicate, a roll-up would replicate and destroy the entire counter 
-everywhere so the only real option is to publish a negative value.
+everywhere so the only real option is to publish a negative value into the particular point in the tree structure where
+you want to reset.
 
 ### Adding Sources
 
 Adding a source that already has values in it and that had limits applied will be problematic since we will not have the 
-history to fully recount the message in the target Stream.
+history to fully recount the message in the target Stream. Additionally if a Source had many messages adding in the whole
+source might be computationally too expensive, especially when the history is not important.
 
 Tooling might use a direct get to retrieve that value in the source, place that value into the target Stream and then 
-starting the sourcing from seq+1, meaning we snapshot the Source value into the target and then only handle new counts.  
+start the sourcing from seq+1, meaning we snapshot the Source value into the target and then only handle new counts.  
 This will scale well and avoid huge recounts, but, would require the target Stream to have a subject.
 
 ## Stream Configuration
 
-Weather or not a Stream support this behavior should be a configuration opt-in. We want clients to definitely know
-when this is supported which the opt-in approach with a boolean on the configuration would make clear.
+Weather or not a Stream support this behavior should be a configuration opt-in since once enabled only Counters can exist
+in the Stream
 
 ```golang
 type StreamConfig struct {
@@ -148,8 +147,11 @@ type StreamConfig struct {
 ```
 
  * Setting this on a Mirror should cause an error.
- * This feature can be turned off and on using Stream edits.
+ * This feature can be turned off and on using Stream edits, turning it on should only be allowed on an empty, or purged, Stream.
  * A Stream with this feature on should require API level 2
+ * Only Max Messages Per Subject limit should be allowed for this kind of Stream. Other limits might result in counters disappearing, or losing updates, over offline Sources. We might look at relaxing this in time based on feedback to avoid ever-growing counter Streams
+ * Stream should not support Discard New with this setting set
+ * This setting may not be enabled along with Per Message TTLs
 
 ## Client Considerations
 
@@ -163,11 +165,13 @@ reason Key-Value stores are attractive.
 
 Additionally the management features for Counters are very purpose specific and would not belong in KV.
 
-So we propose to follow the new standard approach of landing something in Orbit and merging it back
-later, in this case a dedicated light weight Counter client to begin with:
+So we propose to follow the new standard approach of landing something in Orbit and merging it back later into core clients 
+if deemed suitable.  At that point it might become an extension on KV if it makes sense. 
+
+In this case a dedicated light weight Counter client to begin with would be added to Orbit:
 
 > [!NOTE]  
-> This is just an idea at present, the client will be fleshed out later in the development cycle
+> This is just an idea at present, the client will be fleshed out later in the development cycle.
 
 ```go
 // Creates a new counter abstraction bound to a Stream
