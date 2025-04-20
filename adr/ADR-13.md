@@ -122,7 +122,7 @@ for the pull consumer.
 
 ### No Wait Pull Requests
 
-In order to get a response from the server rigth away, a client can
+In order to get a response from the server right away, a client can
 make a pull request with the `no_wait` option enabled. For example:
 
 ```shell
