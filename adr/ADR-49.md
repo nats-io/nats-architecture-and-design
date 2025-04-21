@@ -67,9 +67,7 @@ Handling published messages has the follow behavior and constraints:
  * A Stream with the option set will reject all messages without `Nats-Incr`
  * When a message has a `Nats-Rollup`, `Nats-Expected-Last-Sequence`, `Nats-Expected-Subject-Last-Sequence`, `Nats-Expected-Stream` or `Nats-Expected-Last-Msg-Id` header must be rejected
  * When a message with the header is published to a Stream without the option set the message is rejected with an error
- * When a message with the header is received over a Source, that has the configuration setting enabled, processing is 
-   done as above otherwise the message is dropped
- * When a message with the header is received over a Mirror the message is stored verbatim
+ * When a message with the header is received over a Source or Mirror the message is stored verbatim
 
 The value in the body is stored in a struct with the following layout:
 
@@ -80,6 +78,8 @@ type CounterValue struct {
 ```
 
 We use a `string` value since JavaScript would only support up to `2^53` for number, we might want to support BigInt and others in future.
+
+We use a JSON result so we can extend the structure in future, perhaps to indicate data type and more.
 
 ## Recounts and Audit
 
@@ -99,17 +99,30 @@ the negative value, with subject purge being used only for entire counter delete
 
 ## Source-based Replicated Counters
 
-We want to be able to build large replicated global counters, but this present several challenges, the final goal can be 
-seen in the diagram below:
+We will support two strategies for combining multiple Counters into a global view.
 
-![Replicated Counters](images/0049-sources.png)
+ * Aggregated Counters suitable for shorter lived, fully audited, counters
+ * Client-Assisted Sourced Counters suitable for high throughput, long lived, counters
+
+> [!NOTE]  
+> This covers what is possible with current Sourcing features, once the working feature is implemented we will
+> look at adding Counter awareness to Sources to alleviate some of the short comings detailed below
+
+### Aggregated
+
+We want to be able to build large replicated global counters formed of multiple tiers with a running count kept at
+each tier.
+
+Use this for Counters where full, or long term, history can be kept and as little as possible client side work is needed
+to obtain the total values.
+
+![Aggregated Counters](images/0049-aggregate.png)
 
 When the counter is read at any location in the tree the value shown should be returned - the total of all messages that
 flowed through a particular server.
 
-To achieve this topology we create sources that copy a subject between location and regions. The problem here would be 
-that in order to get a fully global counter we end up with the same subject in all these Streams and locations and might 
-end up with double writes if all Streams listen on the same subject. 
+In order to get a fully global counter we end up with the same subject in all these Streams and locations and might end
+up with double writes if all Streams listen on the same subject.
 
 To solve this problem we configure regions to listen on subjects like `count.es.hits` and we use rewriting during the 
 sourcing to turn that into `count.eu.hits` and eventually `count.hits` with the aggregate streams possibly not listening 
@@ -124,7 +137,11 @@ to reset it. In the replicated case a purge will not replicate, a roll-up would 
 everywhere so the only real option is to publish a negative value into the particular point in the tree structure where
 you want to reset.
 
-### Adding Sources
+In this scenario users must take care to configure limits appropriately, at no point may a down Source miss messages,
+this means if a Source is down for a day, there must be history to cover that period. Each aggregation point must also
+be configured to be a Counter.
+
+#### Adding Sources
 
 Adding a source that already has values in it and that had limits applied will be problematic since we will not have the 
 history to fully recount the message in the target Stream. Additionally if a Source had many messages adding in the whole
@@ -133,6 +150,29 @@ source might be computationally too expensive, especially when the history is no
 Tooling might use a direct get to retrieve that value in the source, place that value into the target Stream and then 
 start the sourcing from seq+1, meaning we snapshot the Source value into the target and then only handle new counts.  
 This will scale well and avoid huge recounts, but, would require the target Stream to have a subject.
+
+### Client-Assisted
+
+We want to support long-lived, high throughput, Counters where full audit trail is not needed and where Source
+outages of any period will resolve in a eventually consistent manner without loss of Counts. The aggregation
+Streams do not recount the entire global Counter.
+
+![Client-Assisted Counters](images/0049-assisted.png)
+
+Here the colors indicate that the Counters are not combined by the Streams but that each Counter is simply copied. A 
+multi-tier arrangement as above can also be constructed.
+
+The Counters are sourced into a Stream that combines the other Streams and stores the data verbatim.  The 
+combination Streams are not configured to be a Counters.
+
+Reads are done on a client-assisted manner meaning we use a Batch Direct Get of all the subjects that make up the
+Counter and simply sum their values together in the client.  This results in a consistent point in time read.
+
+The Streams can all have quite small Max Messages Per Subject limits allowing control of the storage space and would
+improve the overall performance of these Streams if configured for 2 messages per subject.
+
+Even with short limits applied only the latest message matter, if some messages are lost during a Source outage they 
+will resume to the correct value after the outage.
 
 ## Stream Configuration
 
@@ -148,10 +188,9 @@ type StreamConfig struct {
 
  * Setting this on a Mirror should cause an error.
  * This feature can be turned off and on using Stream edits, turning it on should only be allowed on an empty, or purged, Stream.
- * A Stream with this feature on should require API level 2
- * Only Max Messages Per Subject limit should be allowed for this kind of Stream. Other limits might result in counters disappearing, or losing updates, over offline Sources. We might look at relaxing this in time based on feedback to avoid ever-growing counter Streams
  * Stream should not support Discard New with this setting set
  * This setting may not be enabled along with Per Message TTLs
+ * A Stream with this feature on should require API level 2
 
 ## Client Considerations
 
@@ -184,12 +223,9 @@ func ParseMessage(msg jetstream.Msg) (Entry, error)
 type Entry interface {
 	// ValueInt64 parses the value as a int64
 	ValueInt64() (int64, error)
-
-	// Message holds the received JetStream Message
-	Message() jetstream.Msg
 	
-	// IncrementInt64 increments the entry, produce a new entry with the result
-	IncrementInt64(value int64) (Entry, error)
+	// The messages that contributed to the Value
+	Messages() []jetstream.Msg
 }
 
 // Increments and loads 
@@ -199,5 +235,9 @@ type Counter interface {
 	
     // Loads the value from the stream subject, options to supply a specific seq/time for example
     func Load(subject string, opts ...LoadOption) (Entry, error)
+
+    // Loads a group of subjects from the same stream using a direct batch get, performs the
+    // calculation to combine these numbers client side
+    func LoadMulti(subjects []string, opts ...LoadOptions) ([]Entry, error)
 }
 ```
