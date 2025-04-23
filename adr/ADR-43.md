@@ -106,5 +106,5 @@ Restrictions:
  * When  `AllowMsgTTL` or `SubjectDeleteMarkerTTL` are set the Stream should require API level `1`.
  * `AllowRollup` must be `true`, stream update and create should set this unless pedantic mode is enabled.
  * `DenyPurge` must be `false`, stream update and create should set this unless pedantic mode is enabled.
- * The server should treat `SubjectDeleteMarkerTTL` as the minimum for `Nats-TTL` but not reject messages that do not satisfy that. This might be changed in 2.12 depending on some internal implementation fixes in the server.
+ * Unless `MaxMsgsPer` equals 1 the server should treat `SubjectDeleteMarkerTTL` as the minimum for `Nats-TTL` but not reject messages that do not satisfy that. This might be changed in 2.12 depending on some internal implementation fixes in the server.
 
