@@ -23,7 +23,7 @@ is ready again.
 
 #### Client Integration
 
-Although an implementation is provided directly in the GO client, it is preferred that this functionality is built in Orbit or similar, as an extension/library.
+Although an implementation is provided directly in the GO client, it is preferred that this functionality is built in [Orbit](https://www.synadia.com/blog/orbit-and-the-future-of-the-clients) or similar, as an extension/library.
 
 ## Implementation
 
