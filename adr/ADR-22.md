@@ -7,6 +7,11 @@
 | Status   | Partially Implemented     |
 | Tags     | jetstream, client         |
 
+| Revision | Date       | Author   | Info                        |
+|----------|------------|----------|-----------------------------|
+| 1        | 2022-03-18 | @wallyqs | Initial design              |
+| 2        | 2024-03-06 | @scottf  | Integration and Orbit notes |
+
 ## Motivation
 
 When the NATS Server is running with JetStream on cluster mode, there
@@ -15,6 +20,10 @@ of `no responders available` errors during the election.  In order to
 try to mitigate these failures, retries can be added into JetStream
 enabled clients to attempt to publish the message to JetStream once it
 is ready again.
+
+#### Client Integration
+
+Although an implementation is provided directly in the GO client, it is preferred that this functionality is built in Orbit or similar, as an extension/library.
 
 ## Implementation
 
@@ -26,7 +35,7 @@ JetStream service was not ready at the moment of publishing, the
 server will send to the requestor a 503 status message right away.
 
 To improve robustness of producing messages to JetStream, a client can
-back off for a a bit and then try to send the message again later.
+back off for a bit and then try to send the message again later.
 By default, the Go client waits for `250ms` and will retry 2 times
 sending the message (so that in total it would have attempted to send
 the message 3 times).
@@ -107,3 +116,7 @@ if err != nil {
 	log.Println("Pub Error", err)
 }
 ```
+
+## Orbit / Implementations
+
+[Java JetStream Publish Extentions](https://github.com/synadia-io/orbit.java/tree/main/js-publish-extensions)
