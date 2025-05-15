@@ -7,6 +7,12 @@
 | Status   | Implemented                |
 | Tags     | server, client             |
 
+
+| Revision | Date       | Description      |
+|----------|------------|------------------|
+| 1        | 2021-05-12 | Initial document |
+| 2        | 2025-05-15 | Clarified ASCII  |
+
 ## Context
 
 This document describes NATS Headers from the perspective of clients. NATS
@@ -35,6 +41,12 @@ More specifically from [rfc822](https://www.ietf.org/rfc/rfc822.txt) Section
 > decimal, except colon). The field-body may be composed of any ASCII
 > characters, except CR or LF. (While CR and/or LF may be present in the actual
 > text, they are removed by the action of unfolding the field.)
+
+and Section 3.3:
+```test
+                                            ; (  Octal, Decimal.)
+CHAR        =  <any ASCII character>        ; (  0-177,  0.-127.)
+```
 
 ### Unique to NATS Headers
 
