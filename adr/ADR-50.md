@@ -99,4 +99,8 @@ type StreamConfig struct {
 ```
 ### Mirrors and Sources
 
-Mirrors will ignore these headers, Sources will process them as above.
+Sources and Mirrors will ignore these headers.
+
+Mirrors will eventually be consistent by their nature, but with Mirror Direct in the picture there is no consistency guarantees anyway. We might revisit this after Server issue 6557.
+
+Sources could be very difficult to make right due to filters and more.
