@@ -99,6 +99,9 @@ type StreamConfig struct {
 	AllowAtomicPublish bool `json:"allow_atomic,omitempty"`
 }
 ```
+
+Setting this to true should set the API level to 2.
+
 ### Mirrors and Sources
 
 Sources and Mirrors will ignore these headers.
