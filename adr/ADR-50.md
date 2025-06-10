@@ -47,7 +47,7 @@ Clients can decide to optimise the empty acks by only sending a request every N 
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with a error Pub Ack if any message fails these checks
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
- * Send a pub ack on the final message that includes a new property `Batch:ID` and `Messages:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
+ * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
 
 The server will operate under limits to safeguard itself:
 
@@ -62,7 +62,7 @@ When the server sends a Pub Ack at the end of a batch the `PubAck` will set thes
 
 ```go
 type PubAck struct {
-    // ...
+	// ...
 	BatchId   string `json:"batch,omitempty"`
 	BatchSize int    `json:"count,omitempty"`
 }
@@ -81,11 +81,13 @@ var (
 )
 
 type PubAck struct {
-    // ...
+	// ...
 	BatchId      string             `json:"batch"`
 	Reason       BatchAbandonReason `json:"reason"`
 }
 ```
+
+The event type is `io.nats.jetstream.advisory.v1.batch_abandoned`.
 
 ### Stream Configuration
 
