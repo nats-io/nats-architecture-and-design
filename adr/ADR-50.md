@@ -100,12 +100,14 @@ type StreamConfig struct {
 }
 ```
 
+The setting can be disabled and enabled using configuration updates.
+
 Setting this to true should set the API level to 2.
 
 ### Mirrors and Sources
 
-Sources and Mirrors will ignore these headers.
+Mirrors can enable this setting as long as the mirror is unfiltered. Batches will be processed as above except when a batch gets rejected the mirror would need to resume as the sequence before the batch started which will result in retrying the batch write. 
 
-Mirrors will eventually be consistent by their nature, but with Mirror Direct in the picture there is no consistency guarantees anyway. We might revisit this after Server issue 6557.
+Mirrors will ignore the various headers like `ExpectedLastSeq` as normal.
 
-Sources could be very difficult to make right due to filters and more.
+Streams with Sources cannot enable the `AllowAtomicPublish` and Sources may not be added to streams with `AllowAtomicPublish` set. 
