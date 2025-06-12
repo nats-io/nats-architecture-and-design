@@ -68,7 +68,7 @@ Handling published messages has the follow behavior and constraints:
  * A Stream with the option set will reject all messages without `Nats-Incr`
  * When a message has a `Nats-Rollup`, `Nats-Expected-Last-Sequence`, `Nats-Expected-Subject-Last-Sequence`, `Nats-Expected-Stream` or `Nats-Expected-Last-Msg-Id` header must be rejected
  * When a message with the header is published to a Stream without the option set the message is rejected with an error
- * When a message with the header is received over a Source or Mirror the message is stored verbatim
+ * When a message with the header is received over a Source (with the setting disabled) or Mirror the message is stored verbatim
 
 The value in the body is stored in a struct with the following layout:
 
