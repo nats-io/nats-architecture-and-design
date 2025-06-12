@@ -9,9 +9,10 @@
 
 ## Revision History
 
-| Revision | Date       | Description             | Refinement | Server Requirement |
-|----------|------------|-------------------------|------------|--------------------|
-| 1        | 2025-04-14 | Document Initial Design |            | 1.12.0             |
+| Revision | Date       | Description                      | Refinement | Server Requirement |
+|----------|------------|----------------------------------|------------|--------------------|
+| 1        | 2025-04-14 | Document Initial Design          |            | 1.12.0             |
+| 2        | 2025-06-12 | Server will always use `big.Int` |            |                    |
 
 ## Context and Motivation
 
@@ -57,17 +58,16 @@ counters will effectively create a big combined counter holding totals contribut
 
 Handling published messages has the follow behavior and constraints:
 
- * The header holds values like `+1`, `-1` and `-10`, in other words any valid `int64`, if the value fails to parse 
+ * The header holds values like `+1`, `-1` and `-10`, in other words any valid `BigInt`, if the value fails to parse 
    the message is rejected with an error. A value of `0` is valid. A valid message is `^[+-]\d+$` with the additional checks
-   around `int64` maximal values
+   around `BigInt` maximal values
  * When publishing a message to the subject the last value is loaded by the server receiving the message (so the leader), 
    the body is parsed, incremented and written into the new message body. The headers are all preserved
  * When rewrites are in place on the Stream, the rewritten subject should be used to perform the calculation
- * If the result will overflow an `int64` in either direction the message will be rejected with an error
  * A Stream with the option set will reject all messages without `Nats-Incr`
  * When a message has a `Nats-Rollup`, `Nats-Expected-Last-Sequence`, `Nats-Expected-Subject-Last-Sequence`, `Nats-Expected-Stream` or `Nats-Expected-Last-Msg-Id` header must be rejected
  * When a message with the header is published to a Stream without the option set the message is rejected with an error
- * When a message with the header is received over a Source or Mirror the message is stored verbatim
+ * When a message with the header is received over a Source (with the setting disabled) or Mirror the message is stored verbatim
 
 The value in the body is stored in a struct with the following layout:
 
@@ -221,17 +221,17 @@ func ParseMessage(msg jetstream.Msg) (Entry, error)
 
 // Entry holds helpers for parsing the values in counters
 type Entry interface {
-	// ValueInt64 parses the value as a int64
-	ValueInt64() (int64, error)
+	// Value parses the value as a big.Int
+	Value() (big.Int, error)
 	
-	// The messages that contributed to the Value
+// The messages that contributed to the Value
 	Messages() []jetstream.Msg
 }
 
 // Increments and loads 
 type Counter interface {
     // Increments a counter by delta
-    func IncrementInt64(subject string, value int64) (Entry, error)
+    func Increment(subject string, value int64) (Entry, error)
 	
     // Loads the value from the stream subject, options to supply a specific seq/time for example
     func Load(subject string, opts ...LoadOption) (Entry, error)
