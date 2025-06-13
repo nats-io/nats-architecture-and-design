@@ -27,8 +27,6 @@ When a KV store is used to store a User record the it might span many keys, the 
 
 To address this we want to be able to deliver the 5 writes as a batch and the entire batch either fails or succeeds.
 
-These features will be cumulative with other features such as `ExpectedLastSeq` and `ExpectedSeq`.
-
 ### Client Design
 
 The client will signal batch start and membership using headers on published messages.
@@ -55,6 +53,12 @@ The server will operate under limits to safeguard itself:
  * Each server can only have 1000 batches in flight at any time
  * A batch that has not had traffic for 10 seconds will be abandoned
  * Each batch can have maximum 1000 messages
+
+### Stream State Constraints
+
+Headers like `ExpectedLastSeq` and `LastMsgId` makes sense if checked before committing the batch aginst the pre-commit state of the Stream.  Unfortunately our current implementation would not make this feasible. 
+
+Initial release of this feature will reject messages published with those headers and we might support them in future.
 
 ### Publish Acknowledgements
 
