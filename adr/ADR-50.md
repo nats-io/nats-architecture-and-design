@@ -33,9 +33,9 @@ These features will be cumulative with other features such as `ExpectedLastSeq` 
 
 The client will signal batch start and membership using headers on published messages.
 
- * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Seq:1` headers using a request, the server will acknowledge the batch was started using an empty reply
- * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Seq:n` by one, the server will acknowledge receipt using an empty reply if a reply subject is set.
- * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Seq:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack
+ * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request, the server will acknowledge the batch was started using an empty reply
+ * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, the server will acknowledge receipt using an empty reply if a reply subject is set.
+ * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
