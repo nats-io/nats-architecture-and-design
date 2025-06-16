@@ -31,9 +31,11 @@ To address this we want to be able to deliver the 5 writes as a batch and the en
 
 The client will signal batch start and membership using headers on published messages.
 
- * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request, the server will acknowledge the batch was started using an empty reply
- * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, the server will acknowledge receipt using an empty reply if a reply subject is set.
- * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack
+ * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request. 
+ * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one,
+ * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack.
+
+The server will not acknowledge any of the publishes except the one doing the Commit, clients must publish using Core NATS publish.
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
