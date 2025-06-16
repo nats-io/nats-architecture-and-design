@@ -33,6 +33,8 @@ Publishing a message to such a Stream will load the most recent message on the s
 the new message with the latest value in the body. The header is preserved for downstream processing by Sources and for 
 visibility and debugging purposes.
 
+The `PubAck` will include the value post-increment for fast feedback, avoiding a Get to get the latest value.
+
 ```bash
 $ nats s get COUNTER --last-for counter.hits
 Item: COUNTER#22802062 received 2025-01-09 18:05:07.93747413 +0000 UTC on Subject counter.hits
@@ -41,7 +43,8 @@ Headers:
   Nats-Incr: +2
 
 {"val":"100"}
-$ nats pub counter.hits '' -J -H "Nats-Incr:+1"
+$ nats req counter.hits '' -J -H "Nats-Incr:+1"
+{"stream":"COUNTER", "domain":"hub", "seq":22802063, "val":"101"}
 $ nats s get COUNTER --last-for counter.hits
 Item: COUNTER#22802063 received 2025-01-09 18:06:00 +0000 UTC on Subject counter.hits
 
@@ -80,6 +83,15 @@ type CounterValue struct {
 We use a `string` value since JavaScript would only support up to `2^53` for number, we might want to support BigInt and others in future.
 
 We use a JSON result so we can extend the structure in future, perhaps to indicate data type and more.
+
+The PubAck gets a new field:
+
+```go
+type PubAck struct {
+	// ....
+	Value string `json:"val,omitempty"`
+}
+```
 
 ## Recounts and Audit
 
