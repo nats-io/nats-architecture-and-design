@@ -198,7 +198,8 @@ type StreamConfig struct {
 }
 ```
 
- * Setting this on a Mirror should cause an error.
+ * Setting this on a Mirror should cause an error
+ * Setting this on a stream with anything but Limits retention should cause an error
  * This feature can be turned off and on using Stream edits, turning it on should only be allowed on an empty, or purged, Stream.
  * Stream should not support Discard New with this setting set
  * This setting may not be enabled along with Per Message TTLs
