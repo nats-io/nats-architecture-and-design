@@ -20,6 +20,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |-----|----|-----------|
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
+|[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 
 ## Client
 
@@ -53,6 +54,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
+|[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 
 ## Jetstream
 
@@ -82,6 +84,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
+|[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 
 ## Kv
 
@@ -116,6 +119,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 
 ## Security
 
