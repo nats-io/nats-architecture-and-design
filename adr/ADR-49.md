@@ -11,8 +11,9 @@
 
 | Revision | Date       | Description                      | Refinement | Server Requirement |
 |----------|------------|----------------------------------|------------|--------------------|
-| 1        | 2025-04-14 | Document Initial Design          |            | 1.12.0             |
+| 1        | 2025-04-14 | Document Initial Design          |            | 2.12.0             |
 | 2        | 2025-06-12 | Server will always use `big.Int` |            |                    |
+| 3        | 2025-06-19 | Source-aware tracking            |            |                    |
 
 ## Context and Motivation
 
@@ -71,6 +72,10 @@ Handling published messages has the follow behavior and constraints:
  * When a message has a `Nats-Rollup`, `Nats-Expected-Last-Sequence`, `Nats-Expected-Subject-Last-Sequence`, `Nats-Expected-Stream` or `Nats-Expected-Last-Msg-Id` header must be rejected
  * When a message with the header is published to a Stream without the option set the message is rejected with an error
  * When a message with the header is received over a Source (with the setting disabled) or Mirror the message is stored verbatim
+ * When the previous message in the stream has the `Nats-Counter-Sources` header, it must be copied into the new message, with or without modifications as needed below. This is necessary to ensure that we never lose sourcing state and that changes from sources can always be reconciled.
+ * When a message is received over a Source, with a `Nats-Stream-Source` header:
+    1. The `Nats-Incr` value will be overwritten with the delta between the last seen `"val"` for that source (as stored in the `Nats-Counter-Sources` header) and the new one
+    2. The `Nats-Counter-Sources` header will then be updated with the new sourced `"val"` for that particular source
 
 The value in the body is stored in a struct with the following layout:
 
@@ -111,17 +116,6 @@ the negative value, with subject purge being used only for entire counter delete
 
 ## Source-based Replicated Counters
 
-We will support two strategies for combining multiple Counters into a global view.
-
- * Aggregated Counters suitable for shorter lived, fully audited, counters
- * Client-Assisted Sourced Counters suitable for high throughput, long lived, counters
-
-> [!NOTE]  
-> This covers what is possible with current Sourcing features, once the working feature is implemented we will
-> look at adding Counter awareness to Sources to alleviate some of the short comings detailed below
-
-### Aggregated
-
 We want to be able to build large replicated global counters formed of multiple tiers with a running count kept at
 each tier.
 
@@ -149,42 +143,31 @@ to reset it. In the replicated case a purge will not replicate, a roll-up would 
 everywhere so the only real option is to publish a negative value into the particular point in the tree structure where
 you want to reset.
 
-In this scenario users must take care to configure limits appropriately, at no point may a down Source miss messages,
-this means if a Source is down for a day, there must be history to cover that period. Each aggregation point must also
-be configured to be a Counter.
+### Adding Sources
 
-#### Adding Sources
+Adding a source that uses a subject transform to merge an upstream counter into an aggregate one is supported through a
+source-tracking `Nats-Counter-Sources` header, which is automatically populated and maintained by the server.
 
-Adding a source that already has values in it and that had limits applied will be problematic since we will not have the 
-history to fully recount the message in the target Stream. Additionally if a Source had many messages adding in the whole
-source might be computationally too expensive, especially when the history is not important.
+The `Nats-Counter-Sources` keys each source based on the stream name & original pre-transformed subject and contains the most
+recently seen `"val"` for each source.
 
-Tooling might use a direct get to retrieve that value in the source, place that value into the target Stream and then 
-start the sourcing from seq+1, meaning we snapshot the Source value into the target and then only handle new counts.  
-This will scale well and avoid huge recounts, but, would require the target Stream to have a subject.
+When a message is received from a source, as determined by the presence of the `Nats-Stream-Source` header, the server will
+not use the sourced `Nats-Incr` value to update the counter verbatim, but will instead rewrite `Nats-Incr` to reflect the
+delta between the last seen `"val"` for that source and the new one.
 
-### Client-Assisted
+This way, it is possible to replay `Nats-Incr` headers and recount on the aggregate stream even if some messages from the
+source were lost, i.e. due to message retention policies, network outages etc, and still arrive at the correct total.
 
-We want to support long-lived, high throughput, Counters where full audit trail is not needed and where Source
-outages of any period will resolve in a eventually consistent manner without loss of Counts. The aggregation
-Streams do not recount the entire global Counter.
+This also means that adding a source that has a non-zero counter is possible and the `Nats-Incr` header will include that
+initial count, i.e. adding source counter with an existing value of 10 will result in the first sourced count having a 
+`Nats-Incr: 10`. 
 
-![Client-Assisted Counters](images/0049-assisted.png)
+Note that once a source key is added to this map, it is not ever removed, so that if the stream source is removed and
+re-added later to the stream config, the server will be able to do the right thing and determine the difference during
+that time, instead of re-adding the whole value and potentially ending up with a miscount on the aggregated stream.
 
-Here the colors indicate that the Counters are not combined by the Streams but that each Counter is simply copied. A 
-multi-tier arrangement as above can also be constructed.
-
-The Counters are sourced into a Stream that combines the other Streams and stores the data verbatim.  The 
-combination Streams are not configured to be a Counters.
-
-Reads are done on a client-assisted manner meaning we use a Batch Direct Get of all the subjects that make up the
-Counter and simply sum their values together in the client.  This results in a consistent point in time read.
-
-The Streams can all have quite small Max Messages Per Subject limits allowing control of the storage space and would
-improve the overall performance of these Streams if configured for 2 messages per subject.
-
-Even with short limits applied only the latest message matter, if some messages are lost during a Source outage they 
-will resume to the correct value after the outage.
+These properties mean that aggregated counters will always be eventually consistent with their sources, even if the
+aggregating stream also has local additions or subtractions that were not themselves sourced.
 
 ## Stream Configuration
 
