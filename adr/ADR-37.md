@@ -119,9 +119,9 @@ Consumers will have the following operations:
 - `Info` - An optional operation that returns the consumer info of the consumer
 - `Delete` - An optional operation to delete the referenced consumer
 
-Lifecycle of Consume may need to be controlled. For example, to stop
+Lifecycle of Consume may need to be controlled. For example, the ability to stop
 delivering messages to the callback or drain messages already accumulated before
-stopping the consumer, these can be additional methods on the consumer
+stopping the consumer can be additional methods on the consumer
 implementation if appropriate. They could also be an object that is the return value 
 of callback-driven consumers.
 
@@ -354,8 +354,12 @@ was described in previous sections.
    - if a message is a heartbeat message, go to #1
    - if a message is a user message, handle it (return or execute callback)
     and subtract 1 message from pending message count and
+   - if the message is a heartbeat message, go to #1
+   - if the message is a user message, handle it (return or execute callback)
+    and subtract one message from pending message count and
     message size from pending bytes count and go to #1
    - if a message is an error, go to #6
+   - if the message is an error, go to #6
 6. Verify error type:
    - if message contains `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, go to #7
    - verify if an error should be terminal based on [Status handling](#status-handling),
@@ -368,6 +372,7 @@ was described in previous sections.
 
 An optional operation that returns the consumer info. Note that depending on the
 context (a consumer that is exported across the account), the JS API to retrieve the
+context (a consumer that is exported across an account), the JS API to retrieve the
 info on the consumer may not be available.
 
 Clients may optionally expose a way to retrieve cached info (from the Consumer instance itself),
@@ -377,6 +382,7 @@ bypassing `CONSUMER.INFO` request to the server.
 
 An optional operation that allows deleting the consumer. Note that depending on
 the context (a consumer that is exported across the account), the JS API to delete
+the context (a consumer that is exported across an account), the JS API to delete
 the consumer may not be available.
 
 ## Consequences
