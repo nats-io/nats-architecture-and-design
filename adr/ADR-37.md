@@ -13,7 +13,7 @@
 |----------|------------|-----------------------------------------------------|
 | 1        | 2023-05-30 | Initial stable release                              |
 | 2        | 2024-06-07 | Change server reconnect behavior during `consume()` |
-| 3        | 2025-05-14 | Additional status and general wording               |
+| 3        | 2025-06-30 | Additional status and general wording               |
 
 ## Context and Problem Statement
 
