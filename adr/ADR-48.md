@@ -8,6 +8,11 @@
 | Tags     | jetstream, client, kv, refinement, 2.11 |
 | Updates  | ADR-8                                   |
 
+
+| Revision | Date       | Author    | Info                             |
+|----------|------------|-----------|----------------------------------|
+| 1        | 2025-06-30 | @scottf   | Clarify purge and error handling |
+
 ## Context
 
 Since NATS Server 2.11 we support [Per-Message TTLs](ADR-43.md), we wish to expose some KV specific features built
@@ -15,9 +20,9 @@ on this feature.
 
  * Improve Watchers by notifying of Max Age deleted messages
  * Improve Purge so that old subjects can be permanently removed, removing the need for costly compacts, while still supporting Watchers
- * Creating keys with a custom life time
+ * Creating keys with a custom lifetime
 
-In KV we call these Limit Markers.
+In Key Value, we call these Limit Markers.
 
 ## Configuration
 
@@ -44,19 +49,25 @@ type Status interface {
 
 ## API Changes
 
+The functions noted here should support accepting a TTL for the specified api and pass errors on to the user when the server errors because the bucket does not support the feature.
+
+The basic operation is to add a `Nats-TTL` header to the api request. See [ADR-43](ADR-43.md) for more information.
+
 ### Storing Values
 
-Only the `Create()` function should support accepting a TTL and should error when a TTL is passed with the bucket not supporting this feature - though the server will also error.
+The `Create()` function should support accepting a TTL.
 
 Clients can implement this as a varags version of `Create()`, a configuration option for `Create()` or other idiomatic manner the language supports.
 
-We cannot support this on `Put()` since that might mean older revisions could come back from the dead once the TTL expires.
-
 ### Purging Keys
 
-If the bucket supports Marker TTLs the `Purge()` function can accept a TTL, this should then pass `KV-Operation: PURGE`, `Nats-Rollup: sub` and `Nats-TTL: 1h`.
+The `Purge()` function should support accepting a TTL.
 
 Clients can implement this as a varags version of `Purge()`, a configuration option for `Purge()` or other idiomatic manner the language supports.
+
+### Do Not Support
+
+At this time, do not accept a TTL for other API. Some are currently undefined, and some are understood to create improper state. For instance a TTL on `Put()` might mean older revisions could come back from the dead once the TTL expires.
 
 ### Retrieving Values
 
