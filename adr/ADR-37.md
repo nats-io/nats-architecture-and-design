@@ -121,9 +121,8 @@ Consumers will have the following operations:
 
 Lifecycle of Consume may need to be controlled. For example, the ability to stop
 delivering messages to the callback or drain messages already accumulated before
-stopping the consumer can be additional methods on the consumer
-implementation if appropriate. They could also be an object that is the return value 
-of callback-driven consumers.
+stopping the consumer. These can be additional methods on the consumer
+implementation if appropriate or an object that is the return value of callback-driven consumers.
 
 Note: pull requests issued by clients should have client-side timeouts in addition to
 server-side timeout (`expiry`). Client-side timeout value should always be larger than expiry.
@@ -134,11 +133,10 @@ Get one or more messages. This operation will end once the RPC expires or the
 number of messages/data batch requested is provided. The user is in control of
 when they retrieve the messages from the server.
 
-The messages will be delivered in a language-specific way via a callback. There should be
-some signal to indicate that the fetch has finished, for instance, a null message.
-It could be via some iterator functionality where getting the next message will block
-until a message is yielded or the operation or the operation finishes, which
-terminates the iterator.
+Depending on the language, the messages will be delivered via a callback with
+some signal to indicate that the fetch has finished (could be that the message is null.)
+It could also come via some iterator functionality where getting the next message will block
+until a message is yielded or the operation or the operation finishes, terminating the iterator.
 
 Client should also expose the options to fetch certain amount of data (`max_bytes`)
 instead of messages. Depending on the language, this can either be an option on `Fetch`
@@ -193,10 +191,10 @@ un-acked.
   trigger a low watermark on the client, and influence it to request more data.
 
 Note that `max_messages` and `max_bytes` are exclusive. Clients should not allow depending on both constraints.
-If no options are provided, clients should use a default value for `max_messages` and not set `max_bytes`.
+If no option is provided, clients should use a default value for `max_messages` and not set `max_bytes`.
 For each constraint, a corresponding threshold can be set.
 
-Note that if `max_bytes` is set, the client should set `batch_size` in requests to a large number (e.g., 1_000_000)
+Note that if `max_bytes` is set, a client should set `batch_size` in requests to a large number (e.g., 1 000 000)
 instead of leaving it empty to bypass server sending only one message if `batch_size == 0`.
 
 ###### Defaults and constraints
@@ -207,7 +205,7 @@ depending on what values are most efficient using a specific programming languag
 - `max_messages` - depends on a client, probably between 100 and 1000 messages
 - `expires` - default 30s, minimum 1s
 - `max_bytes` - not set, use `max_messages` if not provided
-- `idle_heartbeat` - default 1/2 of the expires value with a minimum 500ms and a maximum of 30s
+- `idle_heartbeat` - default 1/2 of the `expires` value, capping at 30 seconds with a minimum of 500 milliseconds and the maximum 30s
 - `threshold_messages` - 50% of `max_messages`
 - `threshold_bytes` - 50% of `max_bytes`
 
@@ -250,10 +248,11 @@ maintained, `Consume()` should be able to fill the buffer appropriately.
 
 Pending messages and bytes count should be updated when:
 
-- A new pull request is published. Add a value of `request.batch_size` to the pending messages count and
+- A new pull request is published: add a value of `request.batch_size` to the pending messages count and
 the value of `request.max_bytes` to the pending byte count.
-- A new user message is processed. Subtract 1 from the pending messages count and subtract message size from the pending byte count.
-- A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count. Clients could just check all statuses for the headers to future proof.
+- A new user message is processed: subtract 1 from the pending messages count and subtract message size from the pending byte count.
+- A pull request termination status is received containing `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, subtract the value of `Nats-Pending-Messages` header from pending messages count and subtract the value of `Nats-Pending-Bytes` from pending bytes count. 
+Clients could just check all statuses for the headers to future-proof.
   - 408 Request Timeout
   - 409 Message Size Exceeds MaxBytes
   - 409 Batch-Completed
@@ -269,8 +268,8 @@ The message size (in bytes) should be calculated as the server does it. Size con
  From `consumer.go`:
 
 ```go
-// Calculate payload size. This can be calculated on the client side.
-// We do not include the transport subject here since not generally known on the client.
+// Calculate payload size. This can be calculated on client side.
+// We do not include transport subject here since not generally known on client.
 sz = len(pmsg.subj) + len(ackReply) + len(pmsg.hdr) + len(pmsg.msg)
 ```
 
@@ -292,16 +291,12 @@ Warnings:
 - 409 Exceeded MaxRequestExpires of %v
 - 409 Exceeded MaxRequestMaxBytes of %v
 - 409 Exceeded MaxWaiting
-- 409 Server Shutdown
 
 Not Telegraphed:
 
 - 404 No Messages
 - 408 Request Timeout
 - 409 Message Size Exceeds MaxBytes
-- 409 Batch Completed
-- 409 Leadership Change
-
 
 Calls to `next()` and `fetch()` should be concluded when the pull is terminated. On the other hand `consume()` should recover
 while maintaining its state (e.g., pending counts) by issuing a new pull request unless the status is `409 Consumer Deleted` or `409 Consumer is push based` in
@@ -312,22 +307,22 @@ which case `consume()` call should conclude in an implementation-specific way id
 `Consume()` should always use idle heartbeats. Heartbeat values are calculated as follows:
 
 A warning is triggered if the timer reaches 2 * request's idle_heartbeat value.
-The timer is reset on each received message (this can be either a user message, status message, or heartbeat message).
+The timer is reset on each received message (this can be either a user message, a status message, or heartbeat message).
 
 Heartbeat timer should be reset and paused in the event of client disconnect and resumed on reconnect.
 
-Heartbeat errors are not terminal. They should instead be telegraphed to the user in language idiomatic way.
+Heartbeat errors are not terminal. They should rather be telegraphed to the user in language idiomatic way.
 
 ###### Server reconnects
 
 Clients should detect server disconnect and reconnect.
 
-When a disconnect event is received, the client should:
+When a disconnect event is received, a client should:
 
 - Pause the heartbeat timer.
 - Stop publishing new pull requests.
 
-When a reconnect event is received, the client should:
+When a reconnect event is received, a client should:
 
 - Reset the heartbeat timer.
 - Publish a new pull request.
@@ -351,18 +346,14 @@ was described in previous sections.
    - if not, go to #1
 4. Reset the heartbeat timer.
 5. Verify the type of message:
-   - if a message is a heartbeat message, go to #1
-   - if a message is a user message, handle it (return or execute callback)
-    and subtract 1 message from pending message count and
    - if the message is a heartbeat message, go to #1
    - if the message is a user message, handle it (return or execute callback)
     and subtract one message from pending message count and
     message size from pending bytes count and go to #1
-   - if a message is an error, go to #6
    - if the message is an error, go to #6
 6. Verify error type:
    - if message contains `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers, go to #7
-   - verify if an error should be terminal based on [Status handling](#status-handling),
+   - verify if the error should be terminal based on [Status handling](#status-handling),
    then issue a warning/error (if required) and conclude the call if necessary.
 7. Read the values of `Nats-Pending-Messages` and `Nats-Pending-Bytes` headers.
 8. Subtract the values from pending messages count and pending bytes count respectively.
@@ -371,7 +362,6 @@ was described in previous sections.
 #### Info
 
 An optional operation that returns the consumer info. Note that depending on the
-context (a consumer that is exported across the account), the JS API to retrieve the
 context (a consumer that is exported across an account), the JS API to retrieve the
 info on the consumer may not be available.
 
@@ -381,7 +371,6 @@ bypassing `CONSUMER.INFO` request to the server.
 #### Delete
 
 An optional operation that allows deleting the consumer. Note that depending on
-the context (a consumer that is exported across the account), the JS API to delete
 the context (a consumer that is exported across an account), the JS API to delete
 the consumer may not be available.
 
