@@ -231,26 +231,25 @@ In this case a dedicated light weight Counter client to begin with would be adde
 import "math/big"
 
 type Counter interface {
-     /// Adds or subtracts a value from the counter, returning the new value.
-	 Add(counter string, value big.Int) (big.Int, error)
-     /// Load retrieves the current value of the counter, using direct get with no headers.
-	 Load(counter string) (big.Int, error)
-     /// LoadMultiple retrieves the current values of multiple counters, using direct get with no headers.
-     /// It allows using wildcards in the counter names.
-	 LoadMultiple(counters []string) (Values, error)
-     /// Get retrieves the current value of a counter, including its sources.
-	 GetEntry(counter string) (Entry, error)
-	 /// GetMany retrieves the current values of multiple counters, including their sources.
-     /// It allows using wildcards in the counter names.
-	 GetEntries(counters []string) (Entries, error)
+     // Adds or subtracts a value from the counter, returning the new value.
+     Add(counter string, value big.Int) (big.Int, error)
+     // Load retrieves the current value of the counter, using direct get with no headers.
+     Load(counter string) (big.Int, error)
+     // LoadMultiple retrieves the current values of multiple counters, using direct get with no headers.
+     // It allows using wildcards in the counter names.
+     LoadMultiple(counters []string) (Values, error)
+     // Get retrieves the current value of a counter, including its sources.
+     GetEntry(counter string) (Entry, error)
+     // GetMany retrieves the current values of multiple counters, including their sources.
+     // It allows using wildcards in the counter names.
+     GetEntries(counters []string) (Entries, error)
 }
 
 type Entry struct {
-	Value big.Int
+    Value big.Int
     // TODO: maybe there is a prettier way to represent the sources.
     // For now, we're using the server representation.
-	Sources  map[string]map[string]string
-
+    Sources  map[string]map[string]string
 }
 
 // Allows iterating over multiple counters values.
