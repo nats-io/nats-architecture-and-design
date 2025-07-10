@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -29,7 +30,8 @@ type ADR struct {
 }
 
 var (
-	validStatus = []string{"Proposed", "Approved", "Partially Implemented", "Implemented", "Deprecated"}
+	validStatus    = []string{"Proposed", "Approved", "Partially Implemented", "Implemented", "Deprecated"}
+	allowedHeaders = []string{"Date", "Author", "Status", "Tags", "Updates"}
 )
 
 func parseCommaList(l string) []string {
@@ -73,6 +75,8 @@ func parseADR(adrPath string) (*ADR, error) {
 
 	adr.Meta.Index = idx
 
+	var shouldStop bool
+
 	for _, t := range tokens {
 		switch tok := t.(type) {
 		case *markdown.Inline:
@@ -100,6 +104,10 @@ func parseADR(adrPath string) (*ADR, error) {
 				adr.Meta.Updates = parseCommaList(tok.Content)
 
 			case in1stTbl:
+				if !slices.Contains(allowedHeaders, tok.Content) {
+					return nil, fmt.Errorf("invalid header %s in %s", tok.Content, adrPath)
+				}
+
 				curHdrKey = tok.Content
 			}
 
@@ -113,15 +121,20 @@ func parseADR(adrPath string) (*ADR, error) {
 
 		case *markdown.TbodyClose:
 			in1stTbl = false
+			shouldStop = true
 
-			// stop parsing after first table
-			break
 		case *markdown.HeadingClose:
 			in1stHdr = false
+
 		case *markdown.TableClose:
 			in1stTbl = false
+
 		case *markdown.TrClose:
 			curHdrKey = ""
+		}
+
+		if shouldStop {
+			break
 		}
 	}
 
