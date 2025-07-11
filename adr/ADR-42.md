@@ -8,10 +8,11 @@
 | Tags     | jetstream, server, 2.11 |
 
 
-| Revision | Date       | Author     | Info                              |
-|----------|------------|------------|-----------------------------------|
-| 1        | 2024-05-14 | @ripienaar | Initial design                    |
-| 2        | 2024-10-15 | @jarema    | Add client implementation details |
+| Revision | Date       | Author     | Info                                              |
+|----------|------------|------------|---------------------------------------------------|
+| 1        | 2024-05-14 | @ripienaar | Initial design                                    |
+| 2        | 2024-10-15 | @jarema    | Add client implementation details                 |
+| 3        | 2025-07-11 | @ripienaar | Add standby / failover feature to overflow policy |
 
 ## Context and Problem Statement
 
@@ -99,12 +100,13 @@ Pull requests will have the following additional fields:
  * `"group": "jobs"` - the group the pull belongs to, pulls not part of a valid group will result in an error
  * `"min_pending": 1000` - only deliver messages when `num_pending` for the consumer is >= 1000
  * `"min_ack_pending: 1000` - only deliver messages when `ack_pending` for the consumer is >= 1000
+ * `failover: 5` - should there be no pull requests at all for 5 seconds this pull request will be serviced, overriding other limits
 
 If `min_pending` and `min_ack_pending` are both given either being satisfied will result in delivery (boolean OR).
 
-In the specific case where MaxAckPending is 1 and a pull is made using `min_pending: 1` this should only be served when
-there are no other pulls waiting. This means we have to give priority to pulls without conditions over those with when
-considering the next pull that will receive a message.
+If `failover` is given and there are no non-limited pull requests for this group for the specified period, in seconds,
+the pull request will be serviced. This allows the a different region to take over all pull requests when the primary
+region is entirely down rather than wait for the limits to be reached. `failover` values below `5` will result in error.
 
 Once multiple groups are supported consumer updates could add and remove groups.
 
