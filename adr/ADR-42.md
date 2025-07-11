@@ -104,9 +104,14 @@ Pull requests will have the following additional fields:
 
 If `min_pending` and `min_ack_pending` are both given either being satisfied will result in delivery (boolean OR).
 
-If `failover` is given and there are no non-limited pull requests for this group for the specified period, in seconds,
-the pull request will be serviced. This allows the a different region to take over all pull requests when the primary
-region is entirely down rather than wait for the limits to be reached. `failover` values below `5` will result in error.
+The `failover` option extends overflow with the ability to nominate other regions or AZs as standby for the non-limited pulls.
+A use case would be where local pulls have no limits, cross AZ has 5 second `failover` and cross region has 30 seconds. The server
+will always track which requests are being served and ensure that the nearest, in terms of `failover` value, will be served. In effect
+when there are no local pulls the AZ will take over and only when there are no local nor AZ pulls will the foreign region get messages.
+Pulls from any nearer client will reset the timers, meaning if the foreign region were handling Pulls any pull from the nearby AZ will
+cause those to get all the messages and so forth.
+
+The minimum value for `failover` is `5` and maximum is `3600`, any out of bounds or non numeric value will result in a pull error. 
 
 Once multiple groups are supported consumer updates could add and remove groups.
 
@@ -226,15 +231,18 @@ To use either of the policies, a client needs to
 expose a new options on `fetch`, `consume`, or any other method that are used for pull consumers.
 
 #### Groups
+
 - `group` - mandatory field. If consumer has configured `PriorityGroups`, every Pull Request needs to provide it.
 
 #### Overflow
+
 When Consumer is in `overflow` mode, user should be able to optionally specify thresholds for pending and ack pending messages.
 
 - `min_pending` - when specified, this Pull request will only receive messages when the consumer has at least this many pending messages.
 - `min_ack_pending` - when specified, this Pull request will only receive messages when the consumer has at least this many ack pending messages.
 
 #### Pinning
+
 In pinning mode, user does not have to provide anything beyond `group`.
 Client needs to properly handle the `id` sent by the server. That applies only to ` Consume`. Fetch should not be supported in this mode.
 At least initially.
