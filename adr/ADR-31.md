@@ -7,11 +7,12 @@
 | Status   | Implemented                                               |
 | Tags     | jetstream, client, server, 2.11                           |
 
-| Revision | Date       | Author     | Info                                                     |
-|----------|------------|------------|----------------------------------------------------------|
-| 1        | 2022-08-08 | @tbeets    | Initial design                                           |
-| 2        | 2024-03-06 | @ripienaar | Adds Multi and Batch behaviors for Server 2.11           |
-| 3        | 2025-06-19 | @ripienaar | Support surpressing headers in replies using `NoHeaders` | 
+| Revision | Date       | Author          | Info                                                     | Refinement | Server Requirement |
+|----------|------------|-----------------|----------------------------------------------------------|------------|--------------------|
+| 1        | 2022-08-08 | @tbeets         | Initial design                                           |            |                    |
+| 2        | 2024-03-06 | @ripienaar      | Adds Multi and Batch behaviors for Server 2.11           |            |                    |
+| 3        | 2025-06-19 | @ripienaar      | Support suppressing headers in replies using `NoHeaders` |            |                    | 
+| 4        | 2025-07-11 | @MauriceVanVeen | Update on Read-after-Write guarantee                     | ADR-53     |                    |
 
 ## Context and motivation 
 
@@ -42,14 +43,20 @@ clients. Also, read availability can be enhanced as mirrors may be available to 
 
 ###### A note on read-after-write coherency
 
-The existing Get API `$JS.API.STREAM.MSG.GET.<stream>` provides read-after-write coherency by routing requests to a 
-stream's current peer leader (R>1) or single server (R=1). A client that publishes a message to stream (with ACK) is 
-assured that a subsequent call to the Get API will return that message as the read will go a server that defines 
-_most current_. 
+The existing Get API `$JS.API.STREAM.MSG.GET.<stream>` as well as _Direct Get_ do NOT provide any read-after-write
+guarantees by default. The existing Get API only guarantees read-after-write if the underlying stream is not
+replicated (R=1).
 
-In contrast, _Direct Get_ does not assure read-after-write coherency as responders may be non-leader stream servers 
-(that may not have yet applied the latest consensus writes) or MIRROR downstream servers that have not yet _consumed_ 
-the latest consensus writes from upstream.
+_Direct Get_ does not assure read-after-write coherency as responders may be non-leader stream servers (that may not
+have yet applied the latest consensus writes) or MIRROR downstream servers that have not yet _consumed_ the latest
+consensus writes from upstream.
+
+The Get API routes requests to a stream's current peer leader (R>1). A client that publishes multiple messages to a
+stream (with ACK) is assured that they will be properly ordered by sequence, regardless of which peer leader was active
+at that time. However, during and after leader elections, calls to the Get API could still be served by a server that
+still thinks it's leader even if a new leader was elected in the meantime (but it doesn't know yet).
+
+Read-after-write guarantees can be opted into with [ADR-53](adr/ADR-53.md).
 
 ## Implementation
 
@@ -61,7 +68,7 @@ the latest consensus writes from upstream.
 based on `max_msgs_per_subject`
 
 > Allow Direct is set automatically based on the inferred use case of the stream. Maximum messages per subject is a
-tell-tale of a stream that is a KV bucket.
+> tell-tale of a stream that is a KV bucket.
 
 ### Direct Get API 
 
