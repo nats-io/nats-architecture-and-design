@@ -7,10 +7,11 @@
 | Status   | Implemented                                               |
 | Tags     | jetstream, client, server, 2.11                           |
 
-| Revision | Date       | Author     | Info                                           |
-|----------|------------|------------|------------------------------------------------|
-| 1        | 2022-08-08 | @tbeets    | Initial design                                 |
-| 2        | 2024-03-06 | @ripienaar | Adds Multi and Batch behaviors for Server 2.11 |
+| Revision | Date       | Author     | Info                                                     |
+|----------|------------|------------|----------------------------------------------------------|
+| 1        | 2022-08-08 | @tbeets    | Initial design                                           |
+| 2        | 2024-03-06 | @ripienaar | Adds Multi and Batch behaviors for Server 2.11           |
+| 3        | 2025-06-19 | @ripienaar | Support surpressing headers in replies using `NoHeaders` | 
 
 ## Context and motivation 
 
@@ -84,11 +85,13 @@ StartTime    *time.Time `json:"start_time,omitempty"`
 MultiLastFor []string   `json:"multi_last,omitempty"`
 UpToSeq      uint64     `json:"up_to_seq,omitempty"`
 UpToTime     *time.Time `json:"up_to_time,omitempty"`
+NoHeaders    bool       `json:"no_hdr,omitempty"`
 ```
 
 Example request payloads:
 
 - `{seq: number}` - get a message by sequence
+- `{seq: number, no_hdr: true}` - get a message by sequence, no user headers are included, only the payload
 - `{last_by_subj: string}` - get the last message having the subject
 - `{next_by_subj: string}` - get the first message (lowest seq) having the specified subject
 - `{start_time: string}` - get the first message at or newer than the time specified in RFC 3339 format (since server 2.11)
@@ -124,6 +127,7 @@ When requests are made against servers that do not support `batch` the first res
 
 There are 4 viable API calls for a batch. All require a batch amount greater than 0 and a subject which may include a wildcard.
 They also require a start sequence -or- a start time. 
+
 There is a server issue under consideration requesting that if neither start sequence nor a start time is supplied that it defaults to start sequence of 1.
 For now the client can optionally provide the 2 additional calls which provide the start sequence of 1 for the user. 
 
@@ -145,6 +149,8 @@ For now the client can optionally provide the 2 additional calls which provide t
 1. get up to batch number of messages where the message timestamp is >= than start time, for the specified subject and limited by max bytes
     * API: `batch: number, max_bytes: number, start time: time, subject: string`
     * Request: `{"batch":3,"max_bytes":2002,"start_time":"2024-11-04T23:45:02.060192000Z","next_by_subj":"foo.>"}`
+
+If the `no_hdr` option is set for any of these requests the messages being delivered will have all headers stripped.
 
 #### Multi-subject requests
 
@@ -194,6 +200,8 @@ For the multi last API, we can make 6 distinct calls:
    * API: `batch: number, subject: []string, up_to_time: time`
    * Request: `{"batch":2,"multi_last":["foo.A","foo.D"],"up_to_time":"2024-11-05T00:50:25.248431300Z"}`
 
+If the `no_hdr` option is set for any of these requests the messages being delivered will have all headers stripped.
+
 #### Response Format 
 
 Responses may include these status codes:
@@ -205,7 +213,7 @@ Responses may include these status codes:
 
 Error code is returned as a header, e.g. `NATS/1.0 408 Bad Request`. Success returned as `NATS/1.0` with no code.
 
-Direct Get replies contain the message along with the following message headers:
+When `no_hdr` is false or not given, Direct Get replies contain the message along with the following message headers:
 
 - `Nats-Stream`: stream name
 - `Nats-Sequence`: message sequence number 
@@ -216,7 +224,6 @@ Direct Get replies contain the message along with the following message headers:
 - `Nats-UpTo-Sequence`: when doing multi subject gets the sequence should be used for following requests to ensure consistent reads
 
 A _regular_ (not JSON-encoded) NATS message is returned (from the stream store).
-
 
 ## Example calls
 
@@ -256,6 +263,21 @@ Nats-Stream: KV_mykv1
 Nats-Subject: $KV.mykv1.mykey2
 Nats-Sequence: 2
 Nats-Time-Stamp: 2022-08-07 06:47:46.610665303 +0000 UTC
+
+goodbye
+```
+
+#### Direct Get with no_hdr
+
+Request:
+```text
+PUB $JS.API.DIRECT.GET.KV_mykv1 _INBOX.pOdFG6hX5uAxqs0JWrAwoY.XJcZuCY4 44
+{"seq":1, "next_by_subj":"$KV.mykv1.mykey2", "no_hdr":true}
+```
+
+Reply:
+```text
+MSG _INBOX.pOdFG6hX5uAxqs0JWrAwoY.XJcZuCY4 1 143 150
 
 goodbye
 ```
