@@ -358,20 +358,6 @@ was described in previous sections.
 8. Subtract the values from pending messages count and pending bytes count respectively.
 9. Go to #1.
 
-##### Acknowledging
-
-Clients can use the synchronous Ack operation to explicitly ack individual messages and know what the result of the acknowledgement was (i.e. a success or not). The server replies to synchronous positive ack requests ('AckAck') with a standard JS ApiResponse message with a single `success` boolean flag.
-
-```go
-type JSApiConsumerAckResponse struct {
-	ApiResponse
-	Success bool `json:"success,omitempty"`
-}
-```
-Note: Current (2.10) versions send back a message in response to an AckAck request with an empty payload, regardless of the message having already been acked or not, or of the sequence number being out of range, and do not send any message back if the sequence number is out of range.
-
-If the message being acked is pending an acknowledgement (i.e. already delivered, not yet acked) then success is true in the reply, otherwise (already acked, not yet delivered or out of range) it is omitted (false) and an error is set in the ApiResponse.
-
 #### Info
 
 An optional operation that returns the consumer info. Note that depending on the
