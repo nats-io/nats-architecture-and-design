@@ -47,6 +47,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-32](adr/ADR-32.md)|client, spec|Service API|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-35](adr/ADR-35.md)|jetstream, client, server|JetStream Filestore Compression|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
@@ -76,6 +77,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server, 2.11|JetStream Direct Get|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-35](adr/ADR-35.md)|jetstream, client, server|JetStream Filestore Compression|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
@@ -148,6 +150,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-31](adr/ADR-31.md)|jetstream, client, server, 2.11|JetStream Direct Get|
 |[ADR-33](adr/ADR-33.md)|jetstream, client, server|Metadata for Stream and Consumer|
 |[ADR-34](adr/ADR-34.md)|jetstream, client, server|JetStream Consumers Multiple Filters|
+|[ADR-35](adr/ADR-35.md)|jetstream, client, server|JetStream Filestore Compression|
 |[ADR-36](adr/ADR-36.md)|jetstream, client, server|Subject Mapping Transforms in Streams|
 |[ADR-38](adr/ADR-38.md)|server, security|OCSP Peer Verification|
 |[ADR-39](adr/ADR-39.md)|server, security|Certificate Store|
