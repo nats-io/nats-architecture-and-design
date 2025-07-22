@@ -102,10 +102,6 @@ Pull requests will have the following additional fields:
 
 If `min_pending` and `min_ack_pending` are both given either being satisfied will result in delivery (boolean OR).
 
-In the specific case where MaxAckPending is 1 and a pull is made using `min_pending: 1` this should only be served when
-there are no other pulls waiting. This means we have to give priority to pulls without conditions over those with when
-considering the next pull that will receive a message.
-
 Once multiple groups are supported consumer updates could add and remove groups.
 
 ### `pinned_client` policy
