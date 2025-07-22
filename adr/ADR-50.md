@@ -43,6 +43,7 @@ Clients can decide to optimise the empty acks by only sending a request every N 
 
 ### Server Behavior Design
 
+ * The server will limit the `Nats-Batch-ID` to 64 characters and response with a error Pub Ack if its too long
  * Server will reject messages for which the batch is unknown with a error Pub Ack
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence` or `Nats-Expected-Last-Msg-Id`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch not also write to that same subject.
