@@ -22,6 +22,7 @@
 | 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | ADR-48     | 2.11.0             |
 | 8        | 2025-02-17 | Add Metadata                                        |            | 2.10.0             |
 | 9        | 2025-04-09 | Document max_age and duplicate_window requirements  |            |                    |
+| 10       | 2025-07-11 | Update on Read-after-Write guarantee                | ADR-53     |                    |
 
 ## Context
 
@@ -291,12 +292,12 @@ The features to support KV is in NATS Server 2.6.0.
 
 #### Consistency Guarantees
 
-We do not provide read-after-write consistency.  Reads are performed directly to any replica, including out
-of date ones.  If those replicas do not catch up multiple reads of the same key can give different values between
-reads. If the cluster is healthy and performing well most reads would result in consistent values, but this should not
+We do not provide read-after-write consistency by default. Reads are performed directly to any replica, including
+out-of-date ones. If those replicas do not catch up, multiple reads of the same key can give different values between
+reads. If the cluster is healthy and performing well, most reads would result in consistent values, but this should not
 be relied on to be true.
 
-Historically we had read-after-write consistency, this has been deprecated and retained here for historical record only.
+Read-after-write guarantees can be opted into with [ADR-53](adr/ADR-53.md).
 
 #### Buckets
 
