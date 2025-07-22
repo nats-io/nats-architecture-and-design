@@ -8,10 +8,12 @@
 | Tags     | jetstream, server, 2.11 |
 
 
-| Revision | Date       | Author     | Info                              |
-|----------|------------|------------|-----------------------------------|
-| 1        | 2024-05-14 | @ripienaar | Initial design                    |
-| 2        | 2024-10-15 | @jarema    | Add client implementation details |
+| Revision | Date       | Author     | Info                                              |
+|----------|------------|------------|---------------------------------------------------|
+| 1        | 2024-05-14 | @ripienaar | Initial design                                    |
+| 2        | 2024-10-15 | @jarema    | Add client implementation details                 |
+| 3        | 2025-07-11 | @ripienaar | Add standby / failover feature to overflow policy |
+| 4        | 2025-07-17 | @ripienaar | Add priority client policy                        |
 
 ## Context and Problem Statement
 
@@ -99,12 +101,18 @@ Pull requests will have the following additional fields:
  * `"group": "jobs"` - the group the pull belongs to, pulls not part of a valid group will result in an error
  * `"min_pending": 1000` - only deliver messages when `num_pending` for the consumer is >= 1000
  * `"min_ack_pending: 1000` - only deliver messages when `ack_pending` for the consumer is >= 1000
+ * `failover: 5` - should there be no pull requests at all for 5 seconds this pull request will be serviced, overriding other limits
 
 If `min_pending` and `min_ack_pending` are both given either being satisfied will result in delivery (boolean OR).
 
-In the specific case where MaxAckPending is 1 and a pull is made using `min_pending: 1` this should only be served when
-there are no other pulls waiting. This means we have to give priority to pulls without conditions over those with when
-considering the next pull that will receive a message.
+The `failover` option extends overflow with the ability to nominate other regions or AZs as standby for the non-limited pulls.
+A use case would be where local pulls have no limits, cross AZ has 5 second `failover` and cross region has 30 seconds. The server
+will always track which requests are being served and ensure that the nearest, in terms of `failover` value, will be served. In effect
+when there are no local pulls the AZ will take over and only when there are no local nor AZ pulls will the foreign region get messages.
+Pulls from any nearer client will reset the timers, meaning if the foreign region were handling Pulls any pull from the nearby AZ will
+cause those to get all the messages and so forth.
+
+The minimum value for `failover` is `5` and maximum is `3600`, any out of bounds or non numeric value will result in a pull error. 
 
 Once multiple groups are supported consumer updates could add and remove groups.
 
@@ -216,6 +224,33 @@ type JSConsumerGroupUnPinnedAdvisory struct {
 }
 ```
 
+### `prioritized` policy
+
+Users want to deliver pull requests to clients not in a round-robin fashion but sorted by priority.
+
+Imagine resources in `us-east` are fetching work off a Stream but `us-east` is resource constrained. For reasons of latency and cross region bandwidth costs the desire is that whenever there are available resources in `us-east` they should first get the work else other regions like `us-west` and `eu-west` should receive the work.
+
+Users can have Pulls with priority `0` (or none), priority `1`, `2` and so forth all at the same time. Lower priorities will always be served first, this way one can construct hierarchies of priority balancing bandwidth cost vs responsiveness: `eu-west` could have the highest priority so it only gets traffic when no US based pulls are present.
+
+In contrast with `overflow` policy where there is a concept of delayed failover or standby consumers that steps in only once there is a backlog of work or clear absense of near-by client, this model will result in other regions getting pulls with zero delay and with less configuration, it could however result in some flip-flop in work moving between regions quite frequently. However it prioritizes work always being picked up by someone with little as possible delay while prioritizing the nearest workers. This comes at the expense of some flip-flop in work.
+
+```go
+{
+	PriorityGroups: ["jobs"],
+	PriorityPolicy: "prioritized",
+	// ... other consumer options
+}
+```
+
+Here we state that the Consumer has one group called `jobs`, it's operating on the `prioritized` policy.
+
+Pull Requests will have the following additional fields:
+
+ * `"group":"jobs"` - the group the pull belongs to, pulls not part of a valid group will result in an error
+ * `"priority": 1` -  the priority of the pull, an integer between `0` and `9`, pulls without a priority will be priority `0`, invalid or out of bounds priorities will result in an error
+
+When the pulls are serviced the client they will be done on a basis of being sorted by `priority` but within each priority they could be delivered on round-robin basis.
+
 # Client side implementation
 
 ### Pull Requests changes
@@ -224,15 +259,18 @@ To use either of the policies, a client needs to
 expose a new options on `fetch`, `consume`, or any other method that are used for pull consumers.
 
 #### Groups
+
 - `group` - mandatory field. If consumer has configured `PriorityGroups`, every Pull Request needs to provide it.
 
 #### Overflow
+
 When Consumer is in `overflow` mode, user should be able to optionally specify thresholds for pending and ack pending messages.
 
 - `min_pending` - when specified, this Pull request will only receive messages when the consumer has at least this many pending messages.
 - `min_ack_pending` - when specified, this Pull request will only receive messages when the consumer has at least this many ack pending messages.
 
 #### Pinning
+
 In pinning mode, user does not have to provide anything beyond `group`.
 Client needs to properly handle the `id` sent by the server. That applies only to ` Consume`. Fetch should not be supported in this mode.
 At least initially.
@@ -240,3 +278,9 @@ At least initially.
 1. When client receives the `id` from the server via `Nats-Pin-Id` header, it needs to store it and use it in every subsequent pull request for this group.
 2. If client receives `423` Status error, it should clear the `id` and continue pulling without it.
 3. Clients should implement the `unpin` method described in this ADR.
+
+#### Priority Client
+
+When in `prioritized` mode, users should be able to optionally specify the `priority` for the pull.
+
+Everything else stays the same.
