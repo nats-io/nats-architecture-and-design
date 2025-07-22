@@ -27,15 +27,15 @@ When a KV store is used to store a User record the it might span many keys, the 
 
 To address this we want to be able to deliver the 5 writes as a batch and the entire batch either fails or succeeds.
 
-These features will be cumulative with other features such as `ExpectedLastSeq` and `ExpectedSeq`.
-
 ### Client Design
 
 The client will signal batch start and membership using headers on published messages.
 
- * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Seq:1` headers using a request, the server will acknowledge the batch was started using an empty reply
- * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Seq:n` by one, the server will acknowledge receipt using an empty reply if a reply subject is set.
- * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Seq:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack
+ * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request. 
+ * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one,
+ * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack.
+
+The server will not acknowledge any of the publishes except the one doing the Commit, clients must publish using Core NATS publish.
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
@@ -43,6 +43,7 @@ Clients can decide to optimise the empty acks by only sending a request every N 
 
 ### Server Behavior Design
 
+ * The server will limit the `Nats-Batch-ID` to 64 characters and response with a error Pub Ack if its too long
  * Server will reject messages for which the batch is unknown with a error Pub Ack
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence` or `Nats-Expected-Last-Msg-Id`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch not also write to that same subject.
@@ -55,6 +56,12 @@ The server will operate under limits to safeguard itself:
  * Each server can only have 1000 batches in flight at any time
  * A batch that has not had traffic for 10 seconds will be abandoned
  * Each batch can have maximum 1000 messages
+
+### Stream State Constraints
+
+Headers like `ExpectedLastSeq` and `LastMsgId` makes sense if checked before committing the batch aginst the pre-commit state of the Stream.  Unfortunately our current implementation would not make this feasible. 
+
+Initial release of this feature will reject messages published with those headers and we might support them in future.
 
 ### Publish Acknowledgements
 
