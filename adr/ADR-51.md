@@ -16,7 +16,7 @@
 
 It's a frequently requested feature to allow messages to be delivered on a schedule or to support delayed publishing.
 
-We propose here a feature where 1 message contains a Cron-like schedule and new messages are produced, into the same stream, on the schedule.
+We propose here a feature where 1 message contains a Cron-like schedule and new messages are produced, into the same stream, on the schedule. In all cases the last message on a subject holds the current schedule. In other words every schedule must have it's own subject.
 
 We target a few use cases in the initial design:
 
@@ -136,7 +136,7 @@ Messages that the Schedules produce will have these headers set in addition to a
 
 | Header               | Description                      |
 |----------------------|----------------------------------|
-| `Nats-Schedular`     | The subject holding the schedule |
+| `Nats-Scheduler`     | The subject holding the schedule |
 | `Nats-Schedule-Next` | Timestamp for next invocation    |
 | `Nats-TTL`           | `5m`                             |
 
