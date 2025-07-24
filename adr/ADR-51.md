@@ -117,7 +117,7 @@ In this use case we could have a sensor that produce a high frequency of data in
 $ nats pub -J '$SCHED.update_orders' \
   -H "Nats-Schedule: @every 5m" \
   -H "Nats-Schedule-Source: sensors.cnc.temperature
-  -H "Nats-Schedule-Target: sensors.aggregate.cnc.temperature"
+  -H "Nats-Schedule-Target: sensors.sampled.cnc.temperature"
   ""
 ```
 
@@ -144,7 +144,7 @@ Messages that the Schedules produce will have these headers set in addition to a
 
 The body of the message will simply be the provided body in the schedule.
 
-Valid schedule header can match normal cron behaviour, perhaps based on the specification from [github.com/robfig/cron](https://pkg.go.dev/github.com/robfig/cron).
+Valid schedule header can match normal cron behavior as defined earlier
 
 All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` means exactly 5AM UTC.
 
