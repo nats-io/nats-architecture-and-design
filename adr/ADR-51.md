@@ -66,14 +66,14 @@ Execution times will be in UTC regardless of server local time zone.
 
 Valid schedule header can match normal cron behavior with a few additional conveniences.
 
-| Field Name   | Allowed Values |
-|--------------|----------------|
-| Seconds      | 0-59           |
-| Minutes      | 0-59           |
-| Hours        | 0-23           |
-| Day of Month | 1-31           |
-| Month        | 1-12           |
-| Day of Week  | 0-6            |
+| Field Name   | Allowed Values                |
+|--------------|-------------------------------|
+| Seconds      | 0-59                          |
+| Minutes      | 0-59                          |
+| Hours        | 0-23                          |
+| Day of Month | 1-31                          |
+| Month        | 1-12, or names                |
+| Day of Week  | 0-6, or names, 0 means Sunday |
 
 (Note this is largely copied from `crontab(5)` man page)
 
@@ -84,6 +84,8 @@ Ranges  of numbers are allowed. For example, 8-11 for an 'hours' entry specifies
 Lists are allowed.  A list is a set of numbers (or ranges) separated by commas.  Examples: `1,2,5,9`, `0-4,8-12`.
 
 Step values  can  be  used in conjunction with ranges.  Following a range with "/<number>" specifies skips of the number's value through the range.  For example, `0-23/2` can be used in the 'hours' field to specify command execution for every other hour. Step values are  also  per‐mitted after an asterisk, so if specifying a job to be run every two hours, you can use `*/2`.
+
+Names  can  also  be used for the 'month' and 'day of week' fields.  Use the first three letters of the particular day or month (case does not matter).  Ranges and list of names are allowed. Examples: `mon,wed,fri`, `jan-mar`.
 
 Note:  The day of a command's execution can be specified in the following two fields — 'day of month', and 'day of week'.  If both fields are restricted (i.e., do not contain the `*` character), the command will be run when either field matches the current time.  For example, `30 4 1,15 * 5` would cause a command to be run at 4:30 am on the 1st and 15th of each month, plus every Friday.
 
