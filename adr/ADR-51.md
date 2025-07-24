@@ -30,7 +30,7 @@ In this use case the Stream will essentially hold onto a message and publish it 
 
 ```bash
 $ nats pub -J '$SCHED.update_orders' \
-  -H "Nats-Schedule: @at 2025-01-01 16:00:00" \
+  -H "Nats-Schedule: @at 2009-11-10T23:00:00Z" \
   -H "Nats-Schedule-TTL: 5m" \
   -H "Nats-Schedule-Target: $SCHED.trigger.update_orders"
   body
@@ -39,6 +39,8 @@ $ nats pub -J '$SCHED.update_orders' \
 This message will be published near the supplied timestamp, the `Nats-Schedule-Target` must be a subject in the same stream and the published message could be republished using Stream Republish configuration. 
 
 The generated message has a Message TTL of `5m`.
+
+The time format is RFC3339 and may include a timezone which the server will convert to UTC when received and execute according to UTC time later.
 
 ## Cron-like schedules
 
@@ -56,7 +58,54 @@ In this case a new message will be placed in `$SCHED.trigger.update_orders` hold
 
 The generated message has a Message TTL of `5m`.
 
-Valid schedule header can match normal cron behaviour, perhaps based on the specification from [github.com/robfig/cron](https://pkg.go.dev/github.com/robfig/cron).
+Execution times will be in UTC regardless of server local time zone.
+
+### Schedule Format
+
+#### 6 field crontab format
+
+Valid schedule header can match normal cron behavior with a few additional conveniences.
+
+| Field Name   | Allowed Values |
+|--------------|----------------|
+| Seconds      | 0-59           |
+| Minutes      | 0-59           |
+| Hours        | 0-23           |
+| Day of Month | 1-31           |
+| Month        | 1-12           |
+| Day of Week  | 0-6            |
+
+(Note this is largely copied from `crontab(5)` man page)
+
+A field may contain an asterisk (*), which always stands for "first-last". See `Step Values` for interaction with the `/` special character.
+
+Ranges  of numbers are allowed. For example, 8-11 for an 'hours' entry specifies execution at hours 8, 9, 10, and 11. The first number must be less than or equal to the second one.
+
+Lists are allowed.  A list is a set of numbers (or ranges) separated by commas.  Examples: `1,2,5,9`, `0-4,8-12`.
+
+Step values  can  be  used in conjunction with ranges.  Following a range with "/<number>" specifies skips of the number's value through the range.  For example, `0-23/2` can be used in the 'hours' field to specify command execution for every other hour. Step values are  also  per‐mitted after an asterisk, so if specifying a job to be run every two hours, you can use `*/2`.
+
+Note:  The day of a command's execution can be specified in the following two fields — 'day of month', and 'day of week'.  If both fields are restricted (i.e., do not contain the `*` character), the command will be run when either field matches the current time.  For example, `30 4 1,15 * 5` would cause a command to be run at 4:30 am on the 1st and 15th of each month, plus every Friday.
+
+#### Predefined Schedules
+
+A number of predefined schedules exist, they can be used them like `Nats-Schedule: @hourly`.
+
+| Entry                      | Description                                | Cron Format   |
+|----------------------------|--------------------------------------------|---------------|
+| `@yearly` (or `@annually`) | Run once a year, midnight, Jan. 1st        | `0 0 0 1 1 *` |
+| `@monthly`                 | Run once a month, midnight, first of month | `0 0 0 1 * *` |
+| `@weekly`                  | Run once a week, midnight between Sat/Sun  | `0 0 0 * * 0` |
+| `@daily` (or `@midnight`)  | Run once a day, midnight                   | `0 0 0 * * *` |
+| `@hourly`                  | Run once an hour, beginning of hour        | `0 0 * * * *` |
+
+#### Intervals
+
+You may also schedule a job to execute at fixed intervals, starting at the time it's added or cron is run. This is supported by formatting the cron spec like this:
+
+`@every 1m`
+
+The time specification complies with go `time.ParseDuration()` format.
 
 ## Subject Sampling
 
@@ -96,12 +145,6 @@ The body of the message will simply be the provided body in the schedule.
 Valid schedule header can match normal cron behaviour, perhaps based on the specification from [github.com/robfig/cron](https://pkg.go.dev/github.com/robfig/cron).
 
 All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` means exactly 5AM UTC.
-
-We would support one additional schedule kind `@at <RFC 3339 timestamp>` which will act as a single use schedule, after 
-triggering the schedule will be removed. RFC 3339 timestamps include Time Zone information the server will convert this
-to UTC and trigger at the UTC times.
-
-
 
 ## Stream Configuration
 
