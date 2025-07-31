@@ -4,13 +4,14 @@
 |----------|--------------------------------------------------------------|
 | Date     | 2025-07-11                                                   |
 | Author   | @MauriceVanVeen                                              |
-| Status   | Proposed                                                     |
+| Status   | Implemented                                                  |
 | Tags     | jetstream, kv, objectstore, server, client, refinement, 2.12 |
 | Updates  | ADR-8, ADR-17, ADR-20, ADR-31, ADR-37                        |
 
-| Revision | Date       | Author          | Info           |
-|----------|------------|-----------------|----------------|
-| 1        | 2025-07-11 | @MauriceVanVeen | Initial design |
+| Revision | Date       | Author          | Info                                |
+|----------|------------|-----------------|-------------------------------------|
+| 1        | 2025-07-11 | @MauriceVanVeen | Initial design                      |
+| 2        | 2025-07-31 | @MauriceVanVeen | Added Client Implementation section |
 
 ## Problem Statement
 
@@ -149,3 +150,130 @@ purge markers. Therefore, the KV abstraction still has these guarantees since it
 Since this is an opt-in on a read request or consumer create basis, this is not a breaking change. Depending on client
 implementation, this could be harder to implement. But given it's just another field in the `JSApiMsgGetRequest` and
 `ConsumerConfig`, each client should have no trouble supporting it.
+
+## Client implementation
+
+The below sections outline what additions the clients should support for message read requests and consumers, as used in
+JetStream streams, KV and Object Store.
+
+Generally, clients should expect error codes such as `NATS/1.0 412 Min Last Sequence` for Direct Get requests. Message
+Get requests will return the following error code:
+
+```go
+JSStreamMinLastSeqErr: {Code: 412, ErrCode: 10180, Description: "min last sequence"},
+```
+
+A consumer created with a `min_last_seq` does not return errors. However, the consumer will wait with delivering
+messages until the minimum last sequence is reached for the underlying stream store.
+
+### Note about testing
+
+A replicated stream can have followers that are slightly lagging behind in their applies, allowing for a stale read to
+be served after the client has just written a new value. This is inherently a race condition and can't be controlled by
+a client test, unless it meticulously controls the state of the server (for example through embedding the server).
+
+The recommended way for writing tests would be:
+
+- Test Message Get/Direct Get requests with a too high sequence that doesn't exist (yet) in the stream. It should return
+  the `412 Min Last Sequence` error. Then publish a new message to the stream, get the publish acknowledgement, and
+  confirm that a retry of the previous read succeeds.
+- Test Consumers by using a too high sequence that doesn't exist (yet) in the stream. The consumer should not deliver
+  messages. Then publish a new message to the stream, reaching the min last sequence threshold, the consumer should now
+  start delivering messages.
+
+### Message read requests
+
+- Message read requests (Message Get & Direct Get), such as `stream.GetMsg` and `stream.GetLastMsgForSubject`, should
+  support an option to include `min_last_seq` in the body of `JSApiMsgGetRequest`.
+
+**Example:**
+
+```go
+// Write
+ack, err := js.Publish("foo", nil)
+
+// Reads
+msg, err := stream.GetMsg(ctx, ack.Sequence, jetstream.MinLastSequence(ack.Sequence))
+// -> $JS.API.DIRECT.GET.STREAM {"seq":1,"min_last_seq":1}
+msg, err := stream.GetLastMsgForSubject(ctx, "foo", jetstream.MinLastSequence(ack.Sequence))
+// -> $JS.API.DIRECT.GET.STREAM.foo {"min_last_seq":1}
+```
+
+- Similar to the above additions, KV should also support passing a minimum last revision.
+
+**Example:**
+
+```go
+kve, err := kv.Get(ctx, "key", jetstream.MinLastSequence(ack.Sequence))
+kve, err := kv.GetRevision(ctx, "foo", 1, jetstream.MinLastSequence(ack.Sequence))
+```
+
+### Consumers
+
+- Similar to passing a `min_last_seq` in read requests, this should also be optionally passed in the `ConsumerConfig`
+  when creating a consumer. This is not strictly required when the consumer is used for endless consumption, but should
+  be supported when an "ordered consumer" is used since it's often used for "limited consumption" for example with
+  `kv.ListKeys()`.
+
+**Example:**
+
+```go
+// Start consuming, ensuring the newly written message is included (in NumPending counts, etc.)
+ack, err := js.Publish("foo", nil)
+c, err := stream.CreateConsumer(ctx, jetstream.ConsumerConfig{MinLastSeq: ack.Sequence})
+
+// List all keys, including a newly written key.
+r, err := kv.Put(ctx, "key", []byte("value"))
+keys, err := kv.ListKeys(ctx, jetstream.MinLastRevision(r))
+```
+
+### KV Store
+
+The `kv.Create` method ensures a key only gets created if it doesn't already exist. If the key was previously deleted or
+purged, the client can also handle these conditions. However, because the `kv.Create` is responded to by the stream
+leader and the `kv.Get` it does internally could be answered by an outdated follower, the subsequent internal
+`kv.Update` call could then fail.
+
+When the client receives the following error: `wrong last sequence: 5`, it should recognize this and extract the
+sequence from the error message. The error format is `wrong last sequence: {seq}`, and the sequence is that of the
+revision it needs to pass in the `kv.Update` call.
+
+This removes the need for the intermediate `kv.Get` call that could return stale reads, and ensures the `kv.Update` has
+the required "monotonic read" property.
+
+### Object Store
+
+Object Store uses a combination of message read requests and consumers, to both get single-message object info as well
+as reading the object itself.
+
+- Write requests, such as `obs.Put`, should return the highest sequence of that object as `ObjectInfo.Sequence`. This
+  highest sequence is the sequence of the "meta message" which is sent last after the object chunks.
+- All single-message read requests should support, similar to KV, passing the `min_last_seq` in the message/direct get
+  request.
+- All consumers used to gather the object data should support passing the `min_last_seq` in the `ConsumerConfig`.
+
+**Example:**
+
+```go
+// Write object.
+info, err := obs.PutString(ctx, "file", "data")
+
+// Listing objects should include written file.
+lch, err := obs.List(ctx, jetstream.MinLastSequence(info.Sequence))
+
+// Watch itself doesn't strictly require MinLastSequence support,
+// since it's used for endless consumption.
+watcher, err := obs.Watch(ctx)
+for {
+    select {
+    case info := <-watcher.Updates():
+        if info == nil {
+            return
+        }
+        // Object read should support passing MinLastSequence to ensure the consumed metadata
+        // can be retrieved. The watcher could live on the stream leader's server, but the
+        // consumer to retrieve the chunks could be created on a temporarily outdated follower.
+        value, err := obs.GetString(ctx, info.Name, jetstream.MinLastSequence(info.Sequence))
+    }
+}
+```
