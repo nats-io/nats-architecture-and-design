@@ -21,6 +21,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Client
 
@@ -56,6 +57,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Jetstream
 
@@ -87,6 +89,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Kv
 
@@ -95,6 +98,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-8](adr/ADR-8.md)|jetstream, client, kv, spec|JetStream based Key-Value Stores|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Objectstore
 
@@ -102,6 +106,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |-----|----|-----------|
 |[ADR-19](adr/ADR-19.md)|jetstream, client, kv, objectstore|API prefixes for materialized JetStream views|
 |[ADR-20](adr/ADR-20.md)|jetstream, client, objectstore, spec|JetStream based Object Stores|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Observability
 
@@ -122,6 +127,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |-----|----|-----------|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Security
 
@@ -160,6 +166,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
 |[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11|Versioning for JetStream Assets|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
+|[ADR-53](adr/ADR-53.md)|jetstream, kv, objectstore, server, client, refinement, 2.12|JetStream Read-after-Write (updating [ADR-8](adr/ADR-8.md), [ADR-17](adr/ADR-17.md), [ADR-20](adr/ADR-20.md), [ADR-31](adr/ADR-31.md), [ADR-37](adr/ADR-37.md))|
 
 ## Spec
 
