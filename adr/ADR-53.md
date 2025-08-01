@@ -12,11 +12,13 @@
 |----------|------------|-----------------|-------------------------------------|
 | 1        | 2025-07-11 | @MauriceVanVeen | Initial design                      |
 | 2        | 2025-07-31 | @MauriceVanVeen | Added Client Implementation section |
+| 3        | 2025-08-01 | @MauriceVanVeen | Implemented in 2.12                 |
 
 ## Problem Statement
 
-JetStream does NOT support read-after-write or monotonic reads. This can be especially problematic when
-using [ADR-8 JetStream based Key-Value Stores](ADR-8.md), primarily but not limited to the use of _Direct Get_.
+JetStream does NOT support read-after-write or monotonic reads (prior to server version 2.12). This can be especially
+problematic when using [ADR-8 JetStream based Key-Value Stores](ADR-8.md), primarily but not limited to the use of
+_Direct Get_.
 
 Specifically, we have no way to guarantee a write like `kv.Put` can be observed by a subsequent `kv.Get` or `kv.Watch`,
 especially when the KV/stream is replicated or mirrored.
