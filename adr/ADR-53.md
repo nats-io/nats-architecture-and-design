@@ -8,11 +8,12 @@
 | Tags     | jetstream, kv, objectstore, server, client, refinement, 2.12 |
 | Updates  | ADR-8, ADR-17, ADR-20, ADR-31, ADR-37                        |
 
-| Revision | Date       | Author          | Info                                |
-|----------|------------|-----------------|-------------------------------------|
-| 1        | 2025-07-11 | @MauriceVanVeen | Initial design                      |
-| 2        | 2025-07-31 | @MauriceVanVeen | Added Client Implementation section |
-| 3        | 2025-08-01 | @MauriceVanVeen | Implemented in 2.12                 |
+| Revision | Date       | Author          | Info                                                |
+|----------|------------|-----------------|-----------------------------------------------------|
+| 1        | 2025-07-11 | @MauriceVanVeen | Initial design                                      |
+| 2        | 2025-07-31 | @MauriceVanVeen | Added Client Implementation section                 |
+| 3        | 2025-08-01 | @MauriceVanVeen | Implemented in 2.12                                 |
+| 4        | 2025-08-04 | @MauriceVanVeen | `kv.Create`'s `kv.Get` requires a min last sequence |
 
 ## Problem Statement
 
@@ -233,15 +234,16 @@ keys, err := kv.ListKeys(ctx, jetstream.MinLastRevision(r))
 
 The `kv.Create` method ensures a key only gets created if it doesn't already exist. If the key was previously deleted or
 purged, the client can also handle these conditions. However, because the `kv.Create` is responded to by the stream
-leader and the `kv.Get` it does internally could be answered by an outdated follower, the subsequent internal
-`kv.Update` call could then fail.
+leader and the `kv.Get` it does internally could be answered by an outdated follower with a stale read, the subsequent
+internal `kv.Update` call could then fail.
 
 When the client receives the following error: `wrong last sequence: 5`, it should recognize this and extract the
 sequence from the error message. The error format is `wrong last sequence: {seq}`, and the sequence is that of the
-revision it needs to pass in the `kv.Update` call.
+revision it needs to pass in the `kv.Get` call. This ensures the intermediate `kv.Get` call does not return stale reads.
 
-This removes the need for the intermediate `kv.Get` call that could return stale reads, and ensures the `kv.Update` has
-the required "monotonic read" property.
+Do note that there are two similar errors, one with the sequence (`wrong last sequence: {seq}`) and one without a
+sequence (`wrong last sequence`). The client should handle this optional sequence, and use the provided sequence in the
+`kv.Get` if returned.
 
 ### Object Store
 
