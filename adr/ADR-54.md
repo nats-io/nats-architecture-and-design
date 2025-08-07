@@ -60,7 +60,11 @@ type CodecKV struct {
 
 // Constructor functions
 func New(kv jetstream.KeyValue, keyCodec KeyCodec, valueCodec ValueCodec) jetstream.KeyValue
+
+// NewForKey creates a KV bucket with a key codec only, using no-op value codec.
 func NewForKey(kv jetstream.KeyValue, keyCodec KeyCodec) jetstream.KeyValue
+
+// NewForValue creates a KV bucket with a value codec only, using no-op key codec.
 func NewForValue(kv jetstream.KeyValue, valueCodec ValueCodec) jetstream.KeyValue
 ```
 
@@ -107,7 +111,7 @@ codecKV := kvcodec.NewForValue(kv, aesCodec)
 
 ### Watch and Wildcard Support
 
-Codecs should support wildcard patterns for watching and listing keys. The `KeyCodec` interface can be extended to handle wildcard patterns, allowing users to specify how wildcards should be encoded and decoded.
+Key codecs should optionally support wildcard patterns for watching and listing keys. The `KeyCodec` interface can be extended to handle wildcard patterns, allowing users to specify how wildcards should be encoded and decoded.
 
 Special handling of wildcards should be optional when implementing custom codecs, in a language idiomatic way.
 
