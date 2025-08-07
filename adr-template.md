@@ -24,10 +24,6 @@
 
 [If this is a specification or actual design, write something here.]
 
-## Decision
-
-[Maybe this was just an architectural decision...]
-
 ## Consequences
 
 [Any consequences of this design, such as breaking change or Vorpal Bunnies]
