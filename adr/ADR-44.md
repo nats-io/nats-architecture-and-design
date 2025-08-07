@@ -7,6 +7,11 @@
 | Status   | Partially Implemented   |
 | Tags     | jetstream, server, 2.11 |
 
+| Revision | Date       | Author          | Info                                    | Server Requirement |
+|----------|------------|-----------------|-----------------------------------------|--------------------|
+| 1        | 2024-07-22 | @ripienaar      | Initial design                          |                    |
+| 2        | 2025-08-05 | @MauriceVanVeen | Add required feature level in API calls | 2.12.0             |
+
 # Context and Problem Statement
 
 As development of the JetStream feature progress there is a complex relationship between connected-server, JetStream 
@@ -177,8 +182,17 @@ the meta leader version is known - but in reality one cannot really tell a lot f
 guaranteed to be representative of the cluster and is particularly problematic in long running clients as the server
 may have been upgraded since last `INFO` call.
 
-In the future we could have clients assert that a certain API call requires a certain API Level but it was felt that
-today that would not be feasible to do given the amount of clients and their current state.
+# Required API level
+
+Clients can assert that a certain API call requires a minimum API Level by including a `Nats-Required-Api-Level` header,
+containing the requested minimum API level as a string. All endpoints under the JetStream API (`$JS.API.>`) should be
+supported.
+
+This asserts whether the server that's responding supports this API level. The request will error with
+`api level not supported` if the server has a lower API level than required.
+
+A single server does not represent a cluster-wide supported API level. In the future we should keep track of a
+cluster-agreed API level, and have the servers enforce an agreed-upon API level.
 
 # Implementation Targets
 
