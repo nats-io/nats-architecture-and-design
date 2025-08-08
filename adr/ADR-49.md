@@ -209,31 +209,37 @@ In this case a dedicated light weight Counter client to begin with would be adde
 > This is just an idea at present, the client will be fleshed out later in the development cycle.
 
 ```go
-// Creates a new counter abstraction bound to a Stream
-func NewCounter(stream jetstream.Stream) (Counter, error)
+``package counters
 
-// Parses a messages received from a consumer into a counter entry
-func ParseMessage(msg jetstream.Msg) (Entry, error)
+import "math/big"
 
-// Entry holds helpers for parsing the values in counters
-type Entry interface {
-	// Value parses the value as a big.Int
-	Value() (big.Int, error)
-	
-// The messages that contributed to the Value
-	Messages() []jetstream.Msg
-}
-
-// Increments and loads 
 type Counter interface {
-    // Increments a counter by delta
-    func Increment(subject string, value int64) (Entry, error)
-	
-    // Loads the value from the stream subject, options to supply a specific seq/time for example
-    func Load(subject string, opts ...LoadOption) (Entry, error)
-
-    // Loads a group of subjects from the same stream using a direct batch get, performs the
-    // calculation to combine these numbers client side
-    func LoadMulti(subjects []string, opts ...LoadOptions) ([]Entry, error)
+     // Adds or subtracts a value from the counter, returning the new value.
+     Add(counter string, value big.Int) (big.Int, error)
+     // Load retrieves the current value of the counter, using direct get with no headers.
+     Load(counter string) (big.Int, error)
+     // LoadMultiple retrieves the current values of multiple counters, using direct get with no headers.
+     // It allows using wildcards in the counter names.
+     LoadMultiple(counters []string) (Values, error)
+     // Get retrieves the current value of a counter, including its sources.
+     GetEntry(counter string) (Entry, error)
+     // GetMany retrieves the current values of multiple counters, including their sources.
+     // It allows using wildcards in the counter names.
+     GetEntries(counters []string) (Entries, error)
 }
-```
+
+type Entry struct {
+    Value big.Int
+    // TODO: maybe there is a prettier way to represent the sources.
+    // For now, we're using the server representation.
+    Sources  map[string]map[string]string
+}
+
+// Allows iterating over multiple counters values.
+type Values struct {}
+
+
+// Allows iterating over multiple counter Entries.
+type Entries struct {}
+
+`
