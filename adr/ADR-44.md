@@ -1,16 +1,17 @@
 # Versioning for JetStream Assets
 
-| Metadata | Value                   |
-|----------|-------------------------|
-| Date     | 2024-07-22              |
-| Author   | @ripienaar              |
-| Status   | Partially Implemented   |
-| Tags     | jetstream, server, 2.11 |
+| Metadata | Value                         |
+|----------|-------------------------------|
+| Date     | 2024-07-22                    |
+| Author   | @ripienaar                    |
+| Status   | Implemented                   |
+| Tags     | jetstream, server, 2.11, 2.12 |
 
 | Revision | Date       | Author          | Info                                    | Server Requirement |
 |----------|------------|-----------------|-----------------------------------------|--------------------|
 | 1        | 2024-07-22 | @ripienaar      | Initial design                          |                    |
 | 2        | 2025-08-05 | @MauriceVanVeen | Add required feature level in API calls | 2.12.0             |
+| 3        | 2025-08-11 | @ripienaar      | Mark as fully implemented               | 2.12.0             |
 
 # Context and Problem Statement
 
@@ -169,20 +170,7 @@ and comparing the server API levels to those required by the asset.
 
 Incompatible assets should be loaded in Offline mode and an advisory should be published.
 
-# Concerns
-
-The problem with this approach is that we only know if something worked, or was compatible with the server, after the
-asset was created. In cases where a feature adds new configuration fields this would be easily detected by the 
-Marshaling but on more subtle features like previous changes to `DiscardNew` the client would need to verify the 
-response to ensure the version requirements were met and then remove the bad asset, this is a pretty bad error 
-handling scenario.
-
-This can be slightly mitigated by including the current server version in the `$JS.API.INFO` response so at least 
-the meta leader version is known - but in reality one cannot really tell a lot from this version since it is not 
-guaranteed to be representative of the cluster and is particularly problematic in long running clients as the server
-may have been upgraded since last `INFO` call.
-
-# Required API level
+# Required API level in API Calls
 
 Clients can assert that a certain API call requires a minimum API Level by including a `Nats-Required-Api-Level` header,
 containing the requested minimum API level as a string. All endpoints under the JetStream API (`$JS.API.>`) should be
@@ -193,13 +181,3 @@ This asserts whether the server that's responding supports this API level. The r
 
 A single server does not represent a cluster-wide supported API level. In the future we should keep track of a
 cluster-agreed API level, and have the servers enforce an agreed-upon API level.
-
-# Implementation Targets
-
-For 2.11 we should:
-
- * calculate and report the api support level
- * start reporting the metadata
- * soft unmarshalling failures with an option to enable fatal failures
-
-For future versions we can round the feature set out with the offline features and more.
