@@ -221,6 +221,7 @@ type Entry struct {
 	Subject string                         // The counter subject
 	Value   *big.Int                       // Current counter value  
 	Sources map[string]map[string]*big.Int // Source contributions (for aggregated counters)
+	Incr    *big.Int                       // Most recent increment value for this entry. Useful for recounting and auditing purposes.
 }
 
 // Counter provides operations for distributed counters
