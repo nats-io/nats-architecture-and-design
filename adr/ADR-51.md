@@ -137,14 +137,16 @@ These headers can be set on message that define a schedule:
 | `Nats-Schedule-Target` | The subject the message will be delivered to                                                                                                                    |
 | `Nats-Schedule-Source` | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
 | `Nats-Schedule-Ttl`    | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               |
+| `Nats-Schedule-Rollup` | When publishing sets the `Nats-Rollup` header to this value (valid values `all`, `sub`)                                                                         |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
-| Header               | Description                      |
-|----------------------|----------------------------------|
-| `Nats-Scheduler`     | The subject holding the schedule |
-| `Nats-Schedule-Next` | Timestamp for next invocation    |
-| `Nats-TTL`           | `5m`                             |
+| Header               | Description                                                 |
+|----------------------|-------------------------------------------------------------|
+| `Nats-Scheduler`     | The subject holding the schedule                            |
+| `Nats-Schedule-Next` | Timestamp for next invocation for cron schedule messages    |
+| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is given                      |
+| `Nats-Rollup`        | `sub` when `Nats-Schedule-Rollup` is given with value `sub` |
 
 The body of the message will simply be the provided body in the schedule.
 
