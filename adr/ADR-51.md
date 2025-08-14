@@ -42,6 +42,8 @@ The generated message has a Message TTL of `5m`.
 
 The time format is RFC3339 and may include a timezone which the server will convert to UTC when received and execute according to UTC time later.
 
+There may only be one message per subject that holds a schedule, if a user wish to have many delayed messages all publishing into the same subject the scheduled messages need to go into something like `orders.schedule.UUID` where UUID is a unique identifier, set the `Nats-Schedule-Target` to the desired target subject.
+
 ## Cron-like schedules
 
 In this use case the Stream holds a message with a Cron-like schedule attached to it and the Stream will produce messages on the given schedule.
@@ -59,6 +61,8 @@ In this case a new message will be placed in `$SCHED.trigger.update_orders` hold
 The generated message has a Message TTL of `5m`.
 
 Execution times will be in UTC regardless of server local time zone.
+
+There may only be one message per subject that holds a schedule, if a user wish to have many scheduled messages all publishing into the same subject the scheduled messages need to go into something like `orders.cron.UUID` where UUID is a unique identifier, set the `Nats-Schedule-Target` to the desired target subject.
 
 ### Schedule Format
 
