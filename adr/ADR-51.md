@@ -138,7 +138,7 @@ These headers can be set on message that define a schedule:
 | `Nats-Schedule`        | The schedule the message will be published on                                                                                                                   |
 | `Nats-Schedule-Target` | The subject the message will be delivered to                                                                                                                    |
 | `Nats-Schedule-Source` | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
-| `Nats-Schedule-Ttl`    | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               | |
+| `Nats-Schedule-TTL`    | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               | |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
