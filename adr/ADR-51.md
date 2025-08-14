@@ -60,7 +60,7 @@ $ nats pub -J '$SCHED.update_orders' \
   body
 ```
 
-In this case a new message will be placed in `$SCHED.trigger.update_orders` holding the supplied body unchanged.  The original schedule message will remain and again produce a message the next hour.
+In this case a new message will be placed in `$SCHED.trigger.update_orders` holding the supplied body unchanged.  The original schedule message will remain and again produce a message the next hour. Additional headers added to the message will be sent to the target subject verbatim. If the original schedule message has a `Nats-TTL` header the schedule will be removed after that time.
 
 The generated message has a Message TTL of `5m`.
 
