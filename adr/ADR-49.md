@@ -14,6 +14,7 @@
 | 1        | 2025-04-14 | Document Initial Design          |            | 2.12.0             |
 | 2        | 2025-06-12 | Server will always use `big.Int` |            |                    |
 | 3        | 2025-06-19 | Source-aware tracking            |            |                    |
+| 4        | 2025-08-11 | Client implementation details    |            |                    |
 
 ## Context and Motivation
 
@@ -203,37 +204,52 @@ Additionally the management features for Counters are very purpose specific and 
 So we propose to follow the new standard approach of landing something in Orbit and merging it back later into core clients 
 if deemed suitable.  At that point it might become an extension on KV if it makes sense. 
 
-In this case a dedicated light weight Counter client to begin with would be added to Orbit:
+In this case a dedicated light weight Counter client should be available as orbit module.:
 
-> [!NOTE]  
-> This is just an idea at present, the client will be fleshed out later in the development cycle.
+### Implementation Summary
+
+The Counter client provides abstraction over JetStream streams configured with `allow_msg_counter: true`.
+It supports arbitrary precision counting and handles source tracking for aggregated counters in multi-tier deployments.
 
 ```go
 // Creates a new counter abstraction bound to a Stream
-func NewCounter(stream jetstream.Stream) (Counter, error)
+// Client should validate whether AllowMsgCounter and AllowDirect options are enabled.
+func NewCounterFromStream(stream jetstream.Stream) (Counter, error)
 
-// Parses a messages received from a consumer into a counter entry
-func ParseMessage(msg jetstream.Msg) (Entry, error)
-
-// Entry holds helpers for parsing the values in counters
-type Entry interface {
-	// Value parses the value as a big.Int
-	Value() (big.Int, error)
-	
-// The messages that contributed to the Value
-	Messages() []jetstream.Msg
+// Entry represents a counter value with source tracking
+type Entry struct {
+	Subject string                         // The counter subject
+	Value   *big.Int                       // Current counter value  
+	Sources map[string]map[string]*big.Int // Source contributions (for aggregated counters)
+	Incr    *big.Int                       // Most recent increment value for this entry. Useful for recounting and auditing purposes.
 }
 
-// Increments and loads 
+// Counter provides operations for distributed counters
 type Counter interface {
-    // Increments a counter by delta
-    func Increment(subject string, value int64) (Entry, error)
-	
-    // Loads the value from the stream subject, options to supply a specific seq/time for example
-    func Load(subject string, opts ...LoadOption) (Entry, error)
+  // Add increments the counter for the given subject and returns the new total value.
+	Add(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
 
-    // Loads a group of subjects from the same stream using a direct batch get, performs the
-    // calculation to combine these numbers client side
-    func LoadMulti(subjects []string, opts ...LoadOptions) ([]Entry, error)
+	// AddInt increments the counter for the given subject and returns the new total value.
+	AddInt(ctx context.Context, subject string, value int) (*big.Int, error)
+
+	// Load returns the current value of the counter for the given subject.
+	Load(ctx context.Context, subject string) (*Value, error)
+
+	// LoadMultiple returns an iterator over counter values for multiple subjects.
+	// Wildcards are supported.
+	LoadMultiple(ctx context.Context, subjects []string) iter.Seq2[*Value, error]
+
+	// GetEntry returns the full entry with value and source history for the given subject.
+	GetEntry(ctx context.Context, subject string) (*Entry, error)
+
+	// GetEntries returns an iterator over counter entries matching the pattern.
+	// Wildcards are supported.
+	GetEntries(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
 }
 ```
+
+The implementation requires streams to have both `AllowMsgCounter: true` and `AllowDirect: true` configured (for batch direct get when fetching multiple values).
+
+Fetching multiple values/entries should be non-blocking and expose a streaming API for efficient consumption.
+
+For loading values only, clients should use the `no_hdr` option when getting a message (as described in [ADR-31](ADR-31.md#direct-get-api)) to avoid fetching source headers.
