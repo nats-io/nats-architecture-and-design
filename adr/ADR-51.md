@@ -36,7 +36,9 @@ $ nats pub -J '$SCHED.update_orders' \
   body
 ```
 
-This message will be published near the supplied timestamp, the `Nats-Schedule-Target` must be a subject in the same stream and the published message could be republished using Stream Republish configuration. 
+This message will be published near the supplied timestamp, the `Nats-Schedule-Target` must be a subject in the same stream and the published message could be republished using Stream Republish configuration. Additional headers added to the message will be sent to the target subject verbatim.
+
+If a message is made with a schedule in the past it is immediately sent. If a server was down for a month and a scheduled message is recovered, even if it was schedule  for a month ago, it will be sent immediately. To avoid this, add a `Nats-TTL` header to the message so it will be removed after the TTL. 
 
 Messages produced from this kind of schedule will have a `Nats-Schedule-Next` header set with the value `purge`
 
