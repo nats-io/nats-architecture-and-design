@@ -128,18 +128,17 @@ when doing their remediation loops.
 
 # Offline Assets
 
-Today when an asset cannot be loaded it's simply not loaded. But to improve compatability, user reporting and 
+Today when an asset cannot be loaded it's simply not loaded. But to improve compatibility, user reporting and 
 discovery we want to support a mode where a stream is visible in Stream reports but marked as offline with a reason.
 
-An offline stream should still be reporting, responding to info and more but no messages should be accepted into it 
-and no messages should be delivered to any consumers, messages can't be deleted, configuration cannot be updated - 
-it is offline in every way that would result in a change.  Likewise a compatible offline mode should exist for Consumers. 
+To support this we add a field to the `io.nats.jetstream.api.v1.stream_list_response` and `io.nats.jetstream.api.v1.consumer_list_response`
+that holds a map or offline assets and reasons `map[string]string`.
 
-The Stream and Consumer state should get new fields `Offline bool` and `OfflineReason string` that should be set for 
-such assets.
+All offline streams will be added to the existing `missing` list in responses but offline ones will have the reasons in
+the additional key. This ensure older tools will still understand these streams as inaccessible.
 
-When the server starts and determines it cannot start an asset for any reason, due to error or required API
-Level, it should set this mode and fields.
+The `io.nats.jetstream.api.v1.stream_names_response` and `io.nats.jetstream.api.v1.consumer_names_response` results
+should include the offline assets.
 
 For starting incompatible streams in offline mode we would need to load the config in the current manner to figure out
 which subjects Streams would listen on since even while Streams are offline we do need the protections of
