@@ -131,7 +131,7 @@ when doing their remediation loops.
 Today when an asset cannot be loaded it's simply not loaded. But to improve compatibility, user reporting and 
 discovery we want to support a mode where a stream is visible in Stream reports but marked as offline with a reason.
 
-To support this we add a field to the `io.nats.jetstream.api.v1.consumer_list_response` and `io.nats.jetstream.api.v1.consumer_list_response`
+To support this we add a field to the `io.nats.jetstream.api.v1.stream_list_response` and `io.nats.jetstream.api.v1.consumer_list_response`
 that holds a map or offline assets and reasons `map[string]string`.
 
 All offline streams will be added to the existing `missing` list in responses but offline ones will have the reasons in
