@@ -262,7 +262,7 @@ type Counter interface {
     // - Required
     GetValue(ctx context.Context, subject string) (*Value, error)
    
-    // GetValues returns an iterator over counter Values structs for multiple subjects.
+    // GetValues returns an iterator over counter Value structs for multiple subjects.
     // - Wildcards are allowed in subjects.
     // - Required
     GetValues(ctx context.Context, subjects []string) iter.Seq2[*Value, error]
