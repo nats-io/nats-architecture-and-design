@@ -9,12 +9,13 @@
 
 ## Revision History
 
-| Revision | Date       | Description                      | Refinement | Server Requirement |
-|----------|------------|----------------------------------|------------|--------------------|
-| 1        | 2025-04-14 | Document Initial Design          |            | 2.12.0             |
-| 2        | 2025-06-12 | Server will always use `big.Int` |            |                    |
-| 3        | 2025-06-19 | Source-aware tracking            |            |                    |
-| 4        | 2025-08-11 | Client implementation details    |            |                    |
+| Revision | Date       | Description                        | Refinement | Server Requirement |
+|----------|------------|------------------------------------|------------|--------------------|
+| 1        | 2025-04-14 | Document Initial Design            |            | 2.12.0             |
+| 2        | 2025-06-12 | Server will always use `big.Int`   |            |                    |
+| 3        | 2025-06-19 | Source-aware tracking              |            |                    |
+| 4        | 2025-08-11 | Client implementation details      |            |                    |
+| 5        | 2025-08-28 | More client implementation details |            |                    |
 
 ## Context and Motivation
 
@@ -28,7 +29,7 @@ Related:
 
 ## Solution Overview
 
-A Stream can opt-in to supporting Counters which will allow any subject to be a counter. All subjects in the stream must
+A Stream can opt in to supporting Counters which will allow any subject to be a counter. All subjects in the stream must
 be counters.
 
 Publishing a message to such a Stream will load the most recent message on the subject, increment its value and save 
@@ -82,7 +83,7 @@ The value in the body is stored in a struct with the following layout:
 
 ```go
 type CounterValue struct {
-	Value string `json:"val"`
+    Value string `json:"val"`
 }
 ```
 
@@ -94,8 +95,8 @@ The PubAck gets a new field:
 
 ```go
 type PubAck struct {
-	// ....
-	Value string `json:"val,omitempty"`
+    // ....
+    Value string `json:"val,omitempty"`
 }
 ```
 
@@ -177,8 +178,8 @@ in the Stream
 
 ```golang
 type StreamConfig struct {
-	// AllowMsgCounter enables the feature
-	AllowMsgCounter bool          `json:"allow_msg_counter"`
+    // AllowMsgCounter enables the feature
+    AllowMsgCounter bool          `json:"allow_msg_counter"`
 }
 ```
 
@@ -199,52 +200,107 @@ This seems like a reasonable surface area to add, but, it does stretch the behav
 over Streams into a ever broader and more complicated to adopt and maintain surface area, potentially harming the very
 reason Key-Value stores are attractive.
 
-Additionally the management features for Counters are very purpose specific and would not belong in KV.
+Additionally, the management features for Counters are very purpose specific and would not belong in KV.
 
 So we propose to follow the new standard approach of landing something in Orbit and merging it back later into core clients 
 if deemed suitable.  At that point it might become an extension on KV if it makes sense. 
 
-In this case a dedicated light weight Counter client should be available as orbit module.:
+In this case a dedicated lightweight Counter client should be available as orbit module.:
 
 ### Implementation Summary
 
 The Counter client provides abstraction over JetStream streams configured with `allow_msg_counter: true`.
 It supports arbitrary precision counting and handles source tracking for aggregated counters in multi-tier deployments.
 
+Wildcards in subjects are supported in api that fetch multiple responses.
+
 ```go
 // Creates a new counter abstraction bound to a Stream
 // Client should validate whether AllowMsgCounter and AllowDirect options are enabled.
 func NewCounterFromStream(stream jetstream.Stream) (Counter, error)
 
+// Value represents a counter value
+type Value struct {
+    Subject string   // The counter subject
+    Value   *big.Int // Current counter value  
+}
+
 // Entry represents a counter value with source tracking
 type Entry struct {
-	Subject string                         // The counter subject
-	Value   *big.Int                       // Current counter value  
-	Sources map[string]map[string]*big.Int // Source contributions (for aggregated counters)
-	Incr    *big.Int                       // Most recent increment value for this entry. Useful for recounting and auditing purposes.
+    Subject string                         // The counter subject
+    Value   *big.Int                       // Current counter value  
+    Sources map[string]map[string]*big.Int // Source contributions (for aggregated counters)
+    Incr    *big.Int                       // Most recent increment value for this entry. Useful for recounting and auditing purposes.
 }
 
 // Counter provides operations for distributed counters
 type Counter interface {
-  // Add increments the counter for the given subject and returns the new total value.
-	Add(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
+    // Add increments the counter for the given subject and returns the new total value.
+    // - Required
+    Add(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
 
-	// AddInt increments the counter for the given subject and returns the new total value.
-	AddInt(ctx context.Context, subject string, value int) (*big.Int, error)
+    // AddInt increments the counter for the given subject and returns the new total value.
+    // - Required / Language Specific
+    AddInt(ctx context.Context, subject string, value int) (*big.Int, error)
 
-	// Load returns the current value of the counter for the given subject.
-	Load(ctx context.Context, subject string) (*Value, error)
+    // AddLong increments the counter for the given subject and returns the new total value.
+    // - Optional / Language Specific
+    AddLong(ctx context.Context, subject string, value int64) (*big.Int, error)
 
-	// LoadMultiple returns an iterator over counter values for multiple subjects.
-	// Wildcards are supported.
-	LoadMultiple(ctx context.Context, subjects []string) iter.Seq2[*Value, error]
+    // Get returns the current big int of the counter for the given subject.
+    // - Use the "no_hdr": true option on the direct get.
+    // - Required
+    Get(ctx context.Context, subject string) (*big.Int, error)
+   
+    // GetMultiple returns an iterator over counter big ints for multiple subjects.
+    // - Wildcards are allowed in subjects.
+    // - Use the "no_hdr": true option on the direct get.
+    // - Required
+    GetMultiple(ctx context.Context, subjects []string) iter.Seq2[*big.Int, error]
+   
+    // GetValue returns the current value as part of a Value struct of the counter for the given subject.
+    // - Required
+    GetValue(ctx context.Context, subject string) (*Value, error)
+   
+    // GetValues returns an iterator over counter Values structs for multiple subjects.
+    // - Wildcards are allowed in subjects.
+    // - Required
+    GetValues(ctx context.Context, subjects []string) iter.Seq2[*Value, error]
+   
+    // GetEntry returns the full entry with value and source history for the given subject.
+    // - Required
+    GetEntry(ctx context.Context, subject string) (*Entry, error)
 
-	// GetEntry returns the full entry with value and source history for the given subject.
-	GetEntry(ctx context.Context, subject string) (*Entry, error)
+    // GetEntries returns an iterator over counter entries matching the pattern.
+    // - Wildcards are allowed in subjects.
+    // - Required
+    GetEntries(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
 
-	// GetEntries returns an iterator over counter entries matching the pattern.
-	// Wildcards are supported.
-	GetEntries(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
+    // Shortcut to calling Add with subject and 1
+    // - Optional
+    Increment(ctx context.Context, subject string) (*big.Int, error)
+
+    // Shortcut to calling Add with subject and -1
+    // - Optional
+    Decrement(ctx context.Context, subject string) (*big.Int, error)
+
+    // Shortcut to set the value of an existing subject  
+    // - Requires calling Get to get the current value,
+    // - then call Add with (new value - current value)
+    // - Optional
+    Set(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
+
+    // Shortcut to set the value of an existing subject  
+    // - Optional / Language Specific
+    SetInt(ctx context.Context, subject string, value int) (*big.Int, error)
+
+    // Shortcut to set the value of an existing subject  
+    // - Optional / Language Specific
+    SetLong(ctx context.Context, subject string, value int64) (*big.Int, error)
+    
+    // Shortcut to set the value of an existing subject to 0 (same as calling Set with 0)
+    // - Optional
+    Zero(subject string) (*big.Int, error)
 }
 ```
 
@@ -252,4 +308,4 @@ The implementation requires streams to have both `AllowMsgCounter: true` and `Al
 
 Fetching multiple values/entries should be non-blocking and expose a streaming API for efficient consumption.
 
-For loading values only, clients should use the `no_hdr` option when getting a message (as described in [ADR-31](ADR-31.md#direct-get-api)) to avoid fetching source headers.
+For getting the numeric value(s) only, clients should use the `no_hdr` option on direct message calls (as described in [ADR-31](ADR-31.md#direct-get-api)), therefore avoiding fetching source headers.
