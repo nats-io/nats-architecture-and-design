@@ -89,7 +89,7 @@ type CounterValue struct {
 
 We use a `string` value since JavaScript would only support up to `2^53` for number, we might want to support BigInt and others in future.
 
-We use a JSON result so we can extend the structure in future, perhaps to indicate data type and more.
+We use a JSON result so we can extend the structure in the future, perhaps to indicate data type and more.
 
 The PubAck gets a new field:
 
@@ -235,57 +235,23 @@ type Counter interface {
 
     // AddInt increments the counter for the given subject and returns the new total value.
 	// - Language Specific Variations are acceptable to handle all native integer type numbers.
-    // - Required 
     AddInt(ctx context.Context, subject string, value int) (*big.Int, error)
 
     // Get returns the current big int of the counter for the given subject.
     // - Use the "no_hdr": true option on the direct get.
-    // - Required
     Get(ctx context.Context, subject string) (*big.Int, error)
    
     // GetMultiple returns an iterator over counter big ints for multiple subjects.
     // - Wildcards are allowed in subjects.
     // - Use the "no_hdr": true option on the direct get.
-    // - Required
     GetMultiple(ctx context.Context, subjects []string) iter.Seq2[*big.Int, error]
    
     // GetEntry returns the full entry with value and source history for the given subject.
-    // - Required
     GetEntry(ctx context.Context, subject string) (*Entry, error)
 
     // GetEntries returns an iterator over counter entries matching the pattern.
     // - Wildcards are allowed in subjects.
-    // - Required
     GetEntries(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
-
-    // Reset the value to zero then purge  
-    // - 1. Requires calling Get to get the current value,
-    // - 2. call Add with (0 - current value)
-	// - 3. Purge the subject except the last message in the subject.
-    // - Required
-    ResetToZero(ctx context.Context, subject string) (*big.Int, error)
-
-    // Shortcut to calling Add with subject and 1
-    // - Optional
-    Increment(ctx context.Context, subject string) (*big.Int, error)
-
-    // Shortcut to calling Add with subject and -1
-    // - Optional
-    Decrement(ctx context.Context, subject string) (*big.Int, error)
-
-    // Shortcut to set the value of an existing subject  
-    // - Requires calling Get to get the current value,
-    // - then call Add with (new value - current value)
-    // - Optional
-    SetViaAdd(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
-
-    // Shortcut to set the value of an existing subject  
-    // - Optional / Language Specific integer variations
-    SetIntViaAdd(ctx context.Context, subject string, value int) (*big.Int, error)
-    
-    // Shortcut to set the value of an existing subject to 0 (same as calling Set with 0)
-    // - Optional
-    SetToZeroViaAdd(subject string) (*big.Int, error)
 }
 ```
 
