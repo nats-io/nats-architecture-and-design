@@ -219,12 +219,6 @@ Wildcards in subjects are supported in api that fetch multiple responses.
 // Client should validate whether AllowMsgCounter and AllowDirect options are enabled.
 func NewCounterFromStream(stream jetstream.Stream) (Counter, error)
 
-// Value represents a counter value
-type Value struct {
-    Subject string   // The counter subject
-    Value   *big.Int // Current counter value  
-}
-
 // Entry represents a counter value with source tracking
 type Entry struct {
     Subject string                         // The counter subject
@@ -240,12 +234,9 @@ type Counter interface {
     Add(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
 
     // AddInt increments the counter for the given subject and returns the new total value.
-    // - Required / Language Specific
+	// - Language Specific Variations are acceptable to handle all native integer type numbers.
+    // - Required 
     AddInt(ctx context.Context, subject string, value int) (*big.Int, error)
-
-    // AddLong increments the counter for the given subject and returns the new total value.
-    // - Optional / Language Specific
-    AddLong(ctx context.Context, subject string, value int64) (*big.Int, error)
 
     // Get returns the current big int of the counter for the given subject.
     // - Use the "no_hdr": true option on the direct get.
@@ -258,15 +249,6 @@ type Counter interface {
     // - Required
     GetMultiple(ctx context.Context, subjects []string) iter.Seq2[*big.Int, error]
    
-    // GetValue returns the current value as part of a Value struct of the counter for the given subject.
-    // - Required
-    GetValue(ctx context.Context, subject string) (*Value, error)
-   
-    // GetValues returns an iterator over counter Value structs for multiple subjects.
-    // - Wildcards are allowed in subjects.
-    // - Required
-    GetValues(ctx context.Context, subjects []string) iter.Seq2[*Value, error]
-   
     // GetEntry returns the full entry with value and source history for the given subject.
     // - Required
     GetEntry(ctx context.Context, subject string) (*Entry, error)
@@ -275,6 +257,13 @@ type Counter interface {
     // - Wildcards are allowed in subjects.
     // - Required
     GetEntries(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
+
+    // Reset the value to zero then purge  
+    // - 1. Requires calling Get to get the current value,
+    // - 2. call Add with (0 - current value)
+	// - 3. Purge the subject except the last message in the subject.
+    // - Required
+    ResetToZero(ctx context.Context, subject string) (*big.Int, error)
 
     // Shortcut to calling Add with subject and 1
     // - Optional
@@ -288,19 +277,15 @@ type Counter interface {
     // - Requires calling Get to get the current value,
     // - then call Add with (new value - current value)
     // - Optional
-    Set(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
+    SetViaAdd(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
 
     // Shortcut to set the value of an existing subject  
-    // - Optional / Language Specific
-    SetInt(ctx context.Context, subject string, value int) (*big.Int, error)
-
-    // Shortcut to set the value of an existing subject  
-    // - Optional / Language Specific
-    SetLong(ctx context.Context, subject string, value int64) (*big.Int, error)
+    // - Optional / Language Specific integer variations
+    SetIntViaAdd(ctx context.Context, subject string, value int) (*big.Int, error)
     
     // Shortcut to set the value of an existing subject to 0 (same as calling Set with 0)
     // - Optional
-    Zero(subject string) (*big.Int, error)
+    SetToZeroViaAdd(subject string) (*big.Int, error)
 }
 ```
 
