@@ -230,7 +230,6 @@ type Entry struct {
 // Counter provides operations for distributed counters
 type Counter interface {
     // Add increments the counter for the given subject and returns the new total value.
-    // - Required
     Add(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
 
     // AddInt increments the counter for the given subject and returns the new total value.
