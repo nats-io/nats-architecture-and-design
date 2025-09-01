@@ -166,5 +166,5 @@ type StreamConfig struct {
 ```
 
  * Setting this on a Source or Mirror should be denied
- * This feature can be turned off and on using Stream edits, turning it on should only be allowed on an empty, or purged, Stream.
+ * This feature can be enabled on existing streams but not disabled
  * A Stream with this feature on should require API level 2
