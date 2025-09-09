@@ -7,9 +7,14 @@
 | Status   | Approved                        |
 | Tags     | jetstream, server, client, 2.12 |
 
+| Revision | Date       | Author          | Info            |
+|----------|------------|-----------------|-----------------|
+| 1        | 2025-06-10 | @ripienaar      | Initial design  |
+| 2        | 2025-09-08 | @MauriceVanVeen | Initial release |
+
 ## Context
 
-There exist a need to treat groups of related messages in batched manner, there are a few goals with this work:
+There exists a need to treat groups of related messages in a batched manner, there are a few goals with this work:
 
  * We need to be able to improve performance
  * We need to deliver Atomic Batch writes - where an entire batch is stored or abandoned
@@ -39,8 +44,6 @@ The server will not acknowledge any of the publishes except the one doing the Co
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
-Clients can decide to optimise the empty acks by only sending a request every N messages or N bytes, this facilitates some flow control and awareness if the batch is getting to a server or not.
-
 ### Server Behavior Design
 
  * The server will limit the `Nats-Batch-ID` to 64 characters and response with a error Pub Ack if its too long
@@ -59,7 +62,7 @@ The server will operate under limits to safeguard itself:
 
 ### Stream State Constraints
 
-Headers like `ExpectedLastSeq` and `LastMsgId` makes sense if checked before committing the batch aginst the pre-commit state of the Stream.  Unfortunately our current implementation would not make this feasible. 
+Headers like `MsgId` and `LastMsgId` are currently not supported, there are ongoing discussions about how de-duplication is expected to work when using atomic batch publishing.
 
 Initial release of this feature will reject messages published with those headers and we might support them in future.
 
@@ -83,11 +86,11 @@ When a batch is abandoned it might be for reasons that will never be communicate
 type BatchAbandonReason string
 
 var (
-	BatchUnknown BatchAbandonReason = "unknown"
-	BatchTimeout BatchAbandonReason = "timeout"
+	BatchTimeout    BatchAbandonReason = "timeout"
+	BatchIncomplete BatchAbandonReason = "incomplete"
 )
 
-type PubAck struct {
+type Advisory struct {
 	// ...
 	BatchId      string             `json:"batch"`
 	Reason       BatchAbandonReason `json:"reason"`
@@ -113,8 +116,6 @@ Setting this to true should set the API level to 2.
 
 ### Mirrors and Sources
 
-Mirrors can enable this setting as long as the mirror is unfiltered. Batches will be processed as above except when a batch gets rejected the mirror would need to resume as the sequence before the batch started which will result in retrying the batch write. 
+Mirrors can't enable this setting, and will ignore the various headers like `ExpectedLastSeq` and the batching headers.
 
-Mirrors will ignore the various headers like `ExpectedLastSeq` as normal.
-
-Streams with Sources cannot enable the `AllowAtomicPublish` and Sources may not be added to streams with `AllowAtomicPublish` set. 
+Streams with Sources can enable the `AllowAtomicPublish`, but sources will ignore the batching headers when sourced into the stream similar to how mirrors work.
