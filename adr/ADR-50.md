@@ -7,10 +7,11 @@
 | Status   | Approved                        |
 | Tags     | jetstream, server, client, 2.12 |
 
-| Revision | Date       | Author          | Info            |
-|----------|------------|-----------------|-----------------|
-| 1        | 2025-06-10 | @ripienaar      | Initial design  |
-| 2        | 2025-09-08 | @MauriceVanVeen | Initial release |
+| Revision | Date       | Author          | Info             |
+|----------|------------|-----------------|------------------|
+| 1        | 2025-06-10 | @ripienaar      | Initial design   |
+| 2        | 2025-09-08 | @MauriceVanVeen | Initial release  |
+| 3        | 2025-09-11 | @piotrpio       | Add server codes |
 
 ## Context
 
@@ -36,13 +37,26 @@ To address this we want to be able to deliver the 5 writes as a batch and the en
 
 The client will signal batch start and membership using headers on published messages.
 
- * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request. 
+ * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request. Maximum length of the ID is 64 characters.
  * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one,
  * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack.
 
 The server will not acknowledge any of the publishes except the one doing the Commit, clients must publish using Core NATS publish.
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
+
+#### Server Errors
+
+The server will respond with the following errors if committing a batch fails:
+
+| ErrCode | Code | Description                                                                          |
+|---------|------|--------------------------------------------------------------------------------------|
+| 10174   | 400  | Batch publish not enabled on stream                                                  |
+| 10176   | 400  | Batch publish is incomplete and was abandoned                                        |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                                  |
+| 10175   | 400  | Batch publish sequence is missing                                                    |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)                           |
+| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id` or `Nats-Msg-Id`) |
 
 ### Server Behavior Design
 
