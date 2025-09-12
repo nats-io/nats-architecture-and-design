@@ -24,6 +24,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-51](adr/ADR-51.md)|jetstream, 2.12|JetStream Message Scheduler|
 |[ADR-52](adr/ADR-52.md)|jetstream, client, refinement, 2.12|No Headers support for Direct Get (updating [ADR-31](adr/ADR-31.md))|
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|
+|[ADR-56](adr/ADR-56.md)|server, 2.12|JetStream Consistency Models|
 
 ## Client
 
@@ -169,6 +170,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12|JetStream Batch Publishing|
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|
+|[ADR-56](adr/ADR-56.md)|server, 2.12|JetStream Consistency Models|
 
 ## Spec
 
