@@ -34,8 +34,6 @@ When a KV store is used to store a User record the it might span many keys, the 
 
 To address this we want to be able to deliver the 5 writes as a batch and the entire batch either fails or succeeds.
 
-The above scenario is about consistency, but due to the Ack behavior this method of publishing is also fast. ADR-56 introduces a `weak` write consistency model which would combine with batching to achieve higher performance.
-
 ### Client Design
 
 The client will signal batch start and membership using headers on published messages.
@@ -73,7 +71,7 @@ The server will respond with the following errors if committing a batch fails:
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence` or `Nats-Expected-Last-Msg-Id`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
  * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
- * If a stream is operating on the `WriteConsistency: async` mode, any batch published to it must fail
+ * If a stream is operating on the `WriteConsistency: weak` mode, any batch published to it must fail
 
 The server will operate under limits to safeguard itself:
 
