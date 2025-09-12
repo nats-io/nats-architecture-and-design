@@ -25,6 +25,8 @@ This document intends to document the models it support, the promises it makes a
 
 The `async` consistency model of a stream will result in asynchronous flushing of data to disk, this result in a significant speed-up as each message will not be written to disk but at the expense of data loss during severe disruptions in power, server or disk subsystems.
 
+At the moment this mode cannot support batch publishing at all and any attempt to start a batch against a stream in this mode must fail.
+
 ### Implications:
 
  * The Publish Ack will be sent before the data is known to be written to disk
