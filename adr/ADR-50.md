@@ -7,11 +7,12 @@
 | Status   | Approved                        |
 | Tags     | jetstream, server, client, 2.12 |
 
-| Revision | Date       | Author          | Info             |
-|----------|------------|-----------------|------------------|
-| 1        | 2025-06-10 | @ripienaar      | Initial design   |
-| 2        | 2025-09-08 | @MauriceVanVeen | Initial release  |
-| 3        | 2025-09-11 | @piotrpio       | Add server codes |
+| Revision | Date       | Author          | Info                          |
+|----------|------------|-----------------|-------------------------------|
+| 1        | 2025-06-10 | @ripienaar      | Initial design                |
+| 2        | 2025-09-08 | @MauriceVanVeen | Initial release               |
+| 3        | 2025-09-11 | @piotrpio       | Add server codes              |
+| 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior |
 
 ## Context
 
@@ -37,11 +38,15 @@ To address this we want to be able to deliver the 5 writes as a batch and the en
 
 The client will signal batch start and membership using headers on published messages.
 
- * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a request. Maximum length of the ID is 64 characters.
- * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one,
+ * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a *request*, the server will reply with error or zero byte message. Maximum length of the ID is 64 characters.
+ * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and might optionally include a reply subject that will receive a zero byte reply
  * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack.
 
-The server will not acknowledge any of the publishes except the one doing the Commit, clients must publish using Core NATS publish.
+The server will acknowledge in the following manner:
+
+ * The initial message will get an error - for example, feature not supported - or a zero byte ack
+ * Following messages, that have a reply set, will get a zero byte ack
+ * The final message will get a pub ack as described later
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
@@ -66,6 +71,7 @@ The server will respond with the following errors if committing a batch fails:
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence` or `Nats-Expected-Last-Msg-Id`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
  * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
+ * If a stream is operating on the `WriteConsistency: async` mode, any batch published to it must fail
 
 The server will operate under limits to safeguard itself:
 
