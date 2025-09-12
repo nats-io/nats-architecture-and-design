@@ -7,12 +7,12 @@
 | Status   | Approved                        |
 | Tags     | jetstream, server, client, 2.12 |
 
-| Revision | Date       | Author          | Info                                   |
-|----------|------------|-----------------|----------------------------------------|
-| 1        | 2025-06-10 | @ripienaar      | Initial design                         |
-| 2        | 2025-09-08 | @MauriceVanVeen | Initial release                        |
-| 3        | 2025-09-11 | @piotrpio       | Add server codes                       |
-| 4        | 2025-09-11 | @ripienaar      | Add support for weak write consistency |
+| Revision | Date       | Author          | Info                                      |
+|----------|------------|-----------------|-------------------------------------------|
+| 1        | 2025-06-10 | @ripienaar      | Initial design                            |
+| 2        | 2025-09-08 | @MauriceVanVeen | Initial release                           |
+| 3        | 2025-09-11 | @piotrpio       | Add server codes                          |
+| 4        | 2025-09-11 | @ripienaar      | Add support for `async` write consistency |
 
 ## Context
 
@@ -48,7 +48,7 @@ The server will not acknowledge any of the publishes except the one doing the Co
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
-Users can opt into a weaker consistency level that will result in asynchronous writes - primary to use the batching for speed - to achieve that set the `Nats-Batch-Atomic:0` header.
+Users can opt into a weaker consistency level - primary to use the batching for speed - to achieve that set the `Nats-Batch-Atomic:0` header. This header must be set on streams with the `async` write consistency level.
 
 #### Server Errors
 
@@ -71,7 +71,7 @@ The server will respond with the following errors if committing a batch fails:
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence` or `Nats-Expected-Last-Msg-Id`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
  * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
- * If a stream is operating on the `WriteConsistency: weak` mode, any batch without the `Nats-Batch-Atomic: 0` header will be rejected
+ * If a stream is operating on the `WriteConsistency: async` mode, any batch without the `Nats-Batch-Atomic: 0` header will be rejected
 
 The server will operate under limits to safeguard itself:
 
