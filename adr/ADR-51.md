@@ -29,10 +29,10 @@ We target a few use cases in the initial design:
 In this use case the Stream will essentially hold onto a message and publish it again at a later time. Once published the held message is removed.
 
 ```bash
-$ nats pub -J '$SCHED.update_orders' \
+$ nats pub -J 'orders_schedules' \
   -H "Nats-Schedule: @at 2009-11-10T23:00:00Z" \
   -H "Nats-Schedule-TTL: 5m" \
-  -H "Nats-Schedule-Target: $SCHED.trigger.update_orders"
+  -H "Nats-Schedule-Target: orders"
   body
 ```
 
@@ -53,14 +53,14 @@ There may only be one message per subject that holds a schedule, if a user wishe
 In this use case the Stream holds a message with a Cron-like schedule attached to it and the Stream will produce messages on the given schedule.
 
 ```bash
-$ nats pub -J '$SCHED.update_orders' \
+$ nats pub -J 'orders_schedules' \
   -H "Nats-Schedule: @hourly" \
   -H "Nats-Schedule-TTL: 5m" \
-  -H "Nats-Schedule-Target: $SCHED.trigger.update_orders"
+  -H "Nats-Schedule-Target: orders"
   body
 ```
 
-In this case a new message will be placed in `$SCHED.trigger.update_orders` holding the supplied body unchanged.  The original schedule message will remain and again produce a message the next hour. Additional headers added to the message will be sent to the target subject verbatim. If the original schedule message has a `Nats-TTL` header the schedule will be removed after that time.
+In this case a new message will be placed in `orders` holding the supplied body unchanged.  The original schedule message will remain and again produce a message the next hour. Additional headers added to the message will be sent to the target subject verbatim. If the original schedule message has a `Nats-TTL` header the schedule will be removed after that time.
 
 The generated message has a Message TTL of `5m`.
 
@@ -122,7 +122,7 @@ The time specification complies with go `time.ParseDuration()` format.
 In this use case we could have a sensor that produce a high frequency of data into a Stream subject in a Leafnode. We might have realtime processing happening in the site where the data is produced but externally we only want to sample the data every 5 minutes.
 
 ```bash
-$ nats pub -J '$SCHED.update_orders' \
+$ nats pub -J 'sensors.schedules' \
   -H "Nats-Schedule: @every 5m" \
   -H "Nats-Schedule-Source: sensors.cnc.temperature
   -H "Nats-Schedule-Target: sensors.sampled.cnc.temperature"
@@ -168,3 +168,4 @@ type StreamConfig struct {
  * Setting this on a Source or Mirror should be denied
  * This feature can be enabled on existing streams but not disabled
  * A Stream with this feature on should require API level 2
+ * `allow_msg_ttl` is needed if the user intends to use the `Nats-Schedule-TTL` feature
