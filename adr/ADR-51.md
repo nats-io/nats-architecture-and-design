@@ -160,7 +160,7 @@ All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` me
 
 #### Creating the stream.
 
-The `AllowMsgSchedules` field is new, added specifically for this feature and must be set to true to for the feature to be enabled.
+The `AllowMsgSchedules` field is new, added specifically for this feature and must be set to true for the feature to be enabled.
 
 ```go
 type StreamConfig struct {
