@@ -29,7 +29,7 @@ We target a few use cases in the initial design:
 In this use case the Stream will essentially hold onto a message and publish it again at a later time. Once published the held message is removed.
 
 ```bash
-$ nats pub -J 'orders_schedules.single' \
+$ nats pub -J 'schedules.orders.single' \
   -H "Nats-Schedule: @at 2009-11-10T23:00:00Z" \
   -H "Nats-Schedule-TTL: 5m" \
   -H "Nats-Schedule-Target: orders"
@@ -53,7 +53,7 @@ There may only be one message per subject that holds a schedule, if a user wishe
 In this use case the Stream holds a message with a Cron-like schedule attached to it and the Stream will produce messages on the given schedule.
 
 ```bash
-$ nats pub -J 'orders_schedules.hourly' \
+$ nats pub -J 'schedules.orders.hourly' \
   -H "Nats-Schedule: @hourly" \
   -H "Nats-Schedule-TTL: 5m" \
   -H "Nats-Schedule-Target: orders"
@@ -122,7 +122,7 @@ The time specification complies with go `time.ParseDuration()` format.
 In this use case we could have a sensor that produce a high frequency of data into a Stream subject in a Leafnode. We might have realtime processing happening in the site where the data is produced but externally we only want to sample the data every 5 minutes.
 
 ```bash
-$ nats pub -J 'sensors_schedules.cnc_sensors_sampled' \
+$ nats pub -J 'schedules.sensors.cnc_temperature_sampled' \
   -H "Nats-Schedule: @every 5m" \
   -H "Nats-Schedule-Source: sensors.cnc.temperature
   -H "Nats-Schedule-Target: sensors.sampled.cnc.temperature"
@@ -160,7 +160,7 @@ All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` me
 
 #### Creating the stream.
 
-The `allow_msg_schedules` field is new, added specifically for this feature and must be set to true to for the feature to be enabled.
+The `AllowMsgSchedules` field is new, added specifically for this feature and must be set to true to for the feature to be enabled.
 
 ```go
 type StreamConfig struct {
@@ -168,10 +168,11 @@ type StreamConfig struct {
 	AllowMsgSchedules bool          `json:"allow_msg_schedules"`
 }
 ```
-* If the user intends to use the `Nats-Schedule-TTL` feature, the `allow_msg_ttl` must be true for the stream.
+* If the user intends to use the `Nats-Schedule-TTL` feature, the `AllowMsgTTL` must be true for the stream.
 * Setting this on a Source or Mirror should be denied
 * This feature can be enabled on existing streams but not disabled
 * A Stream with this feature on should require API level 2
 
 #### Stream Subject
-As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules, for instance `orders_schedules.*`
+As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules, 
+for instance `schedules.>`, would allow for all the example subjects: `schedules.orders.single`, `schedules.orders.hourly` and `schedules.sensors.cnc_temperature_sampled`
