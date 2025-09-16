@@ -177,4 +177,4 @@ type StreamConfig struct {
 As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules. 
 For instance adding `schedules.>` as a stream subject would allow for all the example subjects: `schedules.orders.single`, `schedules.orders.hourly` and `schedules.sensors.cnc_temperature_sampled`
 
-The target subjects just normal subjects like `orders`, `sensors.cnc.temperature` or `sensors.sampled.cnc.temperature` and their pattern must also be added to as a stream subject. 
+The target subjects just normal subjects like `orders`, `sensors.cnc.temperature` or `sensors.sampled.cnc.temperature` and their pattern must also be added as a stream subject. 
