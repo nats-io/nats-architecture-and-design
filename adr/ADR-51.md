@@ -174,5 +174,5 @@ type StreamConfig struct {
 * A Stream with this feature on should require API level 2
 
 #### Stream Subject
-As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules, 
+As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules. 
 For instance `schedules.>`, would allow for all the example subjects: `schedules.orders.single`, `schedules.orders.hourly` and `schedules.sensors.cnc_temperature_sampled`
