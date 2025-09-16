@@ -53,7 +53,7 @@ There may only be one message per subject that holds a schedule, if a user wishe
 In this use case the Stream holds a message with a Cron-like schedule attached to it and the Stream will produce messages on the given schedule.
 
 ```bash
-$ nats pub -J 'order_schedules.hourly' \
+$ nats pub -J 'orders_schedules.hourly' \
   -H "Nats-Schedule: @hourly" \
   -H "Nats-Schedule-TTL: 5m" \
   -H "Nats-Schedule-Target: orders"
