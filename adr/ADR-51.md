@@ -16,7 +16,7 @@
 
 It's a frequently requested feature to allow messages to be delivered on a schedule or to support delayed publishing.
 
-We propose here a feature where 1 message contains a Cron-like schedule and new messages are produced, into the same stream, on the schedule. In all cases the last message on a subject holds the current schedule. In other words every schedule must have it's own subject.
+We propose here a feature where 1 message contains a Cron-like schedule and new messages are produced, into the same stream, on the schedule. In all cases the last message on a subject holds the current schedule. In other words every schedule must have its own unique subject.
 
 We target a few use cases in the initial design:
 
@@ -29,7 +29,7 @@ We target a few use cases in the initial design:
 In this use case the Stream will essentially hold onto a message and publish it again at a later time. Once published the held message is removed.
 
 ```bash
-$ nats pub -J 'orders_schedules' \
+$ nats pub -J 'orders_schedules.single' \
   -H "Nats-Schedule: @at 2009-11-10T23:00:00Z" \
   -H "Nats-Schedule-TTL: 5m" \
   -H "Nats-Schedule-Target: orders"
@@ -38,7 +38,7 @@ $ nats pub -J 'orders_schedules' \
 
 This message will be published near the supplied timestamp, the `Nats-Schedule-Target` must be a subject in the same stream and the published message could be republished using Stream Republish configuration. Additional headers added to the message will be sent to the target subject verbatim.
 
-If a message is made with a schedule in the past it is immediately sent. If a server was down for a month and a scheduled message is recovered, even if it was schedule  for a month ago, it will be sent immediately. To avoid this, add a `Nats-TTL` header to the message so it will be removed after the TTL. 
+If a message is made with a schedule in the past it is immediately sent. If a server was down for a month and a scheduled message is recovered, even if it was schedule  for a month ago, it will be sent immediately. To avoid this, add a `Nats-TTL` header to the message so it will be removed after the TTL.
 
 Messages produced from this kind of schedule will have a `Nats-Schedule-Next` header set with the value `purge`
 
@@ -53,14 +53,14 @@ There may only be one message per subject that holds a schedule, if a user wishe
 In this use case the Stream holds a message with a Cron-like schedule attached to it and the Stream will produce messages on the given schedule.
 
 ```bash
-$ nats pub -J 'orders_schedules' \
+$ nats pub -J 'order_schedules.hourly' \
   -H "Nats-Schedule: @hourly" \
   -H "Nats-Schedule-TTL: 5m" \
   -H "Nats-Schedule-Target: orders"
   body
 ```
 
-In this case a new message will be placed in `orders` holding the supplied body unchanged.  The original schedule message will remain and again produce a message the next hour. Additional headers added to the message will be sent to the target subject verbatim. If the original schedule message has a `Nats-TTL` header the schedule will be removed after that time.
+In this case a new message will be placed in `orders` holding the supplied body unchanged.The original schedule message will remain and again produce a message the next hour. Additional headers added to the message will be sent to the target subject verbatim. If the original schedule message has a `Nats-TTL` header the schedule will be removed after that time.
 
 The generated message has a Message TTL of `5m`.
 
@@ -122,7 +122,7 @@ The time specification complies with go `time.ParseDuration()` format.
 In this use case we could have a sensor that produce a high frequency of data into a Stream subject in a Leafnode. We might have realtime processing happening in the site where the data is produced but externally we only want to sample the data every 5 minutes.
 
 ```bash
-$ nats pub -J 'sensors.schedules' \
+$ nats pub -J 'sensors_schedules.cnc_sensors_sampled' \
   -H "Nats-Schedule: @every 5m" \
   -H "Nats-Schedule-Source: sensors.cnc.temperature
   -H "Nats-Schedule-Target: sensors.sampled.cnc.temperature"
@@ -158,14 +158,20 @@ All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` me
 
 ## Stream Configuration
 
+#### Creating the stream.
+
+The `allow_msg_schedules` field is new, added specifically for this feature and must be set to true to for the feature to be enabled.
+
 ```go
 type StreamConfig struct {
 	// AllowMsgSchedules enables the feature
 	AllowMsgSchedules bool          `json:"allow_msg_schedules"`
 }
 ```
+* If the user intends to use the `Nats-Schedule-TTL` feature, the `allow_msg_ttl` must be true for the stream.
+* Setting this on a Source or Mirror should be denied
+* This feature can be enabled on existing streams but not disabled
+* A Stream with this feature on should require API level 2
 
- * Setting this on a Source or Mirror should be denied
- * This feature can be enabled on existing streams but not disabled
- * A Stream with this feature on should require API level 2
- * `allow_msg_ttl` is needed if the user intends to use the `Nats-Schedule-TTL` feature
+#### Stream Subject
+As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules, for instance `orders_schedules.*`
