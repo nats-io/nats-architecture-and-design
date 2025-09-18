@@ -1,12 +1,11 @@
 # No Headers support for Direct Get
 
-| Metadata | Value                               |
-|----------|-------------------------------------|
-| Date     | 2025-06-19                          |
-| Author   | @ripienaar                          |
-| Status   | Implemented                         |
-| Tags     | jetstream, client, refinement, 2.12 |
-| Updates  | ADR-31                              |
+| Metadata | Value      |
+|----------|------------|
+| Date     | 2025-06-19 |
+| Author   | @ripienaar |
+| Status   | Deprecated |
+| Tags     | deprecated |
 
 # Context
 
