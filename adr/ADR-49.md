@@ -9,13 +9,14 @@
 
 ## Revision History
 
-| Revision | Date       | Description                        | Refinement | Server Requirement |
-|----------|------------|------------------------------------|------------|--------------------|
-| 1        | 2025-04-14 | Document Initial Design            |            | 2.12.0             |
-| 2        | 2025-06-12 | Server will always use `big.Int`   |            |                    |
-| 3        | 2025-06-19 | Source-aware tracking              |            |                    |
-| 4        | 2025-08-11 | Client implementation details      |            |                    |
-| 5        | 2025-08-28 | More client implementation details |            |                    |
+| Revision | Date       | Description                                          | Refinement | Server Requirement |
+|----------|------------|------------------------------------------------------|------------|--------------------|
+| 1        | 2025-04-14 | Document Initial Design                              |            | 2.12.0             |
+| 2        | 2025-06-12 | Server will always use `big.Int`                     |            |                    |
+| 3        | 2025-06-19 | Source-aware tracking                                |            |                    |
+| 4        | 2025-08-11 | Client implementation details                        |            |                    |
+| 5        | 2025-08-28 | More client implementation details                   |            |                    |
+| 6        | 2025-09-18 | Remove value-only methods from client implementation |            |                    |
 
 ## Context and Motivation
 
@@ -233,29 +234,18 @@ type Counter interface {
     Add(ctx context.Context, subject string, value *big.Int) (*big.Int, error)
 
     // AddInt increments the counter for the given subject and returns the new total value.
-	// - Language Specific Variations are acceptable to handle all native integer type numbers.
+    // - Language Specific Variations are acceptable to handle all native integer type numbers.
     AddInt(ctx context.Context, subject string, value int) (*big.Int, error)
 
-    // Get returns the current big int of the counter for the given subject.
-    // - Use the "no_hdr": true option on the direct get.
-    Get(ctx context.Context, subject string) (*big.Int, error)
-   
-    // GetMultiple returns an iterator over counter big ints for multiple subjects.
-    // - Wildcards are allowed in subjects.
-    // - Use the "no_hdr": true option on the direct get.
-    GetMultiple(ctx context.Context, subjects []string) iter.Seq2[*big.Int, error]
-   
-    // GetEntry returns the full entry with value and source history for the given subject.
-    GetEntry(ctx context.Context, subject string) (*Entry, error)
+    // Get returns counter entry with value and source history for the given subject.
+    Get(ctx context.Context, subject string) (*Entry, error)
 
-    // GetEntries returns an iterator over counter entries matching the pattern.
+    // GetMultiple returns an iterator over counter entries matching the pattern.
     // - Wildcards are allowed in subjects.
-    GetEntries(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
+    GetMultiple(ctx context.Context, subjects []string) iter.Seq2[*Entry, error]
 }
 ```
 
 The implementation requires streams to have both `AllowMsgCounter: true` and `AllowDirect: true` configured (for batch direct get when fetching multiple values).
 
 Fetching multiple values/entries should be non-blocking and expose a streaming API for efficient consumption.
-
-For getting the numeric value(s) only, clients should use the `no_hdr` option on direct message calls (as described in [ADR-31](ADR-31.md#direct-get-api)), therefore avoiding fetching source headers.
