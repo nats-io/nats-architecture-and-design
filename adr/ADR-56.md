@@ -31,6 +31,12 @@ At the moment this mode cannot support batch publishing at all and any attempt t
 
 This setting will require API Level 2.
 
+The interactions between `PersistMode:async` and `sync:always` are as follows:
+
+ * `PersistMode:default`, `sync:always` - all writes are flushed (default) and synced
+ * `PersistMode:default`, not `sync:always` - all writes are flushed (default), but synced only per sync interval
+ * `PersistMode:async` - PubAck is essentially returned first, writes are batched in-memory, and the write happens asynchronously in the background
+
 ### Implications:
 
  * The Publish Ack will be sent before the data is known to be written to disk
