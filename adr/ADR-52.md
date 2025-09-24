@@ -7,6 +7,10 @@
 | Status   | Deprecated |
 | Tags     | deprecated |
 
+## Deprecated
+
+This feature was targeted for 2.12 but the outcome was to increase inconsistency in the msg get API while at the same time being a potentially premature optimisation.
+
 # Context
 
 Often the only part of a message users care for is the body, a good example is counters introduced in ADR-49 where there is a data section in the body and a control section in the headers. For clients that only care for the current count there is no need to even download the headers from the server.

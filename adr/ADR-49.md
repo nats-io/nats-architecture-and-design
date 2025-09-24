@@ -18,10 +18,6 @@
 | 5        | 2025-08-28 | More client implementation details                   |            |                    |
 | 6        | 2025-09-18 | Remove value-only methods from client implementation |            |                    |
 
-## Deprecated
-
-This feature was targeted for 2.12 but the outcome was to increase inconsistency in the msg get API while at the same time being a potentially premature optimisation.
-
 ## Context and Motivation
 
 We wish to provide a distributed counter that will function in Clusters, Super Clusters, through Sources and any other way that data might reach a Stream.
