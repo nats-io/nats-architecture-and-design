@@ -49,10 +49,9 @@ The server will acknowledge in the following manner:
  * The initial message will get an error - for example, feature not supported - or a zero byte ack
  * Following messages, that have a reply set, will get a zero byte ack
  * The final message will get a pub ack as described later
+ * The server will check `Nats-Required-Api-Level` for every batch related message. If for any message the check fails the batch is abandoned, with advisory, and if a reply is set a full error ack is sent.
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
-
-When `Nats-Batch-Commit:eob` is used to commit the final message if the `Nats-Required-Api-Level` is set it should be evaluated. Using the `eob` option should require level `3`.
 
 #### Server Errors
 
@@ -110,8 +109,9 @@ When a batch is abandoned it might be for reasons that will never be communicate
 type BatchAbandonReason string
 
 var (
-	BatchTimeout    BatchAbandonReason = "timeout"
-	BatchIncomplete BatchAbandonReason = "incomplete"
+	BatchTimeout              BatchAbandonReason = "timeout"
+	BatchIncomplete           BatchAbandonReason = "incomplete"
+	BatchRequirementsNotMetqq   BatchAbandonReason = "unsupported"
 )
 
 type Advisory struct {
