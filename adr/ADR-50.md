@@ -1,18 +1,19 @@
 # JetStream Batch Publishing
 
-| Metadata | Value                           |
-|----------|---------------------------------|
-| Date     | 2025-06-10                      |
-| Author   | @ripienaar                      |
-| Status   | Approved                        |
-| Tags     | jetstream, server, client, 2.12 |
+| Metadata | Value                                 |
+|----------|---------------------------------------|
+| Date     | 2025-06-10                            |
+| Author   | @ripienaar                            |
+| Status   | Approved                              |
+| Tags     | jetstream, server, client, 2.12, 2.14 |
 
-| Revision | Date       | Author          | Info                          |
-|----------|------------|-----------------|-------------------------------|
-| 1        | 2025-06-10 | @ripienaar      | Initial design                |
-| 2        | 2025-09-08 | @MauriceVanVeen | Initial release               |
-| 3        | 2025-09-11 | @piotrpio       | Add server codes              |
-| 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior |
+| Revision | Date       | Author          | Info                                                    | Server Version | API Level |
+|----------|------------|-----------------|---------------------------------------------------------|----------------|-----------|
+| 1        | 2025-06-10 | @ripienaar      | Initial design                                          | 2.12.0         | 2         |
+| 2        | 2025-09-08 | @MauriceVanVeen | Initial release                                         | 2.12.0         | 2         |
+| 3        | 2025-09-11 | @piotrpio       | Add server codes                                        | 2.12.0         | 2         |
+| 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior                           | 2.12.0         | 2         |
+| 5        | 2025-09-25 | @ripienaar      | Support batch commit without storing the commit message | 2.14.0         | 3         |
 
 ## Context
 
@@ -40,7 +41,8 @@ The client will signal batch start and membership using headers on published mes
 
  * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a *request*, the server will reply with error or zero byte message. Maximum length of the ID is 64 characters.
  * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and might optionally include a reply subject that will receive a zero byte reply
- * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack.
+ * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will store the message, commit the batch and reply with a pub ack. 
+ * Alternatively the final message will have headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` the server will not store the message, commit the batch and reply with a pub ack  
 
 The server will acknowledge in the following manner:
 
@@ -49,6 +51,8 @@ The server will acknowledge in the following manner:
  * The final message will get a pub ack as described later
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
+
+When `Nats-Batch-Commit:eob` is used to commit the final message if the `Nats-Required-Api-Level` is set it should be evaluated. Using the `eob` option should require level `3`.
 
 #### Server Errors
 
