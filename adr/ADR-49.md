@@ -17,6 +17,7 @@
 | 4        | 2025-08-11 | Client implementation details                        |            |                    |
 | 5        | 2025-08-28 | More client implementation details                   |            |                    |
 | 6        | 2025-09-18 | Remove value-only methods from client implementation |            |                    |
+| 7        | 2025-09-30 | Use `omitempty` on configuration fields              |            |                    |
 
 ## Context and Motivation
 
@@ -180,7 +181,7 @@ in the Stream
 ```golang
 type StreamConfig struct {
     // AllowMsgCounter enables the feature
-    AllowMsgCounter bool          `json:"allow_msg_counter"`
+    AllowMsgCounter bool          `json:"allow_msg_counter,omitempty"`
 }
 ```
 

@@ -8,9 +8,10 @@
 | Tags     | jetstream, 2.12 |
 
 
-| Revision | Date       | Author     | Info                    |
-|----------|------------|------------|-------------------------|
-| 1        | 2025-03-21 | @ripienaar | Document Initial Design |
+| Revision | Date       | Author     | Info                                    |
+|----------|------------|------------|-----------------------------------------|
+| 1        | 2025-03-21 | @ripienaar | Document Initial Design                 |
+| 2        | 2025-09-30 | @ripienaar | Use `omitempty` on configuration fields |
 
 ## Context and Motivation
 
@@ -165,7 +166,7 @@ The `AllowMsgSchedules` field is new, added specifically for this feature and mu
 ```go
 type StreamConfig struct {
 	// AllowMsgSchedules enables the feature
-	AllowMsgSchedules bool          `json:"allow_msg_schedules"`
+	AllowMsgSchedules bool          `json:"allow_msg_schedules,omitempty"`
 }
 ```
 * If the user intends to use the `Nats-Schedule-TTL` feature, the `AllowMsgTTL` must be true for the stream.
