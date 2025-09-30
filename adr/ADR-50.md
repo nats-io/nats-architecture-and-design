@@ -1,18 +1,19 @@
 # JetStream Batch Publishing
 
-| Metadata | Value                           |
-|----------|---------------------------------|
-| Date     | 2025-06-10                      |
-| Author   | @ripienaar                      |
-| Status   | Approved                        |
-| Tags     | jetstream, server, client, 2.12 |
+| Metadata | Value                                 |
+|----------|---------------------------------------|
+| Date     | 2025-06-10                            |
+| Author   | @ripienaar                            |
+| Status   | Approved                              |
+| Tags     | jetstream, server, client, 2.12, 2.14 |
 
-| Revision | Date       | Author          | Info                          |
-|----------|------------|-----------------|-------------------------------|
-| 1        | 2025-06-10 | @ripienaar      | Initial design                |
-| 2        | 2025-09-08 | @MauriceVanVeen | Initial release               |
-| 3        | 2025-09-11 | @piotrpio       | Add server codes              |
-| 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior |
+| Revision | Date       | Author          | Info                                                    | Server Version | API Level |
+|----------|------------|-----------------|---------------------------------------------------------|----------------|-----------|
+| 1        | 2025-06-10 | @ripienaar      | Initial design                                          | 2.12.0         | 2         |
+| 2        | 2025-09-08 | @MauriceVanVeen | Initial release                                         | 2.12.0         | 2         |
+| 3        | 2025-09-11 | @piotrpio       | Add server codes                                        | 2.12.0         | 2         |
+| 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior                           | 2.12.0         | 2         |
+| 5        | 2025-09-25 | @ripienaar      | Support batch commit without storing the commit message | 2.14.0         | 3         |
 
 ## Context
 
@@ -40,13 +41,15 @@ The client will signal batch start and membership using headers on published mes
 
  * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a *request*, the server will reply with error or zero byte message. Maximum length of the ID is 64 characters.
  * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and might optionally include a reply subject that will receive a zero byte reply
- * The final message will have the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1` the server will reply with a pub ack.
+ * If the final message has the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1`, the server will store the message, commit the batch and reply with a pub ack. 
+ * Otherwise, the final message will have headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will commit the batch without storing the message and reply with a pub ack.
 
 The server will acknowledge in the following manner:
 
  * The initial message will get an error - for example, feature not supported - or a zero byte ack
  * Following messages, that have a reply set, will get a zero byte ack
  * The final message will get a pub ack as described later
+ * The server will check `Nats-Required-Api-Level` for every batch related message. If for any message the check fails the batch is abandoned, with advisory, and if a reply is set a full error ack is sent.
 
 The control headers are sent with payload, there are no additional messages to start and stop a batch we piggyback on the usual payload-bearing messages.
 
@@ -106,8 +109,9 @@ When a batch is abandoned it might be for reasons that will never be communicate
 type BatchAbandonReason string
 
 var (
-	BatchTimeout    BatchAbandonReason = "timeout"
-	BatchIncomplete BatchAbandonReason = "incomplete"
+	BatchTimeout              BatchAbandonReason = "timeout"
+	BatchIncomplete           BatchAbandonReason = "incomplete"
+	BatchRequirementsNotMetqq   BatchAbandonReason = "unsupported"
 )
 
 type Advisory struct {
