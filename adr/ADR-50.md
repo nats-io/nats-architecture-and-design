@@ -14,6 +14,7 @@
 | 3        | 2025-09-11 | @piotrpio       | Add server codes                                        | 2.12.0         | 2         |
 | 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior                           | 2.12.0         | 2         |
 | 5        | 2025-09-25 | @ripienaar      | Support batch commit without storing the commit message | 2.14.0         | 3         |
+| 6        | 2025-10-02 | @MauriceVanVeen | Support deduplication                                   | 2.12.1         | 2         |
 
 ## Context
 
@@ -57,14 +58,15 @@ The control headers are sent with payload, there are no additional messages to s
 
 The server will respond with the following errors if committing a batch fails:
 
-| ErrCode | Code | Description                                                                          |
-|---------|------|--------------------------------------------------------------------------------------|
-| 10174   | 400  | Batch publish not enabled on stream                                                  |
-| 10176   | 400  | Batch publish is incomplete and was abandoned                                        |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                                  |
-| 10175   | 400  | Batch publish sequence is missing                                                    |
-| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)                           |
-| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id` or `Nats-Msg-Id`) |
+| ErrCode | Code | Description                                                         |
+|---------|------|---------------------------------------------------------------------|
+| 10174   | 400  | Batch publish not enabled on stream                                 |
+| 10176   | 400  | Batch publish is incomplete and was abandoned                       |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 |
+| 10175   | 400  | Batch publish sequence is missing                                   |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          |
+| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) |
+| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         |
 
 ### Server Behavior Design
 
@@ -85,9 +87,9 @@ The server will operate under limits to safeguard itself:
 
 ### Stream State Constraints
 
-Headers like `MsgId` and `LastMsgId` are currently not supported, there are ongoing discussions about how de-duplication is expected to work when using atomic batch publishing.
+The `LastMsgId` header is currently not supported. A batch will be rejected if this header is used, but we might support this header in the future.
 
-Initial release of this feature will reject messages published with those headers and we might support them in future.
+Initial release of this feature rejects the use of `MsgId`. Starting from 2.12.1 de-duplication is supported and a batch will be rejected with an error if it contains a duplicate message.
 
 ### Publish Acknowledgements
 
