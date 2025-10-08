@@ -173,11 +173,13 @@ The outstanding ack behaviour will address the first buffers and lead to client 
 
 The 2nd is a concern because when there are too many outstanding RAFT proposals requests like Msg Delete, Purge, Config change etc can take a long time to be serviced. Realistically we can't have those take more than 2 seconds.
 
-The server will thus have to monitor those internal buffers and communicate back to all fast-publishers that they need to adjust their flow rate.
+The server will thus have to monitor those internal Stream and Raft related buffers and communicate back to all fast-publishers that they need to adjust their flow rate.
 
 The primary mechanism for this is the `Nats-Flow` header, it can have a value like `10` meaning every 10th message gets an ack or `1024B` meaning every 1024 bytes gets an ack.
 
-The server can adjust this once the batch is established by sending a new flow rates back to the client in `BatchFlowAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against.
+Clients will surface settings like how many outstanding acks there can be before the client waits for acks and how long the timeout is while waiting. The client though must take care to track not just the count of outstanding acks but also the sequence they are for.  If acks for messages 10,20,30,40 and the one for 30 is lost - when the one for 40 comes the client must also treat the one for message 30 as seen, this is critical to avoid unrecoverable stalls.
+
+The server can adjust the active flow parameters once the batch is established by sending a new flow rates back to the client in `BatchFlowAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against the new expectation.
 
 The server must treat the initial flow parameters as the upper bound though, when a client says ack every 10 messages we cannot decide from the server side to change that to > 10. 
 
