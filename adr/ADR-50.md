@@ -96,7 +96,7 @@ TODO/Questions:
 
 * What should clients limit max outstanding acks to, we want to avoid big bytes or many acks
 * Should we only support `eob` style commits?
-
+* Clients might stall if they lost all the acks involved in their max pending, we might then have to just timeout or perhaps add a way to probe the server to send a `BatchFlowAck` as a liveness check. We will though experiment first before doing this.
 
 ### Context
 
@@ -138,16 +138,15 @@ The `Nats-Batch-Gap` header has a few formats see later section.
 
 The server will acknowledge in the following manner:
 
- * The initial message will get an error - for example, feature not supported - or zero byte ack
- * The server will then send `BatchFcAck` back based which might adjust the flow rate
+ * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack
+ * The server will then send `BatchFlowAck` back based which might adjust the flow rate
  * The final message will get a standard pub ack as described later
- * When leadership is lost the server will publish full acks indicating the batch is ended and it will set `LeaderLost:true` in the ack
 
-By always sending the current flow state back in the `BatchFcAck` we guard against lost acks.
+By always sending the current flow state back in the `BatchFlowAck` we guard against lost acks.
 
 When the leader of the Stream changes:
 
-* In `ok` gap mode the new leader will continue and send a `BatchFcAck` out indicating the gap
+* In `ok` gap mode the new leader will continue and send a `BatchFlowAck` out indicating the gap
 * In `fail` gap mode the new leader will abandon the batch and send back a final pub ack with details up to the last received message for the batch
 
 ### Message Gaps
@@ -159,7 +158,7 @@ We want to cater for 2 kinds of use cases around gaps:
 
 To support both we add the `Nats-Batch-Gap` header with values `ok` or `fail`. The default for this header is `fail` when it is not set for a batch. Invalid values must result in a batch abandon error.
 
-When `ok` the server will upon detecting a gap immediately send a `BatchFcAck` with the `LastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
+When `ok` the server will upon detecting a gap immediately send a `BatchFlowAck` with the `LastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
 
 When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap.
 
@@ -178,12 +177,14 @@ The server will thus have to monitor those internal buffers and communicate back
 
 The primary mechanism for this is the `Nats-Flow` header, it can have a value like `10` meaning every 10th message gets an ack or `1024B` meaning every 1024 bytes gets an ack.
 
-The server can adjust this once the batch is established by sending a new flow rates back to the client in `BatchFcAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against.
+The server can adjust this once the batch is established by sending a new flow rates back to the client in `BatchFlowAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against.
+
+The server must treat the initial flow parameters as the upper bound though, when a client says ack every 10 messages we cannot decide from the server side to change that to > 10. 
 
 Aside from this, all current self-protection mechanisms in the server - dropping too fast messages etc - will remain in place.
 
 ```go
-type BatchFcAck struct {
+type BatchFlowAck struct {
 	// LastSequence is the previously highest sequence seen, this is set when a gap is detected
 	LastSequence int `last_seq,omitempty`
 	// CurrentSequence is the sequence of the message that triggered the ack
