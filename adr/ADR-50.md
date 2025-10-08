@@ -7,15 +7,15 @@
 | Status   | Approved                              |
 | Tags     | jetstream, server, client, 2.12, 2.14 |
 
-| Revision | Date       | Author          | Info                                                    | Server Version | API Level |
-|----------|------------|-----------------|---------------------------------------------------------|----------------|-----------|
-| 1        | 2025-06-10 | @ripienaar      | Initial design                                          | 2.12.0         | 2         |
-| 2        | 2025-09-08 | @MauriceVanVeen | Initial release                                         | 2.12.0         | 2         |
-| 3        | 2025-09-11 | @piotrpio       | Add server codes                                        | 2.12.0         | 2         |
-| 4        | 2025-09-11 | @ripienaar      | Restore optional ack behavior                           | 2.12.0         | 2         |
-| 5        | 2025-09-25 | @ripienaar      | Support batch commit without storing the commit message | 2.14.0         | 3         |
-| 6        | 2025-10-02 | @MauriceVanVeen | Support deduplication                                   | 2.12.1         | 2         |
-| 7        | 2025-10-08 | @ripienaar      | Support fast ingest                                     | 2.14.0         | 3         |
+| Revision | Date       | Author                                          | Info                                                    | Server Version | API Level |
+|----------|------------|-------------------------------------------------|---------------------------------------------------------|----------------|-----------|
+| 1        | 2025-06-10 | @ripienaar                                      | Initial design                                          | 2.12.0         | 2         |
+| 2        | 2025-09-08 | @MauriceVanVeen                                 | Initial release                                         | 2.12.0         | 2         |
+| 3        | 2025-09-11 | @piotrpio                                       | Add server codes                                        | 2.12.0         | 2         |
+| 4        | 2025-09-11 | @ripienaar                                      | Restore optional ack behavior                           | 2.12.0         | 2         |
+| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message | 2.14.0         | 3         |
+| 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                   | 2.12.1         | 2         |
+| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                     | 2.14.0         | 3         |
 
 ## Context
 
@@ -28,11 +28,6 @@ There exists a need to treat groups of related messages in a batched manner, the
 This ADR focus mainly on the first 2 sections.
 
 ## Atomic Batched Publishes
-
-TODO/Questions:
-
- * What should clients limit max outstanding acks to, we want to avoid big bytes or many acks
- * Should we only support `eob` style commits?
 
 ### Context 
 
@@ -96,6 +91,12 @@ The `LastMsgId` header is currently not supported. A batch will be rejected if t
 Initial release of this feature rejects the use of `MsgId`. Starting from 2.12.1 de-duplication is supported and a batch will be rejected with an error if it contains a duplicate message.
 
 ## Fast-ingest Batch Publishing
+
+TODO/Questions:
+
+* What should clients limit max outstanding acks to, we want to avoid big bytes or many acks
+* Should we only support `eob` style commits?
+
 
 ### Context
 
