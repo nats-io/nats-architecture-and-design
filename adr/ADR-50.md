@@ -124,11 +124,13 @@ The server on the other hand will be able to adjust the frequency of acks based 
 
 At all times the server will maintain its self-protection mechanisms like dropping messages when buffers are full etc.
 
+Clients should use old style inboxes not the mux inbox so that as soon as the server sends an error back the clients would drop interest. The reason is that with many in-flight messages once an error occurs the server mights find it has to send thousands of Acks back to the client, if the client unsubscribe from the control channel completely the server will short circuit some of those acks.
+
 ### Client Design
 
 The client will signal batch start, membership and flow control characteristics using headers on published messages.
 
- * The client will set up a Inbox subscription that will be used for the duration of the batch
+ * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox
  * A batch will be started by adding the `Nats-Fast-Batch-Id:uuid`, `Nats-Flow:10`, `Nats-Batch-Gap:ok` (optional) and `Nats-Batch-Sequence:1` headers using a message with reply being the above Inbox, the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
  * Following messages in the same batch will include the `Nats-Fast-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and must set the same reply-to as the command channel
  * If the final message has the headers `Nats-Fast-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1`, the server will store the message, commit the batch and reply with a pub ack
