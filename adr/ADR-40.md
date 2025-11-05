@@ -7,11 +7,12 @@
 | Status   | Implemented          |
 | Tags     | client, server, spec |
 
-| Revision | Date       | Author   | Info                         |
-| -------- | ---------- | -------- | ---------------------------- |
-| 1        | 2023-10-12 | @Jarema  | Initial draft                |
-| 2        | 2024-6-24  | @aricart | Added protocol error section |
-| 3        | 2024-9-30  | @Jarema  | Add connection Statistics    |
+| Revision | Date       | Author    | Info                                         |
+| -------- | ---------- | --------- | -------------------------------------------- |
+| 1        | 2023-10-12 | @Jarema   | Initial draft                                |
+| 2        | 2024-6-24  | @aricart  | Added protocol error section                 |
+| 3        | 2024-9-30  | @Jarema   | Add connection Statistics                    |
+| 4        | 2025-11-05 | @piotrpio | Add custom server pool and reconnect handler |
 
 ## Summary
 
@@ -124,6 +125,46 @@ all reconnect options are respected.
 
 For most clients, that means having a `reconnect` method on the
 Client/Connection handle.
+
+#### Custom server pool
+
+Client should have a way to specify custom server pool for reconnection
+attempts. When specified, client should use only those servers for reconnection
+attempts, ignoring any advertised servers from the Server.
+
+New pool should be used for all reconnection attempts until the client is
+restarted or a new pool is specified. New pool is subject to the same rules as
+the default one - randomization unless disabled, max reconnect attempts, etc.
+
+```go
+// SetServerPool sets a new server pool for reconnection attempts.
+// It replaces any existing pool, including advertised servers.
+func (nc *Conn) SetServerPool(servers []string) error
+```
+
+#### Reconnect to specific server
+
+Client should expose an option to configure a callback that will be called
+before each reconnection attempt.
+
+As arguments, it should receive the list of servers that are in the pool
+(together with reconnect attempt number), as well as the most up-to-date server
+INFO.
+
+The callback should return the server URL to which the client should attempt to
+reconnect (a url outside of the pool should not be allowed). Additionally, the
+callback should allow to specify whether client should include a delay before
+attempting to reconnect to the selected server (based on what's configured in
+the client options).
+
+```go
+// Return values:
+//   - url.URL: The server URL to connect to. Can be from the provided servers slice
+//     or a new server URL. New servers will be automatically added to the pool.
+//   - bool: If true, apply reconnect delay (ReconnectWait + jitter or CustomReconnectDelayCB)
+//     before attempting connection. If false, attempt connection immediately.
+type ReconnectToServerHandler func([]Server, ServerInfo) (*url.URL, bool)
+```
 
 #### Detecting disconnection
 
