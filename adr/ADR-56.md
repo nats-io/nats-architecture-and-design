@@ -67,6 +67,8 @@ immediately observe all the written messages at that time. For example, if a R1 
 to date on all writes yet. The consumer will eventually observe all the writes as it keeps on fetching new messages as
 they come in.
 
+## Proposal to add linearizability
+
 Newer server versions, like for 2.14+, should support more configurability or in general higher levels of consistency as
 opt-in. For example, higher read consistency for consumers can be achieved by having consumer CRUD operations go through
 the stream's Raft log instead of the Meta Raft log, which ensures that a consumer created at time X in the stream log
