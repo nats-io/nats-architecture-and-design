@@ -115,6 +115,7 @@ This reset API, `$JS.API.CONSUMER.RESET.<STREAM>.<CONSUMER>`, will have the foll
   like a "consumer create" response. This is useful for the durable sourcing consumer to confirm the proper
   configuration is used before allowing the sourcing to happen. As well as generally looking as if the consumer was
   recreated, this response can then also be kept by clients if they need to keep a cached consumer response.
+- Additionally, the response will contain the `ResetSeq` that the consumer is reset to.
 
 ## Decision
 
