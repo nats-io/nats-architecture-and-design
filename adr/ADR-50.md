@@ -109,11 +109,13 @@ Today we have Async publishing in the clients that aims to move data into a stre
 
 We would like to build on the batching behaviours introduced here but deliver high performance ingest without atomicity.
 
-These batches are not reliable, meaning messages can be lost and the batch will not be abandoned like atomic ones.
+These batches are not reliable, meaning messages can be lost and the batch will not be abandoned like atomic ones. For this reason we will also use a lighter method than headers for communicating the control state, since users are unlikely to carefully audit these like they would atomic batch publishes.
 
 Clients will have the flexibility to choose how missing messages are handled - gaps are allowed or any gap terminates the batch.
 
 Crucially these batches are not pre-staged and so will not be limited to 1000 messages like Atomic ones, they will be unlimited and, if gaps are allowed, can survive leader changes.
+
+While we wish to go fast when possible, we also want to not fail when many concurrent producers are doing fast-ingest as we see today with ObjectStore writes - a few concurrently will fail due to pending API counts etc. We will therefor create a flow-control mechanism where the server can tell the clients to go slower. This way the focus is not just fast but being able to actively manage the concurrent pressure ensuring everyone goes as fast as possible while remaining reliable.
 
 The goal is to replace Async publish with one built on these behaviors.
 
@@ -133,18 +135,22 @@ Clients should use old style inboxes not the mux inbox so that as soon as the se
 
 ### Client Design
 
-The client will signal batch start, membership and flow control characteristics using headers on published messages.
+The client will communicate key information about the batch using a reply subject, we support a few formats, if future needs arise we can add `fi5` etc
 
- * The client will set up an Inbox subscription that will be used for the duration of the batch, this must be an old style inbox
- * A batch will be started by adding the `Nats-Fast-Batch-Id:uuid`, `Nats-Flow:10`, `Nats-Batch-Gap:ok` (optional) and `Nats-Batch-Sequence:1` headers using a message with reply being the above Inbox, the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
- * Following messages in the same batch will include the `Nats-Fast-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and must set the same reply-to as the command channel
- * If the final message has the headers `Nats-Fast-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1`, the server will store the message, end the batch and reply with a pub ack
- * Otherwise, the final message will have headers `Nats-Fast-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will end the batch without storing the message and reply with a pub ack. In fast mode the previous message will not get the `Nats-Batch-Commit` header added after a `eob`
+| Template                                                              | Description                                         |
+|-----------------------------------------------------------------------|-----------------------------------------------------|
+| `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.fi1` | Starts a batch                                      |
+| `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.fi2` | Adds messages to a batch                            |
+| `<prefix>.<uuid>.<batch seq>.fi3`                                     | Terminates a batch while storing the last message   |
+| `<prefix>.<uuid>.<batch seq>.fi4`                                     | Terminates a batch without storing the last message |
+
+ * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox. The inbox must subscribe to `<prefix>.>`
+ * A batch will be started by setting a reply subject of `<prefix>.uuid.10.ok.1.fi1` (initial flow of `10`, gap `ok`, sequence `1`), the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
+ * Following messages in the same batch must use a reply subject `<prefix>.uuid.10.ok.n.fi2` where `n` is the sequence incremented by one. We add the initial flow and gap information for replica followers who might have missed the first message due to limits
+ * If the final message has the reply subject `<prefix>.uuid.n.fi3`, the server will store the message, the server will store the message, end the batch and reply with a pub ack
+ * Otherwise, the final message will have reply subject `<prefix>.uuid.n.fi4` the server will end the batch without storing the message and reply with a pub ack. In fast mode the previous message will not get the `Nats-Batch-Commit` header added after a `eob`
  * Clients will monitor the `BatchFlowAck` acks and should an ack have different flow settings different from the active one they will adjust accordingly
  * To deal with lost acks clients will manage outstanding `BatchFlowAck` acks in a way that ensures if an ack for message 30 comes in that it implies all earlier acks were received
-
-The `Nats-Flow` header has a few formats see the later section.
-The `Nats-Batch-Gap` header has a few formats see later section.
 
 The server will acknowledge in the following manner:
 
@@ -166,7 +172,7 @@ We want to cater for 2 kinds of use cases around gaps:
  1. Object store would not be ok with any gaps in the published messages because those would be gaps in files
  2. Fast metric publishers would be ok with some gaps and would just want to continue publishing
 
-To support both we add the `Nats-Batch-Gap` header with values `ok` or `fail`. The default for this header is `fail` when it is not set for a batch. Invalid values must result in a batch abandon error.
+To support both we set the gap mode to `ok` or `fail` in the first reply subject. Invalid values must result in a batch abandon error.
 
 Upon detecting a gap, the server immediately sends a `BatchFlowAck` with the `LastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
 
@@ -189,7 +195,7 @@ The 2nd is a concern because when there are too many outstanding RAFT proposals 
 
 The server will thus have to monitor those internal Stream and Raft related buffers and communicate back to all fast-publishers that they need to adjust their flow rate.
 
-The primary mechanism for this is the `Nats-Flow` header, it can have a value like `10` meaning every 10th message gets an ack or `1024B` meaning every 1024 bytes gets an ack.
+The primary mechanism for this is the `flow` field in the initial reply subject, it can have a value like `10` meaning every 10th message gets an ack or `1024B` meaning every 1024 bytes gets an ack.
 
 Clients will surface settings like how many outstanding acks there can be before the client stops publishing and waits for acks and how long the timeout is while waiting. The client though must take care to track not just the count of outstanding acks but also the sequence they are for. If acks for messages 10,20,30,40 and the one for 30 is lost - when the one for 40 comes the client must also treat the one for message 30 as seen, this is critical to avoid unrecoverable stalls.
 
@@ -228,9 +234,9 @@ The server will respond with the following errors if committing a batch fails:
 
 ### Server Behavior Design
 
-* The server will limit the `Nats-Fast-Batch-Id` to 64 characters and respond with an error Pub Ack if it's too long
+* The server will limit the `uuid` to 64 characters and respond with an error Pub Ack if it's too long
 * Server will reject messages for which the batch is unknown with an error Pub Ack
-* Server will reject values for `Nats-Batch-Gap` that is not `ok` or `fail`, absent means `fail`
+* Server will reject values for `gap` that is not `ok` or `fail`
 * If messages in a batch are received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration
 * Check properties like `ExpectedLastSeq` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through control headers, but per-message content can remain the same. This allows to swap between publish implementations as needed.
 * Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
