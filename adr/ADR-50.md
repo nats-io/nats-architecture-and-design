@@ -146,7 +146,7 @@ The client will communicate key information about the batch using a reply subjec
 
 The server MUST reject any operation that it does not know about
 
- * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox. The inbox must subscribe to `<prefix>.>`
+ * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox. The inbox must subscribe to `<prefix>.uuid.>`
  * A batch will be started by setting a reply subject of `<prefix>.uuid.10.ok.1.0.$FI` (initial flow of `10`, gap `ok`, sequence `1`), the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
  * Following messages in the same batch must use a reply subject `<prefix>.uuid.10.ok.1.1.$FI` where `n` is the sequence incremented by one. We add the initial flow and gap information for replica followers who might have missed the first message due to limits
  * If the final message has the reply subject `<prefix>.uuid.10.ok.1.2.$FI`, the server will store the message, the server will store the message, end the batch and reply with a pub ack
