@@ -135,20 +135,22 @@ Clients should use old style inboxes not the mux inbox so that as soon as the se
 
 ### Client Design
 
-The client will communicate key information about the batch using a reply subject, we support a few formats, if future needs arise we can add `fi5` etc
+The client will communicate key information about the batch using a reply subject, `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.<operation>.$FI`
 
-| Template                                                              | Description                                         |
-|-----------------------------------------------------------------------|-----------------------------------------------------|
-| `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.fi1` | Starts a batch                                      |
-| `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.fi2` | Adds messages to a batch                            |
-| `<prefix>.<uuid>.<batch seq>.fi3`                                     | Terminates a batch while storing the last message   |
-| `<prefix>.<uuid>.<batch seq>.fi4`                                     | Terminates a batch without storing the last message |
+| Version | Description                                 |
+|---------|---------------------------------------------|
+| 0       | Starts a batch                              |
+| 1       | Append to a batch                           |
+| 2       | Commit and store the final message          |
+| 3       | Commit without storing the batch (EOB mode) |
+
+The server MUST reject any operation that it does not know about
 
  * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox. The inbox must subscribe to `<prefix>.>`
- * A batch will be started by setting a reply subject of `<prefix>.uuid.10.ok.1.fi1` (initial flow of `10`, gap `ok`, sequence `1`), the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
- * Following messages in the same batch must use a reply subject `<prefix>.uuid.10.ok.n.fi2` where `n` is the sequence incremented by one. We add the initial flow and gap information for replica followers who might have missed the first message due to limits
- * If the final message has the reply subject `<prefix>.uuid.n.fi3`, the server will store the message, the server will store the message, end the batch and reply with a pub ack
- * Otherwise, the final message will have reply subject `<prefix>.uuid.n.fi4` the server will end the batch without storing the message and reply with a pub ack. In fast mode the previous message will not get the `Nats-Batch-Commit` header added after a `eob`
+ * A batch will be started by setting a reply subject of `<prefix>.uuid.10.ok.1.0.$FI` (initial flow of `10`, gap `ok`, sequence `1`), the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
+ * Following messages in the same batch must use a reply subject `<prefix>.uuid.10.ok.1.1.$FI` where `n` is the sequence incremented by one. We add the initial flow and gap information for replica followers who might have missed the first message due to limits
+ * If the final message has the reply subject `<prefix>.uuid.10.ok.1.2.$FI`, the server will store the message, the server will store the message, end the batch and reply with a pub ack
+ * Otherwise, the final message will have reply subject `<prefix>.uuid.10.ok.1.3.$FI` the server will end the batch without storing the message and reply with a pub ack. In fast mode the previous message will not get the `Nats-Batch-Commit` header added after a `eob`
  * Clients will monitor the `BatchFlowAck` acks and should an ack have different flow settings different from the active one they will adjust accordingly
  * To deal with lost acks clients will manage outstanding `BatchFlowAck` acks in a way that ensures if an ack for message 30 comes in that it implies all earlier acks were received
 
@@ -157,6 +159,7 @@ The server will acknowledge in the following manner:
  * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack
  * The server will then send `BatchFlowAck` back based on the flow rate - which might adjust the flow rate
  * The final message will get a standard pub ack as described later
+ * The server will reject with an error any unsupported operation value
 
 By always sending the current flow state back in the `BatchFlowAck` we guard against lost acks.
 
