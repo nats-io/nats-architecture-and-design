@@ -137,12 +137,12 @@ Clients should use old style inboxes not the mux inbox so that as soon as the se
 
 The client will communicate key information about the batch using a reply subject, `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.<operation>.$FI`
 
-| Version | Description                                 |
-|---------|---------------------------------------------|
-| 0       | Starts a batch                              |
-| 1       | Append to a batch                           |
-| 2       | Commit and store the final message          |
-| 3       | Commit without storing the batch (EOB mode) |
+| Operation | Description                                 |
+|-----------|---------------------------------------------|
+| 0         | Starts a batch                              |
+| 1         | Append to a batch                           |
+| 2         | Commit and store the final message          |
+| 3         | Commit without storing the batch (EOB mode) |
 
 The server MUST reject any operation that it does not know about
 
