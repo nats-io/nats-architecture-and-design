@@ -7,17 +7,18 @@
 | Status   | Proposed                        |
 | Tags     | jetstream, client, server, 2.14 |
 
-| Revision | Date       | Author          | Info           |
-|----------|------------|-----------------|----------------|
-| 1        | 2025-11-06 | @MauriceVanVeen | Initial design |
+| Revision | Date       | Author          | Info                                    |
+|----------|------------|-----------------|-----------------------------------------|
+| 1        | 2025-11-06 | @MauriceVanVeen | Initial design                          |
+| 2        | 2025-12-05 | @MauriceVanVeen | Refinement after initial implementation |
 
 ## Context and Problem Statement
 
 JetStream streams can be mirrored or sourced from another stream. Usually this is done on separate servers, for example,
 loosely connected as a leaf node. This is achieved by the server creating an ephemeral ordered push consumer using
-`AckNone`. This is really reliable if the stream that's being mirrored/sourcing is a Limits stream. If the server
-detects a gap, it recreates the consumer at the sequence it missed. And since the stream is a Limits stream, it will be
-able to recover from the gap since the messages will still be in the stream.
+`AckNone`. This is really reliable if the stream that's being mirrored/sourced is a Limits stream. If the server detects
+a gap, it recreates the consumer at the sequence it missed. And since the stream is a Limits stream, it will be able to
+recover from the gap since the messages will still be in the stream.
 
 However, if the stream is a WorkQueue or Interest stream, then the use of an ephemeral `AckNone` consumer is problematic
 for two reasons:
@@ -48,7 +49,7 @@ use of a new `AckPolicy=AckFlowControl` field, the server will be able to help e
 
 The durable consumer used for stream sourcing/mirroring will need to be just as performant as the current ephemeral
 variant. The current ephemeral consumer configuration uses `AckNone` which is problematic for WorkQueue and Interest
-streams. A different `AckPolicy` will need to be used to ensure that messages are not lost.
+streams. A different `AckPolicy` (`AckFlowControl`) will need to be used to ensure that messages are not lost.
 
 The consumer configuration will closely resemble the ephemeral push consumer variant:
 
@@ -56,13 +57,21 @@ The consumer configuration will closely resemble the ephemeral push consumer var
 - Requires `FlowControl` and `Heartbeat` to be set.
 - Uses `AckPolicy=AckFlowControl` instead of `AckNone`.
 - `AckPolicy=AckFlowControl` will function like `AckAll` although the receiving server will not use the current ack
-  reply format and ack individual messages.
+  reply format by acknowledging individual messages.
 - The receiving server responds to the flow control messages, which includes the stream sequence (`Nats-Last-Stream`)
   and delivery sequence (`Nats-Last-Consumer`) as headers to signal which messages have been successfully stored.
 - The server receiving the flow control response will ack messages based on these stream/delivery sequences. For
   WorkQueue and Interest streams this may result in messages deletion.
 - Acknowledgements happen based on flow control limits, usually a data window size. But if the stream is idle the
   `Heartbeat` will also trigger a flow control message to move the acknowledgement floor up.
+- Flow control messages will happen automatically after a certain data size is reached, but can be controlled using the
+  `MaxAckPending` setting. `MaxAckPending` determines the maximum number of pending messages that can be sent before the
+  sourcing pauses. A flow control message will be automatically sent (no need to wait for a `Heartbeat`) so these
+  messages are acknowledged and new messages can be sent as soon as possible.
+- Since acknowledgements happen based on dynamic flow control, it being determined either by data size, `MaxAckPending`
+  or `Heartbeat`, the consumer cannot have an `AckWait` or `BackOff` setting. These fields need to be unset.
+- Additionally, `MaxDeliver` must be set to `-1` (infinite) to ensure if some messages are lost in transit, they can
+  still be reliably redelivered.
 
 The stream configuration will be extended to include the consumer name as well as the delivery subject used for stream
 sourcing/mirroring.
@@ -125,6 +134,6 @@ This reset API, `$JS.API.CONSUMER.RESET.<STREAM>.<CONSUMER>`, will have the foll
 
 Client should support the `$JS.API.CONSUMER.RESET.<STREAM>.<CONSUMER>` reset API. Clients should not rely on this call
 to be initiated by the client process, but it potentially being called by another process, by the CLI for example.
-Importantly, clients should not fail when the consumer delivery sequence being monotonic, except when needed for the
+Importantly, clients should not fail when the consumer delivery sequence is not monotonic, except when needed for the
 "ordered consumer" implementations. If the reset API is called for an ordered consumer, the client should detect a gap
 as it would normally and simply recreate the consumer.
