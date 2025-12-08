@@ -42,6 +42,10 @@ control (and security implications) of the consumer configuration as this consum
 server containing the data that will be sourced. Additionally, the consumer can be paused and resumed, allowing the
 sourcing to temporarily stop if desired.
 
+WorkQueue streams don't allow having multiple consumers with overlapping filter subjects. This means that a durable
+consumer used for mirroring/sourcing of a WorkQueue stream, would not allow another overlapping consumer to be created
+used for a different purpose. In that case, an Interest or Limits stream should be used.
+
 Some additional tooling will be required to create the durable consumer with the proper configuration. But through the
 use of a new `AckPolicy=AckFlowControl` field, the server will be able to help enforce the correct configuration.
 
@@ -126,9 +130,11 @@ This reset API, `$JS.API.CONSUMER.RESET.<STREAM>.<CONSUMER>`, will have the foll
   recreated, this response can then also be kept by clients if they need to keep a cached consumer response.
 - Additionally, the response will contain the `ResetSeq` that the consumer is reset to.
 
-## Decision
-
-[Maybe this was just an architectural decision...]
+Importantly, the server should also handle the case where a user manually resets the consumer that's used for sourcing.
+The server should handle this gracefully and ensure no messages are lost. However, the user could also reset the
+consumer such that it moves ahead in the stream. The server should also handle this by properly skipping over those
+messages. If instead the user manually resets the consumer to go backward, the server should guarantee that mirrored
+messages are not duplicated.
 
 ## Consequences
 
