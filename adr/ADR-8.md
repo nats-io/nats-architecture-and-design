@@ -22,6 +22,7 @@
 | 7        | 2025-01-23 | Add Max Age limit Markers, remove non direct gets   | ADR-48     | 2.11.0             |
 | 8        | 2025-02-17 | Add Metadata                                        |            | 2.10.0             |
 | 9        | 2025-04-09 | Document max_age and duplicate_window requirements  |            |                    |
+| 10       | 2025-12-16 | Document KV sourcing and Subject Transforms         | ADR-57     |                    |
 
 ## Context
 
