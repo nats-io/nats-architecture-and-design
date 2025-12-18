@@ -12,6 +12,7 @@
 |----------|------------|------------|-----------------------------------------|
 | 1        | 2025-03-21 | @ripienaar | Document Initial Design                 |
 | 2        | 2025-09-30 | @ripienaar | Use `omitempty` on configuration fields |
+| 3        | 2025-11-18 | @ripienaar | Add `Nats-Schedule-Rollup`              |
 
 ## Context and Motivation
 
@@ -141,7 +142,8 @@ These headers can be set on message that define a schedule:
 | `Nats-Schedule`        | The schedule the message will be published on                                                                                                                   |
 | `Nats-Schedule-Target` | The subject the message will be delivered to                                                                                                                    |
 | `Nats-Schedule-Source` | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
-| `Nats-Schedule-TTL`    | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               | |
+| `Nats-Schedule-TTL`    | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               |
+| `Nats-Schedule-Rollup` | When publishing sets a Rollup on the message, only `sub` is a valid value                                                                                       |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
@@ -149,7 +151,8 @@ Messages that the Schedules produce will have these headers set in addition to a
 |----------------------|------------------------------------------------------------------------------------------|
 | `Nats-Scheduler`     | The subject holding the schedule                                                         |
 | `Nats-Schedule-Next` | Timestamp for next invocation for cron schedule messages or `purge` for delayed messages |
-| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is given                                                   |
+| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is given with value `5m`                                   |
+| `Nats-Rollup`        | `sub` when `Nats-Schedule-Rollup` is set to `sub`                                        |
 
 The body of the message will simply be the provided body in the schedule.
 
