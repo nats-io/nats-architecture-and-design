@@ -214,7 +214,7 @@ away from using the `$JS.API.STREAM.MSG.GET.<stream>` API, since it's primarily 
 
 - Introduce a new API for linearizable reads: `$JS.API.DIRECT_LEADER.GET.<stream>`.
 - The new API will be similar to `$JS.API.DIRECT.GET.<stream>` but will go to the stream leader only. If it's a
-  replicated stream, the read will need to "go through Raft" to ensure linearizability.
+  replicated stream, the read will need to ensure linearizability.
 - The new API will be enabled by the `ReadConsistency` setting on the stream. Once enabled, the new API will be active,
   and the leader will also respond to `$JS.API.DIRECT.GET.<stream>`, not requiring `AllowDirect`. This allows clients to
   use the DirectGet API instead of the MsgGet API:
@@ -244,3 +244,18 @@ for various consistency levels. Clients can ease the user experience by offering
 
 The clients are free to implement this in a way that's best for the given language, but should generally provide both
 the per-request and per-object options.
+
+The server can implement linearizable reads by having them "go through Raft". However, this is expensive as it requires
+an additional network hop for consensus. Instead, the server can implement linearizable reads by using leader leases.
+This can be done like how it is described in "LeaseGuard: Raft Leases Done Right":
+
+- The leader refreshes its leader lease by writing an entry into the log. This will be automatic during normal stream
+  operations, but when idle will need to happen based on a noop-entry to prevent cold-starts or read timeouts.
+- The leader can serve reads as long as its leader lease based on the last committed entry's age is still active. The
+  age is based on when the entry was created, not when it was committed.
+- The leader will stop serving reads after the lease expires.
+- A new leader will wait for the lease to expire before answering new reads/writes. It must wait at least the lease
+  duration after the last entry in its log was received.
+- This can be implemented by using monotonic clock readings.
+- The leader lease can immediately expire, allowing a new leader to immediately start serving reads/writes after
+  becoming leader, as a result of manual/automatic step-down as part of a `LeaderTransfer`.
