@@ -16,6 +16,7 @@
 | 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message | 2.14.0         | 3         |
 | 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                   | 2.12.1         | 2         |
 | 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                     | 2.14.0         | 3         |
+| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                              | 2.14.0         | 3         |
 
 ## Context
 
@@ -44,7 +45,7 @@ The client will signal batch start and membership using headers on published mes
  * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a *request*, the server will reply with error or zero byte message. Maximum length of the ID is 64 characters.
  * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and might optionally include a reply subject that will receive a zero byte reply
  * If the final message has the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1`, the server will store the message, commit the batch and reply with a pub ack. 
- * Otherwise, the final message will have headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will commit the batch without storing the message and reply with a pub ack. The last message will get the be updated to have the `Nats-Batch-Commit:1` header set by the server before the batch is saved.
+ * Otherwise, the final message will have headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will commit the batch without storing the message and reply with a pub ack. The last message will be updated to have the `Nats-Batch-Commit:1` header set by the server before the batch is saved.
 
 The server will acknowledge in the following manner:
 
@@ -69,8 +70,8 @@ The server will respond with the following errors if committing a batch fails:
 
 ### Server Behavior Design
 
- * The server will limit the `Nats-Batch-ID` to 64 characters and response with a error Pub Ack if its too long
- * Server will reject messages for which the batch is unknown with a error Pub Ack
+ * The server will limit the `Nats-Batch-ID` to 64 characters and respond with an error Pub Ack if it's too long
+ * Server will reject messages for which the batch is unknown with an error Pub Ack
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
@@ -81,7 +82,7 @@ The server will operate under limits to safeguard itself:
 
  * Each stream can only have 50 batches in flight at any time
  * Each server can only have 1000 batches in flight at any time
- * A batch that has not had traffic for 10 seconds will be abandoned
+ * A batch that has not had traffic for 10 seconds since the first message will be abandoned
  * Each batch can have maximum 1000 messages
 
 ### Stream State Constraints
@@ -95,8 +96,12 @@ Initial release of this feature rejects the use of `MsgId`. Starting from 2.12.1
 TODO/Questions:
 
 * What should clients limit max outstanding acks to, we want to avoid big bytes or many acks
-* Should we only support `eob` style commits?
+* Should we only support `eob` style commits? (server supports both currently)
 * Clients might stall if they lost all the acks involved in their max pending, we might then have to just timeout or perhaps add a way to probe the server to send a `BatchFlowAck` as a liveness check. We will though experiment first before doing this.
+* How to handle errors based on per-message header checks? We could return a PubAck with up to what point of the batch was persisted, and the error of the message that came after that. But would mean a PubAck+error response.
+* Since every message contains a reply, we could easily spam errors to the client. These errors would also be sent earlier than the final ack. Should we only send an error once, and rely on explicit "probes" to retry getting these errors if they were lost?
+* How to handle flow control messages on duplicate messages? Duplicates are omitted, so how do we do flow control in that case since these messages will be immediately dropped.
+* Should flow control only support acks per N messages? There will always be an average message size, so having both seems redundant. More importantly though, the server might count bytes differently than the client would, this could result in the client silently and strangely stalling and slowing down. Relying purely on counting messages makes this simpler to implement on both sides, and prevent desync.
 
 ### Context
 
@@ -104,17 +109,19 @@ Today we have Async publishing in the clients that aims to move data into a stre
 
 We would like to build on the batching behaviours introduced here but deliver high performance ingest without atomicity.
 
-These batches are not reliable, meaning messages can be lost and the batch will not be abandoned like atomic ones.
+These batches are not reliable, meaning messages can be lost and the batch will not be abandoned like atomic ones. For this reason we will also use a lighter method than headers for communicating the control state, since users are unlikely to carefully audit these like they would atomic batch publishes.
 
 Clients will have the flexibility to choose how missing messages are handled - gaps are allowed or any gap terminates the batch.
 
 Crucially these batches are not pre-staged and so will not be limited to 1000 messages like Atomic ones, they will be unlimited and, if gaps are allowed, can survive leader changes.
 
+While we wish to go fast when possible, we also want to not fail when many concurrent producers are doing fast-ingest as we see today with ObjectStore writes - a few concurrently will fail due to pending API counts etc. We will therefor create a flow-control mechanism where the server can tell the clients to go slower. This way the focus is not just fast but being able to actively manage the concurrent pressure ensuring everyone goes as fast as possible while remaining reliable.
+
 The goal is to replace Async publish with one built on these behaviors.
 
 ### Control Channel
 
-The heart of this design is control channel that is open and kept open for the duration of the batch. In practise the reply subject of the first message will be used for all signaling during the batch.
+The heart of this design is a control channel that is open and kept open for the duration of the batch. In practise the reply subject of the first message will be used for all signaling during the batch.
 
 The server will send acks over the channel on a frequency like once every 10 messages or once every 5MB. Crucially if at any stage an error is encountered errors can be sent back immediately and received by the client as the channel is always open.
 
@@ -124,35 +131,42 @@ The server on the other hand will be able to adjust the frequency of acks based 
 
 At all times the server will maintain its self-protection mechanisms like dropping messages when buffers are full etc.
 
-Clients should use old style inboxes not the mux inbox so that as soon as the server sends an error back the clients would drop interest. The reason is that with many in-flight messages once an error occurs the server mights find it has to send thousands of Acks back to the client, if the client unsubscribe from the control channel completely the server will short circuit some of those acks.
+Clients should use old style inboxes not the mux inbox so that as soon as the server sends an error back the clients would drop interest. The reason is that with many in-flight messages once an error occurs the server might find it has to send thousands of Acks back to the client, if the client unsubscribes from the control channel completely the server will short circuit some of those acks.
 
 ### Client Design
 
-The client will signal batch start, membership and flow control characteristics using headers on published messages.
+The client will communicate key information about the batch using a reply subject, `<prefix>.<uuid>.<initial flow>.<gap 'ok' or 'fail'>.<batch seq>.<operation>.$FI`
 
- * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox
- * A batch will be started by adding the `Nats-Fast-Batch-Id:uuid`, `Nats-Flow:10`, `Nats-Batch-Gap:ok` (optional) and `Nats-Batch-Sequence:1` headers using a message with reply being the above Inbox, the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
- * Following messages in the same batch will include the `Nats-Fast-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and must set the same reply-to as the command channel
- * If the final message has the headers `Nats-Fast-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1`, the server will store the message, commit the batch and reply with a pub ack
- * Otherwise, the final message will have headers `Nats-Fast-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will commit the batch without storing the message and reply with a pub ack. In fast mode the previous message will not get the `Nats-Batch-Commit` header added after a `eob`
+| Operation | Description                                 |
+|-----------|---------------------------------------------|
+| 0         | Starts a batch                              |
+| 1         | Append to a batch                           |
+| 2         | Commit and store the final message          |
+| 3         | Commit without storing the batch (EOB mode) |
+
+The server MUST reject any operation that it does not know about
+
+ * The client will set up a Inbox subscription that will be used for the duration of the batch, this must be a old style inbox. The inbox must subscribe to `<prefix>.uuid.>`
+ * A batch will be started by setting a reply subject of `<prefix>.uuid.10.ok.1.0.$FI` (initial flow of `10`, gap `ok`, sequence `1`), the server will reply with error or `BatchFlowAck` message. Maximum length of the ID is 64 characters. Client should ideally wait for the first reply to detect if the feature is available on the server or Stream.
+ * Following messages in the same batch must use a reply subject `<prefix>.uuid.10.ok.1.1.$FI` where `n` is the sequence incremented by one. We add the initial flow and gap information for replica followers who might have missed the first message due to limits
+ * If the final message has the reply subject `<prefix>.uuid.10.ok.1.2.$FI`, the server will store the message, the server will store the message, end the batch and reply with a pub ack
+ * Otherwise, the final message will have reply subject `<prefix>.uuid.10.ok.1.3.$FI` the server will end the batch without storing the message and reply with a pub ack. In fast mode the previous message will not get the `Nats-Batch-Commit` header added after a `eob`
  * Clients will monitor the `BatchFlowAck` acks and should an ack have different flow settings different from the active one they will adjust accordingly
- * To deal with lost acks clients will manage outstanding `BatchFlowAck` acks in a way that ensure if a ack for message 30 comes in that it implies all earlier acks were received
-
-The `Nats-Flow` header has a few formats see the later section.
-The `Nats-Batch-Gap` header has a few formats see later section.
+ * To deal with lost acks clients will manage outstanding `BatchFlowAck` acks in a way that ensures if an ack for message 30 comes in that it implies all earlier acks were received
 
 The server will acknowledge in the following manner:
 
  * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack
  * The server will then send `BatchFlowAck` back based on the flow rate - which might adjust the flow rate
  * The final message will get a standard pub ack as described later
+ * The server will reject with an error any unsupported operation value
 
 By always sending the current flow state back in the `BatchFlowAck` we guard against lost acks.
 
 When the leader of the Stream changes:
 
-* In `ok` gap mode the new leader will continue and send a `BatchFlowAck` out indicating the gap
 * In `fail` gap mode the new leader will abandon the batch and send back a final pub ack with details up to the last received message for the batch
+* In `ok` gap mode the new leader will continue and send a `BatchFlowAck` out indicating the gap. 
 
 ### Message Gaps
 
@@ -161,11 +175,15 @@ We want to cater for 2 kinds of use cases around gaps:
  1. Object store would not be ok with any gaps in the published messages because those would be gaps in files
  2. Fast metric publishers would be ok with some gaps and would just want to continue publishing
 
-To support both we add the `Nats-Batch-Gap` header with values `ok` or `fail`. The default for this header is `fail` when it is not set for a batch. Invalid values must result in a batch abandon error.
+To support both we set the gap mode to `ok` or `fail` in the first reply subject. Invalid values must result in a batch abandon error.
 
-When `ok` the server will, upon detecting a gap, immediately send a `BatchFlowAck` with the `LastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
+Upon detecting a gap, the server immediately sends a `BatchFlowAck` with the `LastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
 
-When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap.
+The `LastSequence` was the last received sequence by the server before the gap, and the `CurrentSequence` is the sequence of the received batch message. The messages with sequences between these two values were lost. Importantly, this flow control message MUST NOT be used to know whether `LastSequence` or `CurrentSequence` was persisted, it's purely informational. Also, this message will be immediately sent upon detecting a gap. This means it can be received out-of-order with the usual flow control messages that signal up to a certain batch sequence was persisted. Crucially, since these gap messages can be sent out-of-order, these messages don't contain any flow updates or information.
+
+When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap. The client will receive the gap message first, and should use this to stop sending messages before eventually receiving the final ack.
+
+When `ok` the server will allow the gap, only send the gap message, and continue the gap onward from the received sequence.
 
 ### Flow Control
 
@@ -180,11 +198,11 @@ The 2nd is a concern because when there are too many outstanding RAFT proposals 
 
 The server will thus have to monitor those internal Stream and Raft related buffers and communicate back to all fast-publishers that they need to adjust their flow rate.
 
-The primary mechanism for this is the `Nats-Flow` header, it can have a value like `10` meaning every 10th message gets an ack or `1024B` meaning every 1024 bytes gets an ack.
+The primary mechanism for this is the `flow` field in the initial reply subject, it can have a value like `10` meaning every 10th message gets an ack or `1024B` meaning every 1024 bytes gets an ack.
 
-Clients will surface settings like how many outstanding acks there can be before the client stops publishing and waits for acks and how long the timeout is while waiting. The client though must take care to track not just the count of outstanding acks but also the sequence they are for.  If acks for messages 10,20,30,40 and the one for 30 is lost - when the one for 40 comes the client must also treat the one for message 30 as seen, this is critical to avoid unrecoverable stalls.
+Clients will surface settings like how many outstanding acks there can be before the client stops publishing and waits for acks and how long the timeout is while waiting. The client though must take care to track not just the count of outstanding acks but also the sequence they are for. If acks for messages 10,20,30,40 and the one for 30 is lost - when the one for 40 comes the client must also treat the one for message 30 as seen, this is critical to avoid unrecoverable stalls.
 
-The server can adjust the active flow parameters once the batch is established by sending a new flow rates back to the client in `BatchFlowAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against the new expectation for new publishes.
+The server can adjust the active flow parameters once the batch is established by sending a new flow rate back to the client in `BatchFlowAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against the new expectation for new publishes.
 
 The server must treat the initial flow parameters as the upper bound though, when a client says ack every 10 messages we cannot decide from the server side to change that to > 10. 
 
@@ -193,9 +211,9 @@ Aside from this, all current self-protection mechanisms in the server - dropping
 ```go
 type BatchFlowAck struct {
 	// LastSequence is the previously highest sequence seen, this is set when a gap is detected
-	LastSequence int `last_seq,omitempty`
+	LastSequence uint64 `last_seq,omitempty`
 	// CurrentSequence is the sequence of the message that triggered the ack
-	CurrentSequence int `seq,omitempty`
+	CurrentSequence uint64 `seq,omitempty`
 	// AckMessages indicates the active per-message frequency of Flow Acks
 	AckMessages int `messages,omitempty`
 	// AckBytes indicates the active per-bytes frequency of Flow Acks in unit of bytes
@@ -209,37 +227,31 @@ This kind of ack is differentiated from Pub Acks by the absence of the `batch` f
 
 The server will respond with the following errors if committing a batch fails:
 
-| ErrCode | Code | Description                                                         |
-|---------|------|---------------------------------------------------------------------|
-| 10174   | 400  | Batch publish not enabled on stream                                 |
-| 10176   | 400  | Batch publish is incomplete and was abandoned                       |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 |
-| 10175   | 400  | Batch publish sequence is missing                                   |
-| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) |
-| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         |
-| 10202   | 400  | Invalid batch gap mode                                              |
+| ErrCode | Code | Description                                         |
+|---------|------|-----------------------------------------------------|
+| 10202   | 400  | Batch publish not enabled on stream                 |
+| 10205   | 400  | Batch publish ID is unknown                         |
+| 10204   | 400  | Batch publish ID is invalid (exceeds 64 characters) |
+| 10203   | 400  | Batch publish sequence is missing                   |
+| 10206   | 400  | Invalid batch gap mode                              |
 
 ### Server Behavior Design
 
-* The server will limit the `Nats-Fast-Batch-Id` to 64 characters and response with a error Pub Ack if its too long
-* Server will reject messages for which the batch is unknown with a error Pub Ack
-* Server will reject values for `Nats-Batch-Gap` that is not `ok` or `fail`, absent means `fail`
-* If messages in a batch is received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration
-* Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
+* The server will limit the `uuid` to 64 characters and respond with an error Pub Ack if it's too long
+* Server will reject messages for which the batch is unknown with an error Pub Ack
+* Server will reject values for `gap` that is not `ok` or `fail`
+* If messages in a batch are received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration
+* Check properties like `ExpectedLastSeq` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through control headers, but per-message content can remain the same. This allows to swap between publish implementations as needed.
 * Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
-* Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
+* Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be for earlier sequences
 
 The server will operate under limits to safeguard itself:
 
 * Each stream can only have 50 batches in flight at any time
 * Each server can only have 1000 batches in flight at any time
-* A batch that has not had traffic for 10 seconds will be abandoned
+* A batch that has not had traffic for 10 seconds since the last message will be abandoned
 * There will be no maximum size for fast ingest batches
 * Streams with `PersistMode: async` set are compatible with fast ingest
-
-### Stream State Constraints
-
-The `LastMsgId` header is currently not supported. A batch will be rejected if this header is used, but we might support this header in the future.
 
 ## Publish Acknowledgements
 
@@ -263,7 +275,7 @@ type BatchAbandonReason string
 var (
 	BatchTimeout              BatchAbandonReason = "timeout"
 	BatchIncomplete           BatchAbandonReason = "incomplete"
-	BatchRequirementsNotMetqq   BatchAbandonReason = "unsupported"
+	BatchRequirementsNotMet   BatchAbandonReason = "unsupported"
 )
 
 type Advisory struct {
@@ -277,7 +289,7 @@ The event type is `io.nats.jetstream.advisory.v1.batch_abandoned`.
 
 ## Stream Configuration
 
-Streams get a new properties that enables this behavior
+Streams get new properties that enable this behavior
 
 ```go
 type StreamConfig struct {
