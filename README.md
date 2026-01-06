@@ -66,6 +66,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 
 ## Jetstream
 
@@ -99,6 +100,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-51](adr/ADR-51.md)|jetstream, 2.12|JetStream Message Scheduler|
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 
 ## Kv
 
@@ -109,6 +111,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 
 ## Objectstore
 
