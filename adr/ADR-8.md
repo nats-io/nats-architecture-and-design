@@ -23,63 +23,16 @@
 | 8        | 2025-02-17 | Add Metadata                                        |            | 2.10.0             |
 | 9        | 2025-04-09 | Document max_age and duplicate_window requirements  |            |                    |
 | 10       | 2025-12-16 | Document KV sourcing and Subject Transforms         | ADR-57     |                    |
+| 11       | 2026-01-06 | Move roadmap items to separate document             | ADR-58     |                    |
+| 12       | 2026-01-06 | Add reference to KV codecs in                       | ADR-54     |                    |
 
 ## Context
 
 This document describes a design and initial implementation of a JetStream backed key-value store. All tier-1 clients
 support KV.
 
-## Status and Roadmap
-
 The API is now stable and considered version 1.0, we have several NATS maintained client libraries with this feature supported
 and a few community efforts are under way.
-
-A roadmap is included below, but note this is subject to change. The API as is will not have breaking changes until 2.0, but
-additional behaviors will come during the 1.x cycle.
-
-### 1.0
-
- * Multiple named buckets hosting a hierarchy of keys with n historical values kept per key. History set per bucket and capped at 64.
- * Put and Get of `string(k)=[]byte(v)` values
- * Put only if the revision of the last value for a key matches an expected revision
- * Put only if the key does not currently exist, or if when the latest historical operation is a delete operation.
- * Key deletes preserves history
- * Keys can be expired from the bucket based on a TTL, TTL is set for the entire bucket
- * Watching a specific key, ranges based on NATS wildcards, or the entire bucket for live updates
- * Valid keys are `\A[-/_=\.a-zA-Z0-9]+\z`, additionally they may not start or end in `.`
- * Valid buckets are `\A[a-zA-Z0-9_-]+\z`
- * Custom Stream Names and Stream ingest subjects to cater for different domains, mirrors and imports
- * Key starting with `_kv` is reserved for internal use
- * CLI tool to manage the system as part of `nats`, compatible with client implementations
- * Accept arbitrary application prefixes, as outlined in [ADR-19](ADR-19.md)
- * Data Compression for NATS Server 2.10
-
-### 1.1
-
- * Merged buckets using NATS Server 2.10 subject transforms
- * Read replicas facilitated by Stream Mirrors
- * Replica auto discovery for mirror based replicas
- * Formalized Multi-cluster and Leafnode Topologies
- * Support [ADR-43](ADR-43.md) Max Age markers and TTLs on `Create()` and `Purge()`
-
-### 1.2
-
- * Read-only operation mode
- * Read cache against with replica support
- * Ranged operations
- * Encoders and Decoders for keys and values
- * Additional Operation that indicates server limits management deleted messages
-
-### 1.3
-
- * Standard Codecs that support zero-trust data storage with language interop
-
-### 2.0
-
- * Formalise leader election against keys
- * Set management against key ranges to enable service discovery and membership management
- * Distributed locks against a key
- * Pluggable storage backends
 
 ## Data Types
 
@@ -92,20 +45,20 @@ This is the value and associated metadata made available over watchers, `Get()` 
 
 ```go
 type Entry interface {
-	// Bucket is the bucket the data was loaded from
-	Bucket() string
-	// Key is the key that was retrieved
-	Key() string
-	// Value is the retrieved value
-	Value() []byte
-	// Created is the time the data was received in the bucket
-	Created() time.Time
-	// Revision is a unique sequence for this value
-	Revision() uint64
-	// Delta is distance from the latest value. If history is enabled this is effectively the index of the historical value, 0 for latest, 1 for most recent etc.
-	Delta() uint64
-	// Operation is the kind of operation this entry represents, enum of PUT, DEL or PURGE
-	Operation() Operation
+  // Bucket is the bucket the data was loaded from
+  Bucket() string
+  // Key is the key that was retrieved
+  Key() string
+  // Value is the retrieved value
+  Value() []byte
+  // Created is the time the data was received in the bucket
+  Created() time.Time
+  // Revision is a unique sequence for this value
+  Revision() uint64
+  // Delta is distance from the latest value. If history is enabled this is effectively the index of the historical value, 0 for latest, 1 for most recent etc.
+  Delta() uint64
+  // Operation is the kind of operation this entry represents, enum of PUT, DEL or PURGE
+  Operation() Operation
 }
 ```
 
@@ -115,42 +68,32 @@ This is the status of the KV as a whole
 
 ```go
 type Status interface {
-	// Bucket the name of the bucket
-	Bucket() string
+  // Bucket the name of the bucket
+  Bucket() string
 
-	// Values is how many messages are in the bucket, including historical values
-	Values() uint64
+  // Values is how many messages are in the bucket, including historical values
+  Values() uint64
 
-	// History returns the configured history kept per key
-	History() uint64
+  // History returns the configured history kept per key
+  History() uint64
 
-	// TTL is how long the bucket keeps values for
-	TTL() time.Duration
+  // TTL is how long the bucket keeps values for
+  TTL() time.Duration
 
-	// LimitMarkerTTL is how long the bucket keeps markers when keys are removed by the TTL setting, 0 meaning markers are not supported
-	LimitMarkerTTL() time.Duration
+  // LimitMarkerTTL is how long the bucket keeps markers when keys are removed by the TTL setting, 0 meaning markers are not supported
+  LimitMarkerTTL() time.Duration
 
-	// Keys return a list of all keys in the bucket.
-	// Historically this method returned a complete slice of all keys in the bucket,
-	// however clients should return iterable result.
-	Keys() ([]string, error)
+  // IsCompressed indicates if the data is compressed on disk
+  IsCompressed() bool
 
-	// KeysWithFilters returns a filtered list of keys in the bucket.
-	// Historically this method returned a complete slice of all keys in the bucket,
-	// however clients should return iterable result.
-	// Languages can implement the list of filters in most idiomatic way - as an iterator, variadic argument, slice, etc.
-	// When multiple filters are passed, client library should check `consumer info` from `consumer create method` if the filters are matching,
-	// as nats-server < 2.10 would ignore them.
-	KeysWithFilters(filter []string) ([]string, error)
+  // BackingStore is a name indicating the kind of backend
+  BackingStore() string
 
-	// IsCompressed indicates if the data is compressed on disk
-	IsCompressed() bool
+  // Bytes returns the size in bytes of the bucket
+  Bytes() uint64
 
-	// BackingStore is a name indicating the kind of backend
-	BackingStore() string
-
-    // Bytes returns the size in bytes of the bucket
-    Bytes() uint64
+  // Metadata returns the metadata associated with the bucket.
+  Metadata() map[string]string
 }
 ```
 
@@ -165,73 +108,58 @@ choice.
 
 Other languages do not have a clear 1:1 match of the above idea so maintainers are free to do something idiomatic.
 
-## RoKV
-
-**NOTE:** Out of scope for version 1.0
-
-This is a read-only KV store handle, I call this out here to demonstrate that we need to be sure to support a read-only
-variant of the client. One that will only function against a read replica and cannot support `Put()` etc.
-
-That capability is important, how you implement this in your language is your choice. You can throw exceptions on `Put()`
-when read-only or whatever you like.
-
-The interface here is a guide of what should function in read-only mode.
-
-```go
-// RoKV is a read-only interface to a single key-value store bucket
-type RoKV interface {
-	// Get gets a key from the store
-	Get(key string) (Entry, error)
-
-	// History retrieves historic values for a key
-	History(ctx context.Context, key string) ([]Entry, error)
-
-	// Watch a key(s) for updates, the same Entry might be delivered more than once. Key can be a specific key, a NATS wildcard
-	// or an empty string to watch the entire bucket
-	Watch(ctx context.Context, keySpec string) (Watch, error)
-
-	// Keys retrieves a list of all known keys in the bucket
-	Keys(ctx context.Context) ([]string, error)
-
-	// Close releases in-memory resources held by the KV, called automatically if the context used to create it is canceled
-	Close() error
-
-	// Status retrieves the status of the bucket
-	Status() (Status, error)
-}
-```
-
-Regarding `Keys`, optionally the client can provide a method that provides the keys in an iterable or consumable form.
-
 ## KV
 
-This is the read-write KV store handle, every backend should implement a language equivalent interface. But note the comments
-by `RoKV` for why I call these out separately.
+This is the read-write KV store handle, every backend should implement a language equivalent interface.
 
 ```go
 // KV is a read-write interface to a single key-value store bucket
 type KV interface {
-	// Put saves a value into a key
-	Put(key string, val []byte, opts ...PutOption) (revision uint64, err error)
+  // Put saves a value into a key
+  Put(key string, val []byte, opts ...PutOption) (revision uint64, err error)
 
-	// Create is a variant of Put that only succeeds when the key does not exist if last historic event is a delete or purge operation
-	Create(key string, val []byte) (revision uint64, err error)
+  // Create is a variant of Put that only succeeds when the key does not exist if last historic event is a delete or purge operation
+  Create(key string, val []byte) (revision uint64, err error)
 
-	// Update is a variant of Put that only succeeds when the most recent operation on a key has the expected revision
-	Update(key string, value []byte, last uint64) (revision uint64, err error)
+  // Update is a variant of Put that only succeeds when the most recent operation on a key has the expected revision
+  Update(key string, value []byte, last uint64) (revision uint64, err error)
 
-	// Delete purges the key in a way that preserves history subject to the bucket history setting limits
-	Delete(key string) error
+  // Delete purges the key in a way that preserves history subject to the bucket history setting limits
+  Delete(key string) error
 
-	// Purge removes all data for a key including history, leaving 1 historical entry being the purge
-	Purge(key string) error
+  // Purge removes all data for a key including history, leaving 1 historical entry being the purge
+  Purge(key string) error
 
-	// Destroy removes the entire bucket and all data, KV cannot be used after
-	Destroy() error
+  // Get gets a key from the store
+  Get(key string) (Entry, error)
 
-	RoKV
+  // GetRevision returns a specific revision value for the key.
+  GetRevision(ctx context.Context, key string, revision uint64) (Entry, error)
+
+  // History retrieves historic values for a key
+  History(ctx context.Context, key string) ([]Entry, error)
+
+  // Watch a key(s) for updates, the same Entry might be delivered more than once. Key can be a specific key, a NATS wildcard
+  // or an empty string to watch the entire bucket.
+  // Watching multiple keys should be supported using multiple filter subjects.
+  Watch(ctx context.Context, keySpec string) (Watcher, error)
+
+  // Keys retrieves a list of all known keys in the bucket
+  // Similarly to Watch, this method supports filtering the returne
+  Keys(ctx context.Context, keySpec string) ([]string, error)
+
+  // Status retrieves the status of the bucket
+  Status() (Status, error)
 }
 ```
+
+Clients may support convenience methods for working with strings (e.g. `PutString`).
+
+Regarding `Keys`, optionally the client can provide a method that provides the
+keys in an iterable or consumable form to avoid loading all keys into memory at
+once.
+
+Both Watch and Keys should have variants supporting filtering using multiple filter subjects.
 
 ## KV Management
 
@@ -263,7 +191,7 @@ type KeyValueManager interface {
 
     // KeyValueBucketNames is used to retrieve a list of key value bucket
     // names. The KeyValueNamesLister should behave in a similar fashion
-	// to the language implementation of Get Stream Names. If not already some sort of iterable,
+    // to the language implementation of Get Stream Names. If not already some sort of iterable,
     // an iterable form of the api is acceptable as well.
     KeyValueBucketNames(ctx context.Context) KeyValueNamesLister
 
@@ -489,7 +417,7 @@ Languages can implement an End Of Initial Data signal in a language idiomatic ma
 first time any message has a `Pending==0`. This signal must also be sent if no data is present - either by checking for messages using
 `GetLastMsg()` on the watcher range or by inspecting the Pending+Delivered after creating the consumer. The signal must always be sent.
 
-Whatchers should support at least the following options. Languages can choose to support more models if they wish, as long as that
+Watchers should support at least the following options. Languages can choose to support more models if they wish, as long as that
 is clearly indicated as a language specific extension. Names should be language idiomatic but close to these below.
 
 | Name             | Description                                                                                                                                |
@@ -501,209 +429,23 @@ is clearly indicated as a language specific extension. Names should be language 
 
 The default behavior with no options set is to send all the `last_per_subject` values, including delete/purge operations.
 
-#### Multi-Cluster and Leafnode topologies
+#### Per-key TTL
 
-A bucket, being backed by a Stream, lives in one Cluster only. To make buckets available elsewhere we have to use
-JetStream Sources and Mirrors.
+Since NATS Server 2.11 we support [Per-Message TTLs](ADR-43.md), enabling per-key TTL settings for Key-Value buckets.
 
-In KV we call these `Toplogies` and adding *Topology Buckets* require using different APIs than the main Bucket API
-allowing us to codify patterns and options that we support at a higher level than the underlying Stream options.
+For detailed information on configuring per-key TTLs, please refer to [ADR-48](ADR-48.md).
 
-For example, we want to be able to expose a single boolean that says an Aggregate is read-only which would potentially
-influence numerous options in the Stream Configuration.
+#### KV sources and mirrors
 
-![KV Topologies](images/0008-topologies.png)
+Key-Value buckets enable configuration of sources and mirrors. Sources allow for the replication of data from one bucket to another, or from a non-KV stream into a KV bucket. Mirrors provide a way to create read-only copies of a bucket in different locations or clusters.
 
-To better communicate the intent than the word Source we will use `Aggregate` in KV terms:
+For detailed information on configuring sources and mirrors in the KV store, please refer to [ADR-57](adr/ADR-57.md).
 
- **Mirror**: Copy of exactly 1 other bucket. Used primarily for scaling out the `Get()` operations.
+#### Encoding and Decoding keys and values
 
- * It is always Read-Only
- * It can hold a filtered subset of keys
- * Replicas are automatically picked using a RTT-nearest algorithm without any configuration
- * Additional replicas can be added and removed at run-time without any re-configuration of already running KV clients
- * Writes and Watchers are transparently sent to the origin bucket
- * Can replicate buckets from other accounts and domains
+Key-Value buckets support key-value encoding and decoding, together with a set of standard codecs to facilitate seamless data interchange and storage. This capabilities will not be included in core client libraries, but provided as Orbit extensions instead.
 
-**Aggregate**: A `Source` that combines one or many buckets into 1 new bucket. Used to provide a full local copy of
-other buckets that support watchers and gets locally in edge scenarios.
-
- * Requires being accessed specifically by its name used in a `KeyValue()` call
- * Can be read-only or read-write
- * It can hold a subset of keys from the origin buckets to limit data exposure or size
- * Can host watchers
- * Writes are not transparently sent to the origin Bucket as with Replicas, they either fail (default) or succeed and
-   modify the Aggregate (opt-in)
- * Can combine buckets from multiple other accounts and domains into a single Aggregate
- * Additional Sources can be added after initially creating the Aggregate
-
-Experiments:
-
-These items we will add in future iterations of the Topology concept:
-
- * Existing Sources can be removed from an Aggregate. Optionally, but by default, purge the data out of the bucket
-   for the Source being removed
- * Watchers could be supported against a Replica and would support auto-discovery of nearest replica but would
-  minimise the ability to add and remove Replicas at runtime
-
-*Implementation Note*: While this says Domains are supported, we might decide not to implement support for them at
-this point as we know we will revisit the concept of a domain. The existing domain based mirrors that are supported
-in KeyValueConfig will be deprecated but supported for the foreseeable future for those requiring domain support.
-
-#### Creation of Aggregates
-
-Since NATS Server 2.10 we support transforming messages as a stream configuration item. This allows us to source one
-bucket from another and rewrite the keys in the new bucket to have the correct name.
-
-We will model this using a few API functions and specific structures:
-
-```go
-// KVAggregateConfig configures an aggregate
-//
-// This one is quite complex because are buckets in their own right and so inevitably need
-// to have all the options that are in buckets today (minus the deprecated ones).
-type KVAggregateConfig struct {
-    Bucket       string
-    Writable     bool
-    Description  string
-    Replicas     int
-    MaxValueSize int32
-    History      uint8
-    TTL          time.Duration
-    MaxBytes     int64
-    Storage      KVStorageType // a new kv specific storage struct, for now identical to normal one
-    Placement    *KVPlacement // a new kv specific placement struct, for now identical to normal one
-    RePublish    *KVRePublish // a new kv specific replacement struct, for now identical to normal one
-    Origins      []*KVAggregateOrigin
-}
-
-type KVAggregateOrigin struct {
-    Stream   string   // note this is Stream and not Bucket since the origin may be a mirror which may not be a bucket
-    Bucket   string   // in the case where we are aggregating from a mirror, we need to know the bucket name to construct mappings
-    Keys     []string // optional filter defaults to >
-    External *ExternalStream
-}
-
-// CreateAggregate creates a new read-only Aggregate bucket with one or more sources
-CreateAggregate(ctx context.Context, cfg KVAggregateOrigin) (KeyValue, error) {}
-
-// AddAggregateOrigin updates bucket by adding new origin cfg, errors if bucket is not an Aggregate
-AddAggregateOrigin(ctx context.Context, bucket KeyValue, cfg KVAggregateOrigin) error {}
-```
-
-To copy the keys `NEW.>` from bucket `ORDERS` into `NEW_ORDERS`:
-
-```go
-bucket, _ := CreateAggregate(ctx, KVAggregateConfig{
-    Name: "NEW_ORDERS",
-    Writable: false,
-    Origins: []KVAggregateOrigin{
-        {
-            Stream: "KV_ORDERS",
-            Keys: []string{"NEW.>"}
-        }
-    }
-})
-```
-
-We create the new stream with the following partial config, rest as per any other KV, if the `orders` handle :
-
-```json
-    "subjects": []string{},
-    "deny_delete": true,
-    "deny_purge": true,
-    "sources": [
-      {
-        "name": "KV_ORDERS",
-        "subject_transforms": [
-          {
-            "src": "$KV.ORDERS.NEW.>",
-            "dest": "$KV.NEW_ORDERS.>"
-          }
-        ]
-      }
-    ],
-```
-
-When writable, configure as normal just add the sources.
-
-This results in all messages from `ORDERS` keys `NEW.>` to be copied into `NEW_ORDERS` and the subjects rewritten on
-write to the new bucket so that a unmodified KV client on `NEW_ORDERS` would just work.
-
-#### Creation of Mirrors
-
-Replicas can be built using the standard mirror feature by setting `mirror_direct` to true as long as the origin bucket
-also has `allow_direct`. When adding a mirror it should be confirmed that the origin bucket has `allow_direct` set.
-
-We will model this using a few API functions and specific structures:
-
-```go
-type KVMirrorConfig struct {
-    Name         string // name, not bucket, as this may not be accessed as a bucket
-    Description  string
-    Replicas     int
-    History      uint8
-    TTL          time.Duration
-    MaxBytes     int64
-    Storage      StorageType
-    Placement    *Placement
-
-    Keys         []string // mirrors only subsets of keys
-    OriginBucket string
-    External     *External
-}
-
-// CreateMirror creates a new read-only Mirror bucket from an origin bucket
-CreateMirror(ctx context.Context, cfg KVMirrorConfig)  error {}
-```
-
-These mirrors are not called `Bucket` and may not have the `KV_` string name prefix as they are not buckets and cannot
-be used as buckets without significant changes in how a KV client constructs its key names etc, we have done this in
-the leafnode mode and decided it's not a good pattern.
-
-When creating a replica of `ORDERS` to `MIRROR_ORDERS_NYC` we do:
-
-```go
-err := CreateMirror(ctx, origin, KVMirrorConfig{
-    Name: "MIRROR_ORDERS_NYC",
-    // ...
-    OriginStream: "ORDERS"
-})
-```
-
-When a direct read is done the response will be from the rtt-nearest mirror.  With a mirror added the `nats` command
-can be used to verify that a alternative location is set:
-
-```
-$ nats s info KV_ORDERS
-...
-State:
-
-            Alternates: MIRROR_ORDERS_NYC: Cluster: nyc Domain: hub
-                                KV_ORDERS: Cluster: lon Domain: hub
-
-```
-
-Here we see a RTT-sorted list of alternatives, the `MIRROR_ORDERS_NYC` is nearest to me in the RTT sorted list.
-
-When doing a direct get the headers will confirm the mirror served the request:
-
-```
-$ nats req '$JS.API.DIRECT.GET.KV_ORDERS.$KV.ORDERS.NEW.123' ''
-13:26:06 Sending request on "JS.API.DIRECT.GET.KV_ORDERS.$KV.ORDERS.NEW.123"
-13:26:06 Received with rtt 1.319085ms
-13:26:06 Nats-Stream: MIRROR_ORDERS_NYC
-13:26:06 Nats-Subject: $KV.ORDERS.NEW.123
-13:26:06 Nats-Sequence: 12
-13:26:06 Nats-Time-Stamp: 2023-10-16T12:54:19.409051084Z
-
-{......}
-```
-
-As mirrors support subject filters these replicas can hold region specific keys.
-
-As this is a `Mirror` this stream does not listen on a subject and so the only way to get data into it is via the origin
-bucket.  We should also set the options to deny deletes and purges.
+For detailed information on the available codecs and their usage, please refer to [ADR-54](ADR-54.md).
 
 #### API Design notes
 
@@ -758,3 +500,7 @@ ditto for service registries and so forth.
 On the name `Entry` for the returned result. `Value` seemed a bit generic and I didn't want to confuse matters mainly in the go client
 that has the unfortunate design of just shoving everything and the kitchen sink into a single package. `KVValue` is a stutter and so
 settled on `Entry`.
+
+### Roadmap and future considerations
+
+Possible enhancements and future work for the KV store are specified in [ADR-58](adr/ADR-58.md)
