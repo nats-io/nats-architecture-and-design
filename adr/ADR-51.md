@@ -7,11 +7,11 @@
 | Status   | Approved        |
 | Tags     | jetstream, 2.12 |
 
-
-| Revision | Date       | Author     | Info                                    |
-|----------|------------|------------|-----------------------------------------|
-| 1        | 2025-03-21 | @ripienaar | Document Initial Design                 |
-| 2        | 2025-09-30 | @ripienaar | Use `omitempty` on configuration fields |
+| Revision | Date       | Author          | Info                                    |
+|----------|------------|-----------------|-----------------------------------------|
+| 1        | 2025-03-21 | @ripienaar      | Document Initial Design                 |
+| 2        | 2025-09-30 | @ripienaar      | Use `omitempty` on configuration fields |
+| 3        | 2026-01-05 | @MauriceVanVeen | Support time zones for cron             |
 
 ## Context and Motivation
 
@@ -136,12 +136,13 @@ Here the local site would produce high frequency temperature readings into `sens
 
 These headers can be set on message that define a schedule:
 
-| Header                 | Description                                                                                                                                                     |
-|------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Nats-Schedule`        | The schedule the message will be published on                                                                                                                   |
-| `Nats-Schedule-Target` | The subject the message will be delivered to                                                                                                                    |
-| `Nats-Schedule-Source` | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
-| `Nats-Schedule-TTL`    | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               | |
+| Header                    | Description                                                                                                                                                     |
+|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Nats-Schedule`           | The schedule the message will be published on                                                                                                                   |
+| `Nats-Schedule-Target`    | The subject the message will be delivered to                                                                                                                    |
+| `Nats-Schedule-Source`    | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
+| `Nats-Schedule-TTL`       | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               |
+| `Nats-Schedule-Time-Zone` | The time zone used for the Cron schedule. If not specified, the Cron schedule will be in UTC. Not allowed to be used if the schedule is not a Cron schedule.    |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
@@ -156,6 +157,12 @@ The body of the message will simply be the provided body in the schedule.
 Valid schedule header can match normal cron behavior as defined earlier
 
 All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` means exactly 5AM UTC.
+
+Cron schedules may use different time zones, if specified in the `Nats-Schedule-Time-Zone` header. Although time zones
+are supported, it's not recommended to use Cron schedules that trigger during daylight saving time (DST) changes. If
+time moves forward due to DST, a schedule could be skipped if its time was not reached. If time moves backward due to
+DST, a schedule could be executed twice if its time was reached twice. Additionally, the server's time zones need to be
+kept up to date; otherwise servers might not run the Cron schedule at the expected time.
 
 ## Stream Configuration
 
