@@ -49,20 +49,34 @@ used for a different purpose. In that case, an Interest or Limits stream should 
 Some additional tooling will be required to create the durable consumer with the proper configuration. But through the
 use of a new `AckPolicy=AckFlowControl` field, the server will be able to help enforce the correct configuration.
 
+Additionally, when configuring the stream source, fields like `OptStartSeq`, `OptStartTime`, and `FilterSubject` are not
+allowed when using durable sourcing. Instead, the durable consumer needs to be configured as such:
+
+- Instead of configuring `OptStartSeq` on the source, configure it in the consumer config: `OptStartSeq`.
+- Instead of configuring `OptStartTime` on the source, configure it in the consumer config: `OptStartTime`.
+- Instead of configuring `FilterSubject` on the source, configure it in the consumer config: `FilterSubject`.
+
+All other consumer configuration fields, like `DeliverPolicy` and `ReplayPolicy`, are allowed as long as the constraints
+for durable sourcing are met. This also allows for new use cases that the ephemeral sourcing currently doesn't support:
+
+- Using `DeliverPolicy=last_per_subject` for only sourcing the last message per subject and every update onward.
+- Using `ReplayPolicy=original` to allow sourcing at the speed the messages were received in originally.
+
 ### Performance / Consumer configuration
 
 The durable consumer used for stream sourcing/mirroring will need to be just as performant as the current ephemeral
 variant. The current ephemeral consumer configuration uses `AckNone` which is problematic for WorkQueue and Interest
-streams. A different `AckPolicy` (`AckFlowControl`) will need to be used to ensure that messages are not lost.
+streams. A new `AckPolicy` (`AckFlowControl`) will need to be used to ensure that performance is on par with an
+ordered consumer and the messages are not lost.
 
 The consumer configuration will closely resemble the ephemeral push consumer variant:
 
 - The consumer will still act as an "ordered push consumer" but it will be durable.
 - Requires `FlowControl` and `Heartbeat` to be set.
 - Uses `AckPolicy=AckFlowControl` instead of `AckNone`.
-- `AckPolicy=AckFlowControl` will function like `AckAll` although the receiving server will not use the current ack
-  reply format by acknowledging individual messages.
-- The receiving server responds to the flow control messages, which includes the stream sequence (`Nats-Last-Stream`)
+- `AckPolicy=AckFlowControl` will function like `AckAll`. The flow control messages (see below) will ack messages rather
+  than the current ack reply format.
+- The receiving server responds with a flow control message, which includes the stream sequence (`Nats-Last-Stream`)
   and delivery sequence (`Nats-Last-Consumer`) as headers to signal which messages have been successfully stored.
 - The server receiving the flow control response will ack messages based on these stream/delivery sequences. For
   WorkQueue and Interest streams this may result in messages deletion.
@@ -73,7 +87,8 @@ The consumer configuration will closely resemble the ephemeral push consumer var
   sourcing pauses. A flow control message will be automatically sent (no need to wait for a `Heartbeat`) so these
   messages are acknowledged and new messages can be sent as soon as possible.
 - Since acknowledgements happen based on dynamic flow control, it being determined either by data size, `MaxAckPending`
-  or `Heartbeat`, the consumer cannot have an `AckWait` or `BackOff` setting. These fields need to be unset.
+  or `Heartbeat`, the consumer cannot have an `AckWait` or `BackOff` setting. These fields need to be unset, or an error
+  will be returned.
 - Additionally, `MaxDeliver` must be set to `-1` (infinite) to ensure if some messages are lost in transit, they can
   still be reliably redelivered.
 
@@ -137,8 +152,9 @@ This reset API, `$JS.API.CONSUMER.RESET.<STREAM>.<CONSUMER>`, will have the foll
 Importantly, the server should also handle the case where a user manually resets the consumer that's used for sourcing.
 The server should handle this gracefully and ensure no messages are lost. However, the user could also reset the
 consumer such that it moves ahead in the stream. The server should also handle this by properly skipping over those
-messages. If instead the user manually resets the consumer to go backward, the server should guarantee that mirrored
-messages are not duplicated.
+messages. This is done by noticing the consumer delivery sequence goes back to 1, the server can then skip the messages
+between the received stream sequence and the one it received previously. If instead the user manually resets the
+consumer to go backward, the server should guarantee that mirrored messages are not duplicated.
 
 ## Consequences
 
