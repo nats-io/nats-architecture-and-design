@@ -7,10 +7,11 @@
 | Status   | Proposed                        |
 | Tags     | jetstream, client, server, 2.14 |
 
-| Revision | Date       | Author          | Info                                    |
-|----------|------------|-----------------|-----------------------------------------|
-| 1        | 2025-11-06 | @MauriceVanVeen | Initial design                          |
-| 2        | 2025-12-05 | @MauriceVanVeen | Refinement after initial implementation |
+| Revision | Date       | Author          | Info                                                                   |
+|----------|------------|-----------------|------------------------------------------------------------------------|
+| 1        | 2025-11-06 | @MauriceVanVeen | Initial design                                                         |
+| 2        | 2025-12-05 | @MauriceVanVeen | Refinement after initial implementation                                |
+| 3        | 2025-01-09 | @MauriceVanVeen | Server-managed durable sourcing & migrating from ephemeral to durable  |
 
 ## Context and Problem Statement
 
@@ -92,7 +93,9 @@ The consumer configuration will closely resemble the ephemeral push consumer var
 - Additionally, `MaxDeliver` must be set to `-1` (infinite) to ensure if some messages are lost in transit, they can
   still be reliably redelivered.
 
-The stream configuration will be extended to include the consumer name as well as the delivery subject used for stream
+### Stream configuration
+
+The stream configuration will be extended to include details about the consumer that should be used for the
 sourcing/mirroring.
 
 ```go
@@ -103,9 +106,92 @@ type StreamSource struct {
 
 type StreamConsumerSource struct {
     Name           string `json:"name,omitempty"`
+    ServerManaged  bool   `json:"server_managed,omitempty"`
     DeliverSubject string `json:"deliver_subject,omitempty"`
 }
 ```
+
+Prior to durable sourcing, sourcing can only be configured to use an ephemeral consumer:
+
+```json
+{
+  "stream": "aggregate",
+  "sources": [
+    {
+      "name": "source",
+      "opt_start_seq": 100,
+      "filter_subject": "source.type.>"
+    }
+  ]
+}
+```
+
+The ephemeral consumer is created and managed by the server doing the sourcing. The user has limited control to define
+the consumer config, for example, by using an optional starting sequence and filter subject.
+
+Durable sourcing/mirroring introduces two ways to use durable consumers:
+
+- "Server-managed": the server creates the durable consumer with the proper configuration. Providing more control
+  over the consumer lifecycle, but the same control over the consumer config as when using ephemeral sourcing. The
+  starting sequence and filter subject can still be configured in the sourcing config.
+
+```json
+{
+  "stream": "aggregate",
+  "sources": [
+    {
+      "name": "source",
+      "opt_start_seq": 100,
+      "filter_subject": "source.type.>",
+      "consumer": {
+        "name": "source-consumer",
+        "server_managed": true
+      }
+    }
+  ]
+}
+```
+
+- "User-managed": the user pre-creates the durable consumer and configures it to use the proper configuration. Providing
+  the highest level of control over both the consumer config and its lifecycle. The starting sequence and filter subject
+  need to be configured on the consumer that's used, instead of on the sourcing config. The sourcing config is only
+  extended to contain the consumer name and deliver subject.
+
+```json
+{
+  "stream": "aggregate",
+  "sources": [
+    {
+      "name": "source",
+      "consumer": {
+        "name": "source-consumer",
+        "deliver_subject": "mirror.consumer.deliver.subject"
+      }
+    }
+  ]
+}
+```
+
+These options allow users to choose the best fit for their use case, as well as migrate from ephemeral to durable
+sourcing:
+
+- Simplest config and lifecycle control: ephemeral. The user doesn't manage nor see the consumer when using the
+  JetStream API. It's automatically created and recreated in the background. This consumer generally works well for
+  sourcing from and to Limits-based streams, but has limitations and should not be used to source from a WorkQueue or
+  Interest stream.
+- "Server-managed" allows easy migration from ephemeral to durable sourcing. The user only needs to choose the desired
+  consumer name, as well as specifying `server_managed: true`, but sourcing otherwise functions in the same way. Since a
+  durable consumer is used, it will be visible to the user and can be paused or updated (although limited).
+- "User-managed" allows full control over the consumer lifecycle and configuration. Intended to be used if the
+  "server-managed" approach doesn't fit the use case, primarily for security reasons or to allow more advanced uses of
+  the consumer configuration that's not supported in the sourcing config. Or, in some use cases where the stream that's
+  sourced is bootstrapped along with the durable consumer on a leaf node that's not yet connected to the server or
+  cluster doing the sourcing. Once this connection is established, all available messages will be mirrored/sourced.
+
+It's generally recommended to use "server-managed" durable sourcing for most use cases, as it's simple to configure and
+allows migration from ephemeral to durable sourcing. While also allowing the consumer that's used to be observable as
+well as paused, and supporting reliable and guaranteed sourcing from any stream to any other stream regardless of stream
+retention policies.
 
 ### Consumer delivery state reset API
 
