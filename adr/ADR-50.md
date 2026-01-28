@@ -7,16 +7,17 @@
 | Status   | Approved                              |
 | Tags     | jetstream, server, client, 2.12, 2.14 |
 
-| Revision | Date       | Author                                          | Info                                                    | Server Version | API Level |
-|----------|------------|-------------------------------------------------|---------------------------------------------------------|----------------|-----------|
-| 1        | 2025-06-10 | @ripienaar                                      | Initial design                                          | 2.12.0         | 2         |
-| 2        | 2025-09-08 | @MauriceVanVeen                                 | Initial release                                         | 2.12.0         | 2         |
-| 3        | 2025-09-11 | @piotrpio                                       | Add server codes                                        | 2.12.0         | 2         |
-| 4        | 2025-09-11 | @ripienaar                                      | Restore optional ack behavior                           | 2.12.0         | 2         |
-| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message | 2.14.0         | 3         |
-| 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                   | 2.12.1         | 2         |
-| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                     | 2.14.0         | 3         |
-| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                              | 2.14.0         | 3         |
+| Revision | Date       | Author                                          | Info                                                      | Server Version | API Level |
+|----------|------------|-------------------------------------------------|-----------------------------------------------------------|----------------|-----------|
+| 1        | 2025-06-10 | @ripienaar                                      | Initial design                                            | 2.12.0         | 2         |
+| 2        | 2025-09-08 | @MauriceVanVeen                                 | Initial release                                           | 2.12.0         | 2         |
+| 3        | 2025-09-11 | @piotrpio                                       | Add server codes                                          | 2.12.0         | 2         |
+| 4        | 2025-09-11 | @ripienaar                                      | Restore optional ack behavior                             | 2.12.0         | 2         |
+| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message   | 2.14.0         | 3         |
+| 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                     | 2.12.1         | 2         |
+| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                       | 2.14.0         | 3         |
+| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                                | 2.14.0         | 3         |
+| 9        | 2026-01-28 | @MauriceVanVeen                                 | Finalize fast ingest details: type hints & error handling | 2.14.0         | 3         |
 
 ## Context
 
@@ -173,9 +174,25 @@ We want to cater for 2 kinds of use cases around gaps:
 
 To support both we set the gap mode to `fail` or `ok` in the reply subject. Invalid values must result in a batch abandon error.
 
-Upon detecting a gap, the server immediately sends a `BatchFlowAck` with the `LastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
+Upon detecting a gap, the server immediately sends a `BatchFlowGap` with the `ExpectedLastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
 
-The `LastSequence` was the last received sequence by the server before the gap, and the `CurrentSequence` is the sequence of the received batch message. The messages with sequences between these two values were lost. Importantly, this flow control message MUST NOT be used to know whether `LastSequence` or `CurrentSequence` was persisted, it's purely informational. Also, this message will be immediately sent upon detecting a gap. This means it can be received out-of-order with the usual flow control messages that signal up to a certain batch sequence was persisted. Crucially, since these gap messages can be sent out-of-order, these messages don't contain any flow updates or information.
+```go
+// BatchFlowGap is used for reporting gaps when fast batch publishing into a stream.
+// This message is purely informational and could technically be lost without the client receiving it.
+type BatchFlowGap struct {
+	// Type: "gap"
+	Type string `json:"type"`
+	// ExpectedLastSequence is the sequence expected to be received next.
+	// Messages starting from ExpectedLastSequence up to (but not including) CurrentSequence were lost.
+	ExpectedLastSequence uint64 `json:"last_seq"`
+	// CurrentSequence is the sequence of the message that just came in and detected the gap.
+	CurrentSequence uint64 `json:"seq"`
+}
+```
+
+The `ExpectedLastSequence` was the expected next sequence to be received by the server before the gap, and the `CurrentSequence` is the sequence of the received batch message. The messages with sequences starting from `ExpectedLastSequence` up to (but not including) `CurrentSequence` were lost. Importantly, this flow control message MUST NOT be used to know whether `ExpectedLastSequence` or `CurrentSequence` was persisted, it's purely informational. Also, this message will be immediately sent upon detecting a gap. This means it can be received out-of-order with the usual flow control messages that signal up to a certain batch sequence was persisted. Crucially, since these gap messages can be sent out-of-order, these messages don't contain any flow updates or information.
+
+Example: `{"type":"gap","last_seq":10,"seq":15}`. The gap was detected at sequence 15, any prior messages up to and including 10 were lost.
 
 When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap. The client will receive the gap message first, and should use this to stop sending messages before eventually receiving the final ack.
 
@@ -183,13 +200,13 @@ When `ok` the server will allow the gap, only send the gap message, and continue
 
 When the leader of the Stream changes:
 
-* In `fail` gap mode the new leader will abandon the batch (if a gap resulted from the leader change) and send back a final pub ack with details up to the last received message for the batch.
-* In `ok` gap mode the new leader will continue and send a `BatchFlowAck` out indicating the gap.
+* In `fail` gap mode the new leader will abandon the batch (if a gap resulted from the leader change), send a `BatchFlowGap` out indicating the gap, and send back a final pub ack with details up to the last received message for the batch.
+* In `ok` gap mode the new leader will continue and send a `BatchFlowGap` out indicating the gap.
 
 When using per-message expected header checks, the server will either stop or continue the batch depending on the mode:
 
 * In `fail` gap mode the error will commit/stop the batch. The final pub ack will contain the error, and no more messages are accepted in the batch after the batch sequence that triggered the error.
-* In `ok` gap mode the error will be sent to the client in the `BatchFlowAck` message with the `CurrentSequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
+* In `ok` gap mode the error will be sent to the client in the `BatchFlowGap` message with the `CurrentSequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
 
 ### Flow Control
 
@@ -220,21 +237,26 @@ The server must treat the initial flow parameters as the upper bound though, whe
 Aside from this, all current self-protection mechanisms in the server - dropping too fast messages etc - will remain in place.
 
 ```go
+// BatchFlowAck is used for flow control when fast batch publishing into a stream.
+// This message is vital to handling acknowledgements and flow control.
+// These may technically be lost without the client receiving it. The client can retrieve
+// these by using the "ping" operation if it's expecting acks but not receiving any.
 type BatchFlowAck struct {
-    // LastSequence is the previously highest sequence seen, this is set when a gap is detected with "gap: ok".
-    LastSequence uint64 `json:"last_seq,omitempty"`
-    // CurrentSequence is the sequence of the message that triggered the ack.
-    // If "gap: fail" this means the messages up to CurrentSequence were persisted.
-    // If "gap: ok" and Error is set, this means this message was NOT persisted and had an error instead.
-    CurrentSequence uint64 `json:"seq,omitempty"`
-    // AckMessages indicates acknowledgements will be sent every N messages.
-    AckMessages uint16 `json:"ack_msgs,omitempty"`
-    // Error is used for "gap:ok" to return the error for the CurrentSequence.
-    Error *ApiError `json:"error,omitempty"`
+    // Type: "ack"
+    Type string `json:"type"`
+    // Sequence is the sequence of the message that triggered the ack.
+    // If "gap: fail" this means the messages up to and including Sequence were persisted.
+    // If "gap: ok" this means _some_ of the messages up to and including Sequence were persisted.
+    // But there could have been gaps.
+    Sequence uint64 `json:"seq"`
+    // Messages indicates acknowledgements will be sent every N messages.
+    Messages uint16 `json:"msgs"`
 }
 ```
 
-This kind of ack is differentiated from Pub Acks by the absence of the `batch` field that the standard publish acks are required to set.
+Example: `{"type":"ack","seq":10,"msgs":15}`. The ack was for message 10 (and below), and the server will send a new ack every 15 messages.
+
+This kind of ack is differentiated from Pub Acks by the presence of `"type":"ack"`.
 
 The following sample Go code can be used when implementing support for this feature, importantly:
 - Manage the proper reply subject (and inbox subscription) used.
@@ -266,29 +288,31 @@ func (f *FastPublisher) AddMsg(m *nats.Msg) (FastPubAck, error) {
 
     // If this batch is new, we immediately get an ack back potentially updating settings.
     if f.batchSeq == 1 {
-        // TODO: wait for and process ack, and store latest flow.CurrentSequence and flow.AckMessages
+        // TODO: wait for and process ack, and store latest ack.Sequence and ack.Messages
         // TODO: differentiate between flow and publish acknowledgements, as we could receive a publish
         //  acknowledgement early if there was an error.
     }
 
     // Check if we need to wait for acknowledgements.
     // Repeat until we don't need to wait for acknowledgements anymore.
+	// TODO: acks, gap, and error messages should be handled asynchronously
+	//  (gap and error should be sent as callbacks informing the user)
     for {
         // If there are any pending messages in our subscription, process them first.
-        // TODO: process pending acks, and store latest flow.CurrentSequence and flow.AckMessages
+        // TODO: process pending acks, and store latest ack.Sequence and ack.Messages
         // TODO: if the server detected a gap, it will send a flow message with
-        //  flow.LastSequence and flow.CurrentSequence. It should purely be treated as informational, and
-        //  MUST NOT be used to update the flow.CurrentSequence and flow.AckMessages settings.
+        //  gap.ExpectedLastSequence and gap.CurrentSequence. It should purely be treated as informational, and
+        //  MUST NOT be used to update the ack.Sequence and ack.Messages settings.
 		// TODO: differentiate between flow and publish acknowledgements, as we could receive a publish
 		//  acknowledgement early if there was an error.
 
         // Otherwise, calculate if we should wait for acknowledgments based on the up-to-date flow values.
-        waitForAck := flow.CurrentSequence+flow.AckMessages*opt.maxOutstandingAcks <= f.batchSeq
-        // TODO: wait for and process ack, and store latest flow.CurrentSequence and flow.AckMessages
+        waitForAck := lastAck.Sequence+lastAck.Messages*opt.maxOutstandingAcks <= f.batchSeq
+        // TODO: wait for and process ack, and store latest ack.Sequence and ack.Messages
         //  if waited for ack, repeat until we don't need to wait anymore.
 
         // Break from loop if there's no more acknowledgements to receive/process.
-        return FastPubAck{BatchSequence: f.batchSeq, AckSequence: flow.CurrentSequence}, nil
+        return FastPubAck{BatchSequence: f.batchSeq, AckSequence: ack.Sequence}, nil
     }
 }
 
@@ -326,6 +350,37 @@ The server will respond with the following errors if using fast batch fails:
 | 10204   | 400  | Batch publish invalid pattern used                  |
 | 10205   | 400  | Batch publish ID is invalid (exceeds 64 characters) |
 | 10206   | 400  | Batch publish ID is unknown                         |
+
+The server will always send a `BatchFlowErr` containing an error if a message failed an expected header check, like `ExpectedLastSeq`.
+
+There's one exception: a batch with only one message that immediately commits. That will return a `PubAck` like you would receive if you had used `js.Publish` or `js.PublishAsync` instead. 
+
+```go
+// BatchFlowErr is used for reporting errors when fast batch publishing into a stream.
+// This message is purely informational and could technically be lost without the client receiving it.
+type BatchFlowErr struct {
+	// Type: "err"
+	Type string `json:"type"`
+	// Sequence is the sequence of the message that triggered the error.
+	// There are no (relative) guarantees whatsoever about whether the messages up to this sequence were persisted.
+	// Such guarantees require the use of "gap: fail" and listening for BatchFlowAck and PubAck.
+	Sequence uint64 `json:"seq"`
+	// Error is used to return the error for the Sequence.
+	Error *ApiError `json:"error"`
+}
+```
+
+Example: `{"type":"err","seq":10,"error":{"code":400,"err_code":10071,"description":"wrong last sequence: 1"}}`.
+
+The `BatchFlowErr` is sent as soon as the server receives and detects the error. This is mostly informational when using `gap: ok`, but may inform the client that the batch will fail when using `gap: fail`. The client can optimize to not allow sending more messages in this case, instead waiting for the final `PubAck`.
+
+It's a conscious decision to not use the `Error` field in the `PubAck` for this purpose.
+
+- Having a separate `BatchFlowErr` makes the error handling consistent, regardless of the gap mode.
+- Having a separate `BatchFlowErr` makes it more responsive in the client, since the error can be surfaced immediately.
+- When using `gap: fail`, the client can optimize to not send more messages in this case, instead waiting for the final `PubAck`.
+- But most importantly: the `PubAck` contains either an error or the persisted information, but not both! Returning an error in the `PubAck` would mean the client wouldn't know which batch sequence triggered the error, nor which messages in the batch were persisted, etc.
+- Having access to both the `BatchFlowErr` and `PubAck` gives the client (and therefore the user) the most context possible. Which messages were persisted, which were not, what the error was, and at what batch sequence.
 
 ### Server Behavior Design
 
