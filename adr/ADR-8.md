@@ -25,6 +25,7 @@
 | 10       | 2025-12-16 | Document KV sourcing and Subject Transforms         | ADR-57     |                    |
 | 11       | 2026-01-06 | Move roadmap items to separate document             | ADR-58     |                    |
 | 12       | 2026-01-06 | Add reference to KV codecs in                       | ADR-54     |                    |
+| 13       | 2026-02-02 | Add Info() method                                   |            |                    |
 
 ## Context
 
@@ -150,6 +151,9 @@ type KV interface {
 
   // Status retrieves the status of the bucket
   Status() (Status, error)
+
+  // Info retrieves the bucket configuration
+  Info() (KeyValueConfig, error)
 }
 ```
 
