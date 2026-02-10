@@ -9,10 +9,11 @@
 
 ## Release History
 
-| Revision | Date       | Description                                         |
-|----------|------------|-----------------------------------------------------|
-| 1        | 2023-05-30 | Initial stable release                              |
-| 2        | 2024-06-07 | Change server reconnect behavior during `consume()` |
+| Revision | Date       | Description                                            |
+|----------|------------|--------------------------------------------------------|
+| 1        | 2023-05-30 | Initial stable release                                 |
+| 2        | 2024-06-07 | Change server reconnect behavior during `consume()`    |
+| 3        | 2026-02-10 | Add `423 Nats-Wrong-Pin-Id` and `408 Interest Expired` |
 
 ## Context and Problem Statement
 
@@ -254,7 +255,8 @@ the value of `request.max_bytes` to the pending byte count.
 Clients could just check all statuses for the headers to future-proof.
   - 408 Request Timeout
   - 409 Message Size Exceeds MaxBytes
-  - 409 Batch-Completed
+  - 408 Interest Expired
+  - 423 Nats-Wrong-Pin-Id
 
 ###### Message Size Calculation
 
@@ -296,6 +298,8 @@ Not Telegraphed:
 - 404 No Messages
 - 408 Request Timeout
 - 409 Message Size Exceeds MaxBytes
+- 408 Interest Expired
+- 423 Nats-Wrong-Pin-Id
 
 Calls to `next()` and `fetch()` should be concluded when the pull is terminated. On the other hand `consume()` should recover
 while maintaining its state (e.g., pending counts) by issuing a new pull request unless the status is `409 Consumer Deleted` or `409 Consumer is push based` in

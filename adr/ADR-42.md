@@ -7,13 +7,13 @@
 | Status   | Approved                |
 | Tags     | jetstream, server, 2.11 |
 
-
-| Revision | Date       | Author     | Info                                              |
-|----------|------------|------------|---------------------------------------------------|
-| 1        | 2024-05-14 | @ripienaar | Initial design                                    |
-| 2        | 2024-10-15 | @jarema    | Add client implementation details                 |
-| 3        | 2025-07-11 | @ripienaar | Add standby / failover feature to overflow policy |
-| 4        | 2025-07-17 | @ripienaar | Add priority client policy                        |
+| Revision | Date       | Author          | Info                                                     |
+|----------|------------|-----------------|----------------------------------------------------------|
+| 1        | 2024-05-14 | @ripienaar      | Initial design                                           |
+| 2        | 2024-10-15 | @jarema         | Add client implementation details                        |
+| 3        | 2025-07-11 | @ripienaar      | Add standby / failover feature to overflow policy        |
+| 4        | 2025-07-17 | @ripienaar      | Add priority client policy                               |
+| 5        | 2026-02-10 | @MauriceVanVeen | Add `423 Nats-Wrong-Pin-Id` & `423 Nats-Pin-Id mismatch` |
 
 ## Context and Problem Statement
 
@@ -276,7 +276,7 @@ Client needs to properly handle the `id` sent by the server. That applies only t
 At least initially.
 
 1. When client receives the `id` from the server via `Nats-Pin-Id` header, it needs to store it and use it in every subsequent pull request for this group.
-2. If client receives `423` Status error, it should clear the `id` and continue pulling without it.
+2. If client receives `423` Status error (`Nats-Pin-Id mismatch` or `Nats-Wrong-Pin-Id`), it should clear the `id` and continue pulling without it.
 3. Clients should implement the `unpin` method described in this ADR.
 
 #### Priority Client
