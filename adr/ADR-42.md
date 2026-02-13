@@ -14,6 +14,7 @@
 | 3        | 2025-07-11 | @ripienaar      | Add standby / failover feature to overflow policy        |
 | 4        | 2025-07-17 | @ripienaar      | Add priority client policy                               |
 | 5        | 2026-02-10 | @MauriceVanVeen | Add `423 Nats-Wrong-Pin-Id` & `423 Nats-Pin-Id mismatch` |
+| 6        | 2026-02-12 | @MauriceVanVeen | Clarify `pinned_client` policy                           |
 
 ## Context and Problem Statement
 
@@ -121,8 +122,13 @@ Once multiple groups are supported consumer updates could add and remove groups.
 Users want to have a single client perform all the work for a consumer, but they also want to have a stand-by client that
 can take over when the primary, aka `pinned` client, fails.
 
+The `pinned_client` policy designates a single client as the active recipient of all messages for a consumer. All other
+clients with outstanding pull requests remain on standby. If the pinned client fails to issue a pull request within the
+configured timeout, or if an administrator explicitly unpins it, the server selects a new pinned client from the pool of
+waiting pull requests.
+
 **NOTE: We should not describe this in terms of exclusivity as there is no such guarantee, there will be times when one
-client think it is pinned when it is not because the server switched.**
+client thinks it is pinned while processing messages when it isn't anymore because the server switched.**
 
 The `pinned_client` policy provides server-side orchestration for the selection of the pinned client.
 
@@ -130,7 +136,7 @@ The `pinned_client` policy provides server-side orchestration for the selection 
 {
 	PriorityGroups: ["jobs"],
 	PriorityPolicy: "pinned_client",
-	PriorityTimeout: 120*time.Second,
+	PriorityTimeout: 2*time.Minute,
 	AckPolicy: "explicit",
 	// ... other consumer options
 }
@@ -140,7 +146,7 @@ This configuration states:
 
  * We have 1 group defined and all pulls have to belong to this group
  * The policy is `pinned_client` that activates these behaviors
- * When a pinned client has not done any pulls in the last 120 seconds the server will switch to another client
+ * When a pinned client has not done any pulls in the last 2 minutes the server will switch to another client
  * AckPolicy has to be `explicit`. If we force this ack policy in normal use we should error in Pedantic mode
 
 A pull request will have the following additional fields:
@@ -162,7 +168,19 @@ When a new pinned client needs to be picked - after timeout, admin action, first
  5. Create an advisory that a new pinned client was picked
  6. Respond with a 4xx header to any pulls, including waiting ones, that have a different ID set. Client that received this error will clear the ID and pull with no ID
 
-If no pulls from the pinned client is received within `PriorityTimeout` the server will switch again using the same flow as above.
+If no pulls from the pinned client are received within `PriorityTimeout` the server will switch again using the same
+flow as above. The pinned timeout only resets back to `PriorityTimeout` if the pinned client starts a new pull request
+within the timeout.
+
+The `PriorityTimeout` is recommended to be sufficiently above the `Expires` value of the pull request. This ensures that
+the pinned client has enough time to make the pull request, get its messages or expire, then optionally process the
+messages and start a new pull request which will then reset the pinned timeout.
+
+With the default `PriorityTimeout` of 2 minutes, a recommended maximum value of `Expires` could be 1 minute. This
+ensures that the pinned client has enough time to make the next pull request after this one expires. A high
+`PriorityTimeout` doesn't guarantee exclusivity, but it does allow the pinned client to spend more time processing
+messages while preserving its pin. Sending a new pull request can be treated as the client sending a heartbeat or
+liveness indicator to keep the pin alive.
 
 Future iterations of this feature would introduce the concept of a priority field so clients can self-organise but we decided
 to deliver that in a future iteration.
@@ -193,7 +211,7 @@ setting supports being updated.
 We will publish advisories when a switch is performed and when a pin is lost.
 
 ```golang
-const  JSAdvisoryConsumerPinnedPre = "$JS.EVENT.ADVISORY.CONSUMER.PINNED"
+const JSAdvisoryConsumerPinnedPre = "$JS.EVENT.ADVISORY.CONSUMER.PINNED"
 const JSAdvisoryConsumerUnpinnedPre = "$JS.EVENT.ADVISORY.CONSUMER.UNPINNED"
 const JSConsumerGroupPinnedAdvisoryType = "io.nats.jetstream.advisory.v1.consumer_group_pinned"
 
