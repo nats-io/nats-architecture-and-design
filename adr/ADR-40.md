@@ -129,8 +129,9 @@ Client/Connection handle.
 #### Custom server pool
 
 Client should have a way to specify custom server pool for reconnection
-attempts. When specified, client should use only those servers for reconnection
-attempts, ignoring any advertised servers from the Server.
+attempts. Client should expose an option to disable using advertised servers and
+use only the provided pool for reconnection attempts. By default, advertised
+servers are merged with the provided pool and used for reconnection attempts.
 
 New pool should be used for all reconnection attempts until the client is
 restarted or a new pool is specified. New pool is subject to the same rules as
@@ -144,26 +145,30 @@ func (nc *Conn) SetServerPool(servers []string) error
 
 #### Reconnect to specific server
 
-Client should expose an option to configure a callback that will be called
-before each reconnection attempt.
+Client should expose an option allowing users to select a specific server from
+the pool to which the client should attempt to reconnect. This can be achieved
+e.g. by a callback invoked on every reconnect attempt, allowing users to
+implement custom logic for server selection.
 
-As arguments, it should receive the list of servers that are in the pool
-(together with reconnect attempt number), as well as the most up-to-date server
-INFO.
+When choosing the server to reconnect to, the client should only consider
+servers from the pool (including advertised servers, if not disabled). Current
+server pool, together with per-server connection attempt number and the most
+up-to-date server INFO should be available to the user when choosing next
+server. User should not be able to select a server outside of the pool.
 
-The callback should return the server URL to which the client should attempt to
-reconnect (a url outside of the pool should not be allowed). Additionally, the
-callback should allow to specify whether client should include a delay before
-attempting to reconnect to the selected server (based on what's configured in
-the client options).
+Users should be able to specify whether the client should apply reconnect delay
+before attempting to reconnect to the selected server. Depending on client
+implementation, client may fall back to default reconnect delay configured on
+the connection options.
+
+Example callback-based implementation in Go:
 
 ```go
 // Return values:
-//   - url.URL: The server URL to connect to. Can be from the provided servers slice
-//     or a new server URL. New servers will be automatically added to the pool.
-//   - bool: If true, apply reconnect delay (ReconnectWait + jitter or CustomReconnectDelayCB)
-//     before attempting connection. If false, attempt connection immediately.
-type ReconnectToServerHandler func([]Server, ServerInfo) (*url.URL, bool)
+//   - url.URL: The server URL to connect to. Library should enforce that the URL is from the provided servers slice.
+//   - time.Duration: Optional reconnect delay before attempting to connect to the selected server. 
+//     If zero, reconnect will be attempted immediately.
+type ReconnectToServerHandler func([]Server, ServerInfo) (*url.URL, time.Duration)
 ```
 
 #### Detecting disconnection
