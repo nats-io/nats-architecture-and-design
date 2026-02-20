@@ -177,6 +177,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
 |[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
+|[ADR-53](adr/ADR-53.md)|server|Feature flags|
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|
 |[ADR-56](adr/ADR-56.md)|server, 2.12|JetStream Consistency Models|
 
