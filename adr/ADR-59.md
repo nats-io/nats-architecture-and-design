@@ -279,8 +279,8 @@ Sourced streams can use:
 ## Subject Transforms
 
 Both mirrors and sources support transforming message subjects as they are replicated. This allows the destination
-stream to use a different subject namespace than the origin. Subject transforms are described in detail
-in [ADR-30](ADR-30.md).
+stream to use a different subject namespace than the origin. The core subject transform syntax is described in
+[ADR-30](ADR-30.md), and the application of transforms within streams is detailed in [ADR-36](ADR-36.md).
 
 ### Filter Subject vs Subject Transforms
 
