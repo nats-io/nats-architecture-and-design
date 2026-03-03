@@ -27,6 +27,19 @@ derived data views.
 
 Both features work within a single account, across accounts, and across JetStream domains.
 
+```mermaid
+graph LR
+    subgraph Mirroring
+        A[ORDERS] -->|mirror| B[ORDERS_MIRROR]
+    end
+
+    subgraph Sourcing
+        C[ORDERS_US] -->|source| F[ALL_ORDERS]
+        D[ORDERS_EU] -->|source| F
+        E[ORDERS_APAC] -->|source| F
+    end
+```
+
 ## Configuration
 
 Both mirrors and sources use the `StreamSource` configuration type:
@@ -85,7 +98,7 @@ A mirror stream is an exact, continuously-updated copy of a single upstream stre
 ### Behavior
 
 - A mirror creates a hidden internal consumer on the upstream stream and replicates messages as they arrive.
-- Messages are delivered in the same order as the upstream stream.
+- Messages are delivered in the same order and with the same sequence numbers as the upstream stream.
 - The mirror is read-only: clients cannot publish directly to a mirror stream.
 - A mirror stream cannot have `subjects` configured since it does not accept direct publishes.
 - A stream can mirror at most one stream. Multiple streams can mirror the same stream.
@@ -323,6 +336,13 @@ the order of application is:
 1. Source-level `filter_subject` or `subject_transforms` — applied as messages are selected from the upstream
 2. Stream-level `subject_transform` — applied to all messages entering the stream
 
+```mermaid
+graph TD
+    A[Upstream Stream<br/>orders.us.>] -->|source-level transform| B[us.>]
+    B -->|stream-level transform| C[processed.us.>]
+    C --> D[Destination Stream]
+```
+
 ## External Streams
 
 The `external` field allows a mirror or source to access a stream in another JetStream domain or account. This
@@ -354,6 +374,26 @@ on which messages from the remote stream will be delivered.
 To source or mirror a stream from another account, you typically configure an `export` in the origin account and an
 `import` in the destination account, then reference the imported API and delivery prefixes in the `external`
 configuration.
+
+```mermaid
+graph LR
+    subgraph "Account A (origin)"
+        S[ORDERS stream]
+        E1[Export: $JS.API.CONSUMER.>]
+        E2[Export: deliver.mirror.>]
+    end
+
+    subgraph "Account B (destination)"
+        I1[Import: $JS.A.API.>]
+        I2[Import: deliver.mirror.>]
+        M[LOCAL_ORDERS mirror]
+    end
+
+    S -.->|JS API via $JS.A.API| I1
+    S -.->|messages via deliver.mirror| I2
+    I1 --> M
+    I2 --> M
+```
 
 ### Cycle Detection
 
