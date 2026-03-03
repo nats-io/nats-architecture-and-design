@@ -297,7 +297,7 @@ subset of messages. Use `subject_transforms` when you need to rename subjects, o
 ### Multiple Transforms
 
 When using `subject_transforms`, you can specify multiple transform rules per source. The `src` patterns must not
-overlap:
+overlap, and the `dest` pattern is optional (it then equals the `src` pattern):
 
 ```json
 {
