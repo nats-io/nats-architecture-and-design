@@ -346,10 +346,10 @@ The server will respond with the following errors if using fast batch fails:
 
 | ErrCode | Code | Description                                         |
 |---------|------|-----------------------------------------------------|
-| 10203   | 400  | Batch publish not enabled on stream                 |
-| 10204   | 400  | Batch publish invalid pattern used                  |
-| 10205   | 400  | Batch publish ID is invalid (exceeds 64 characters) |
-| 10206   | 400  | Batch publish ID is unknown                         |
+| 10205   | 400  | Batch publish not enabled on stream                 |
+| 10206   | 400  | Batch publish invalid pattern used                  |
+| 10207   | 400  | Batch publish ID is invalid (exceeds 64 characters) |
+| 10208   | 400  | Batch publish ID is unknown                         |
 
 The server will always send a `BatchFlowErr` containing an error if a message failed an expected header check, like `ExpectedLastSeq`.
 
