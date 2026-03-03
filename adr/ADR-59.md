@@ -7,6 +7,10 @@
 | Status   | Implemented          |
 | Tags     | server, jetstream, spec |
 
+| Revision | Date       | Author      | Info                                          |
+|----------|------------|-------------|-----------------------------------------------|
+| 1        | 2026-03-03 | @ripienaar  | Initial spec, documents features up to 2.12   |
+
 ## Context
 
 JetStream provides two mechanisms for replicating data between streams: **Mirroring** and **Sourcing**. These features
@@ -158,8 +162,7 @@ When a mirror is first created, you can control where replication begins:
 - **`opt_start_seq`**: Start from a specific sequence number in the upstream stream.
 - **`opt_start_time`**: Start from a specific point in time.
 
-These two options are **mutually exclusive** — the server will reject a configuration that sets both. If both happen
-to be set, `opt_start_seq` takes precedence in the internal consumer creation logic.
+These two options are **mutually exclusive** — the server will reject a configuration that sets both.
 
 These settings only take effect on first creation. On restart, the mirror resumes from its last known position.
 
