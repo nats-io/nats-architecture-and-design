@@ -134,7 +134,7 @@ deleted and recreated. However, a mirror can be "promoted" by removing the strea
 ### Mirror Direct Access
 
 When the upstream stream has `allow_direct` enabled, the mirror stream can set `mirror_direct` to enable high-performance
-direct get access. This is particularly useful for Key-Value store and Object Store mirrors where reads should be served
+direct get access. This is particularly useful for Key-Value store mirrors where reads should be served
 from the nearest replica.
 
 ```json
@@ -423,9 +423,38 @@ replication resumes from the last successfully stored sequence.
 
 ### Upstream Message Expiration
 
-If messages expire from the upstream stream (due to retention policy, TTL, or limits) before they are replicated,
+If messages expire from the upstream stream (due to TTL or limits) before they are replicated,
 the mirror or source will detect the gap via sequence number comparison and skip the missing messages. No data loss
 occurs beyond what the upstream retention policy has already removed.
+
+This gap detection is reliable only for streams using the **Limits** retention policy but not for **Work Queue** or
+**Interest** retention policies.
+
+### Retention Policy Considerations
+
+Mirrors and sources create internal consumers on the upstream stream with a short inactive threshold (currently 10
+seconds). This has different implications depending on the upstream stream's retention policy.
+
+#### Limits Retention
+
+Limits retention is the recommended and best-supported retention policy for mirrored and sourced streams. However, the
+short inactive threshold means that if the internal consumer is temporarily removed (e.g., during a leader election or
+network disruption), messages that are removed by stream limits (max messages, max bytes, max age) during that window
+will not be replicated. The mirror or source will detect the sequence gap and skip the missing messages.
+
+#### Work Queue Retention
+
+Work queue streams are **not recommended** as upstream streams for mirrors or sources. The internal consumers created
+for replication are direct consumers that bypass the work queue's subject overlap validation. This means a work queue
+stream can simultaneously have a regular consumer and a replication consumer receiving the same messages, breaking the
+single-consumer-per-subject-partition guarantee that work queues are designed to enforce.
+
+#### Interest Retention
+
+Interest retention streams are **not recommended** as upstream streams for mirrors or sources. In interest retention,
+messages are removed once all registered consumers have acknowledged them. If the internal replication consumer is
+temporarily absent (due to the short inactive threshold), there may be no consumer to express interest in new messages,
+causing them to be removed before they can be replicated.
 
 ### Cluster Behavior
 
@@ -435,6 +464,5 @@ the replication consumers. If leadership changes, the new leader takes over repl
 ## Consequences
 
 Stream sourcing and mirroring provide a foundation for building distributed data topologies in NATS JetStream. Key-Value
-stores use mirrors for read replicas and sources for aggregating buckets (see [ADR-8](ADR-8.md)). Object stores can
-similarly be mirrored across locations. These primitives, combined with subject transforms
+stores use mirrors for read replicas and sources for aggregating buckets (see [ADR-8](ADR-8.md)). These primitives, combined with subject transforms
 (see [ADR-30](ADR-30.md)), enable flexible data routing and integration patterns without application-level code.
