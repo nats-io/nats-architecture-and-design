@@ -292,7 +292,7 @@ Each source or mirror entry supports two mutually exclusive filtering approaches
   (transformation). This both filters messages and rewrites their subjects.
 
 These cannot be combined on the same source or mirror entry. Use `filter_subject` when you only need to select a
-subset of messages. Use `subject_transforms` when you need to rename subjects.
+subset of messages. Use `subject_transforms` when you need to rename subjects, or need to use multiple filter subjects.
 
 ### Multiple Transforms
 
