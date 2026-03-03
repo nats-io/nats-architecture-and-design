@@ -129,7 +129,7 @@ These settings only take effect on first creation. On restart, the mirror resume
 ### Mirror Updates
 
 Mirror configuration **cannot be changed** after creation. To change the mirror configuration, the stream must be
-deleted and recreated.
+deleted and recreated. However, a mirror can be "promoted" by removing the stream subjects on the stream that's mirrored, and then removing the mirror configuration on this stream, as well as adding the former's stream subjects to it.
 
 ### Mirror Direct Access
 
