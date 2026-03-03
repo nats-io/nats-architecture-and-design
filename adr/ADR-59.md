@@ -88,7 +88,7 @@ A mirror stream is an exact, continuously-updated copy of a single upstream stre
 - Messages are delivered in the same order as the upstream stream.
 - The mirror is read-only: clients cannot publish directly to a mirror stream.
 - A mirror stream cannot have `subjects` configured since it does not accept direct publishes.
-- A stream can have at most one mirror.
+- A stream can mirror at most one stream. Multiple streams can mirror the same stream.
 - The `mirror` and `sources` fields are mutually exclusive.
 
 ### Creating a Mirror
