@@ -665,10 +665,7 @@ This has different implications depending on the upstream stream's retention pol
 
 #### Limits Retention
 
-Limits retention is the recommended and best-supported retention policy for mirrored and sourced streams. However, the
-short inactive threshold means that if the internal consumer is temporarily removed (e.g., during a leader election or
-network disruption), messages that are removed by stream limits (max messages, max bytes, max age) during that window
-will not be replicated. The mirror or source will detect the sequence gap and skip the missing messages.
+Limits retention is the recommended and best-supported retention policy for mirrored and sourced streams. However, depending on the position of the sourcing consumer in the stream, any purged messages (either manually or through message retention) ahead of the consumer will not be replicated. This is equal to the behavior of any consumers used for applications, which will also not observe messages removed before them being eligible for delivery. The mirror or source will detect the sequence gap and skip the missing messages.
 
 #### Work Queue Retention
 
