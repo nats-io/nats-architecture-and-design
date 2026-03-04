@@ -279,8 +279,7 @@ As with mirrors, these only apply on first creation. On restart, each source res
 
 ### Source Updates
 
-Sources **can be added or removed** after stream creation by updating the stream configuration. Existing source
-entries cannot be modified — to change a source's filter or transform, remove it and add a new one.
+Sources can be added, updated or removed after stream creation by updating the stream configuration.
 
 ### Duplicate Detection
 
