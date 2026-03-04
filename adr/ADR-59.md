@@ -123,7 +123,7 @@ A mirror stream is an exact, continuously-updated copy of a single upstream stre
 ### Behavior
 
 - A mirror creates a hidden internal consumer on the upstream stream and replicates messages as they arrive.
-- Messages are delivered in the same order and with the same sequence numbers as the upstream stream.
+- Messages are delivered in the same order and with the same sequence numbers and timestamps as the upstream stream.
 - The mirror is read-only: clients cannot publish directly to a mirror stream.
 - A mirror stream cannot have `subjects` configured since it does not accept direct publishes.
 - A stream can mirror at most one stream. Multiple streams can mirror the same stream.
