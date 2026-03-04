@@ -653,7 +653,7 @@ occurs beyond what the upstream retention policy has already removed.
 The server tracks two sequence numbers per source: the upstream stream sequence (`sseq`) and the consumer delivery
 sequence (`dseq`). When a gap appears in `sseq` but `dseq` is contiguous, it means the upstream stream had messages
 removed — the server records skip markers for the missing range and continues. When `dseq` itself has a gap, the
-consumer is stale and must be recreated.
+consumer itself missed messages and must be recreated to redeliver these.
 
 This gap detection is reliable only for streams using the **Limits** retention policy but not for **Work Queue** or
 **Interest** retention policies.
