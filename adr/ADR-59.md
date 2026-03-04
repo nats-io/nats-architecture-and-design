@@ -609,40 +609,11 @@ can be compared against the upstream stream state to diagnose replication issues
 ### Automatic Reconnection
 
 If the upstream stream becomes temporarily unavailable (e.g., due to a network partition or stream leader change),
-the mirror or source will automatically attempt to reconnect. The server uses heartbeats and a stall detection timer
-to identify failures, then reconnects with exponential backoff and jitter.
+the server automatically detects the disruption and attempts to re-establish replication. Reconnection uses
+exponential backoff with jitter to avoid thundering herd effects.
 
-| Constant                    | Value      | Description                                              |
-|-----------------------------|------------|----------------------------------------------------------|
-| Health check heartbeat      | 1 second   | Internal consumer heartbeat interval.                    |
-| Stall detection interval    | 10 seconds | If no activity for this duration, the source is stalled. |
-| Consumer creation timeout   | 30 seconds | Time to wait for a consumer creation response before retrying. |
-| Minimum retry interval      | 2 seconds  | Minimum time between consumer setup attempts.            |
-| Base retry backoff           | 5 seconds  | Starting backoff duration after a failure.               |
-| Maximum retry backoff        | 2 minutes  | Backoff cap regardless of failure count.                 |
-| Jitter                      | 100–200 ms | Random jitter added to every retry to avoid thundering herd. |
-
-The backoff formula is: `delay = 5s × (failures × 2)`, capped at 2 minutes, plus 100–200 ms of random jitter.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Replicating
-    Replicating --> StallDetected : No activity for 10s
-    Replicating --> Replicating : Heartbeat / message received
-
-    StallDetected --> WaitBackoff : Cancel consumer, compute backoff
-    WaitBackoff --> SetupConsumer : Backoff + jitter elapsed
-    SetupConsumer --> Replicating : Consumer created, resume from last seq + 1
-    SetupConsumer --> WaitBackoff : Setup failed, increment failure count
-
-    Replicating --> GapDetected : Sequence gap in delivery
-    GapDetected --> SkipMessages : Delivery seq matches but stream seq has gap
-    SkipMessages --> Replicating : Store skip markers, continue
-    GapDetected --> WaitBackoff : Delivery seq mismatch, retry consumer
-```
-
-During reconnection, the `error` field in `StreamSourceInfo` will report the connection issue. Once reconnected,
-replication resumes from the last successfully stored sequence.
+During reconnection, the `error` field in `StreamSourceInfo` will report the issue. Once the upstream stream is
+reachable again, replication resumes from the last successfully stored sequence — no manual intervention is required.
 
 ### Upstream Message Expiration
 
