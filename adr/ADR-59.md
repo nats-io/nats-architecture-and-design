@@ -9,7 +9,7 @@
 
 | Revision | Date       | Author      | Info                                          |
 |----------|------------|-------------|-----------------------------------------------|
-| 1        | 2026-03-03 | @ripienaar  | Initial spec, documents features up to 2.12   |
+| 1        | 2026-03-03 | @ripienaar  | Initial spec, documents features up to 2.12.5 |
 
 ## Context
 
@@ -126,6 +126,8 @@ A mirror stream is an exact, continuously-updated copy of a single upstream stre
 - Messages are delivered in the same order and with the same sequence numbers and timestamps as the upstream stream.
 - The mirror is read-only: clients cannot publish directly to a mirror stream.
 - A mirror stream cannot have `subjects` configured since it does not accept direct publishes.
+- The mirror stream's retention policy and limits (max messages, max bytes, max age) are independent of the
+  upstream stream and can differ from the origin.
 - A stream can mirror at most one stream. Multiple streams can mirror the same stream.
 - The `mirror` and `sources` fields are mutually exclusive.
 
@@ -162,7 +164,7 @@ When a mirror is first created, you can control where replication begins:
 - **`opt_start_seq`**: Start from a specific sequence number in the upstream stream.
 - **`opt_start_time`**: Start from a specific point in time.
 
-These two options are **mutually exclusive** — the server will reject a configuration that sets both.
+If both happen to be set, `opt_start_seq` takes precedence in the internal consumer creation logic.
 
 These settings only take effect on first creation. On restart, the mirror resumes from its last known position.
 
@@ -220,6 +222,8 @@ A sourced stream aggregates messages from one or more upstream streams.
   across different sources.
 - A sourced stream **can** also have its own `subjects` and accept direct publishes, combining sourced and
   directly-published messages in a single stream.
+- The sourced stream's retention policy and limits (max messages, max bytes, max age) are independent of the
+  upstream streams and can differ from the origins.
 - Multiple sources can reference the same upstream stream if they have different filters or transforms (see
   [Duplicate Detection](#duplicate-detection)).
 
@@ -263,7 +267,7 @@ A stream sourcing filtered subsets with subject transformation:
 ### Starting Position
 
 Each source independently supports `opt_start_seq` and `opt_start_time` to control where replication begins.
-These two options are **mutually exclusive** per source entry — the server will reject a configuration that sets both.
+If both happen to be set, `opt_start_seq` takes precedence in the internal consumer creation logic.
 
 ```json
 {
@@ -398,28 +402,43 @@ on which messages from the remote stream will be delivered.
 
 ### Cross-Account Access
 
-To source or mirror a stream from another account, you typically configure an `export` in the origin account and an
-`import` in the destination account, then reference the imported API and delivery prefixes in the `external`
-configuration.
+To source or mirror a stream from another account, you configure exports in the origin account and corresponding
+imports in the destination account, then reference the imported prefixes in the `external` configuration.
+
+Three subjects are involved, each requiring the correct export/import type:
+
+| Subject             | Type      | Purpose                                                        |
+|---------------------|-----------|----------------------------------------------------------------|
+| `$JS.API.CONSUMER.>` | Service | Consumer create/delete API requests (request/reply).           |
+| `deliver.mirror.>`   | Stream  | One-way delivery of replicated messages to the destination.    |
+| `$JS.FC.>`           | Service | Flow control responses from the destination back to the origin. |
+
+Getting the type wrong (e.g., using a stream import for the API subject) will cause silent failures. The API and
+flow control subjects use service imports because they require request/reply semantics. The delivery subject uses a
+stream import because messages flow in one direction only.
 
 ```mermaid
 graph LR
     subgraph "Account A (origin)"
         S[ORDERS stream]
-        E1[Export: $JS.API.CONSUMER.>]
-        E2[Export: deliver.mirror.>]
+        E1[Service Export: $JS.API.CONSUMER.>]
+        E2[Stream Export: deliver.mirror.>]
+        E3[Service Export: $JS.FC.>]
     end
 
     subgraph "Account B (destination)"
-        I1[Import: $JS.A.API.>]
-        I2[Import: deliver.mirror.>]
+        I1[Service Import: $JS.A.API.>]
+        I2[Stream Import: deliver.mirror.>]
+        I3[Service Import: $JS.FC.>]
         M[LOCAL_ORDERS mirror]
     end
 
     S -.->|JS API via $JS.A.API| I1
     S -.->|messages via deliver.mirror| I2
+    E3 -.->|flow control| I3
     I1 --> M
     I2 --> M
+    I3 --> M
 ```
 
 ### Cycle Detection
@@ -591,8 +610,11 @@ The `mirror` and `sources` fields use the same `StreamSourceInfo` type described
 contains full `ConsumerInfo` entries for the internal replication consumers.
 
 These internal consumers are distinguished from regular consumers by the `Direct` flag in their configuration. They
-use `AckNone` ack policy, flow control, and heartbeats. Their names follow the pattern `mirror-<id>` for mirrors
-and `src-<id>` for sources.
+use `AckNone` ack policy, flow control, and heartbeats. When a filter subject is configured (either directly via
+`filter_subject` or from a single `subject_transforms` entry), the consumer is created with an explicit name
+following the pattern `mirror-<id>` or `src-<id>` using the extended consumer create API. When no filter is present
+(or multiple subject transforms are configured), the consumer is created via `$JS.API.CONSUMER.CREATE.<stream>` and
+receives a randomly generated name from the server.
 
 Example request to inspect mirror replication state with its internal consumer:
 
