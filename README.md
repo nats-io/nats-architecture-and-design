@@ -101,6 +101,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 
 ## Kv
 
@@ -180,6 +181,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-53](adr/ADR-53.md)|server|Feature flags|
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|
 |[ADR-56](adr/ADR-56.md)|server, 2.12|JetStream Consistency Models|
+|[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 
 ## Spec
 
@@ -194,6 +196,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 
 ## Deprecated
 
