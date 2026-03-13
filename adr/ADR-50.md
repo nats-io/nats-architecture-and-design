@@ -13,11 +13,12 @@
 | 2        | 2025-09-08 | @MauriceVanVeen                                 | Initial release                                           | 2.12.0         | 2         |
 | 3        | 2025-09-11 | @piotrpio                                       | Add server codes                                          | 2.12.0         | 2         |
 | 4        | 2025-09-11 | @ripienaar                                      | Restore optional ack behavior                             | 2.12.0         | 2         |
-| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message   | 2.14.0         | 3         |
+| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message   | 2.14.0         | 4         |
 | 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                     | 2.12.1         | 2         |
-| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                       | 2.14.0         | 3         |
-| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                                | 2.14.0         | 3         |
-| 9        | 2026-01-28 | @MauriceVanVeen                                 | Finalize fast ingest details: type hints & error handling | 2.14.0         | 3         |
+| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                       | 2.14.0         | 4         |
+| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                                | 2.14.0         | 4         |
+| 9        | 2026-01-28 | @MauriceVanVeen                                 | Finalize fast ingest details: type hints & error handling | 2.14.0         | 4         |
+| 10       | 2026-03-13 | @MauriceVanVeen                                 | Update batch limits                                       | 2.14.0         | 4         |
 
 ## Context
 
@@ -82,7 +83,7 @@ The server will respond with the following errors if committing a batch fails:
 The server will operate under limits to safeguard itself:
 
  * Each stream can only have 50 batches in flight at any time
- * Each server can only have 1000 batches in flight at any time
+ * Each server can only have 1,000 batches in flight at any time
  * A batch that has not had traffic for 10 seconds since the last message will be abandoned
  * Each batch can have maximum 1000 messages
 
@@ -394,6 +395,8 @@ It's a conscious decision to not use the `Error` field in the `PubAck` for this 
 
 The server will operate under limits to safeguard itself:
 
+* Each stream can only have 1,000 batches in flight at any time
+* Each server can only have 50,000 batches in flight at any time
 * A batch that has not had traffic for 10 seconds since the last message will be abandoned
 * There will be no maximum size for fast ingest batches
 * Streams with `PersistMode: async` set are compatible with fast ingest
