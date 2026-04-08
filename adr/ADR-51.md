@@ -1,17 +1,18 @@
 # JetStream Message Scheduler
 
-| Metadata | Value           |
-|----------|-----------------|
-| Date     | 2025-03-21      |
-| Author   | @ripienaar      |
-| Status   | Approved        |
-| Tags     | jetstream, 2.12 |
+| Metadata | Value                 |
+|----------|-----------------------|
+| Date     | 2025-03-21            |
+| Author   | @ripienaar            |
+| Status   | Approved              |
+| Tags     | jetstream, 2.12, 2.14 |
 
-| Revision | Date       | Author          | Info                                    |
-|----------|------------|-----------------|-----------------------------------------|
-| 1        | 2025-03-21 | @ripienaar      | Document Initial Design                 |
-| 2        | 2025-09-30 | @ripienaar      | Use `omitempty` on configuration fields |
-| 3        | 2026-01-05 | @MauriceVanVeen | Support time zones for cron             |
+| Revision | Date       | Author                      | Info                                                     | Server Version |
+|----------|------------|-----------------------------|----------------------------------------------------------|----------------|
+| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                  | 2.12.0         |
+| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                  | 2.12.0         |
+| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                              | 2.14.0         |
+| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules | 2.14.0         |
 
 ## Context and Motivation
 
@@ -143,6 +144,7 @@ These headers can be set on message that define a schedule:
 | `Nats-Schedule-Source`    | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
 | `Nats-Schedule-TTL`       | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               |
 | `Nats-Schedule-Time-Zone` | The time zone used for the Cron schedule. If not specified, the Cron schedule will be in UTC. Not allowed to be used if the schedule is not a Cron schedule.    |
+| `Nats-Schedule-Rollup`    | When publishing sets a Rollup on the message, only `sub` is a valid value                                                                                       |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
@@ -150,7 +152,8 @@ Messages that the Schedules produce will have these headers set in addition to a
 |----------------------|------------------------------------------------------------------------------------------|
 | `Nats-Scheduler`     | The subject holding the schedule                                                         |
 | `Nats-Schedule-Next` | Timestamp for next invocation for cron schedule messages or `purge` for delayed messages |
-| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is given                                                   |
+| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is given with value `5m`                                   |
+| `Nats-Rollup`        | `sub` when `Nats-Schedule-Rollup` is set to `sub`                                        |
 
 The body of the message will simply be the provided body in the schedule.
 
@@ -163,6 +166,53 @@ are supported, it's not recommended to use Cron schedules that trigger during da
 time moves forward due to DST, a schedule could be skipped if its time was not reached. If time moves backward due to
 DST, a schedule could be executed twice if its time was reached twice. Additionally, the server's time zones need to be
 kept up to date; otherwise servers might not run the Cron schedule at the expected time.
+
+### Ending/stopping schedules early
+
+Schedules can be stopped early in two ways:
+
+- Basic: stopping one or more schedules.
+- Advanced: only stop a schedule if publishing a message to a different subject succeeds (atomic).
+
+The most basic way to stop one or more schedules is by simply deleting the message for that particular schedule. This
+can be performed by:
+
+- Deleting the schedule message directly by its stream sequence.
+- Purging one schedule by its schedule subject.
+- Purging one or more schedules by using a purge subject with wildcards that can match multiple schedule subjects.
+
+Alternatively, but for more advanced use cases, a schedule can be stopped only after a message on a different subject is
+persisted. This guarantees a schedule can be stopped, and a new message published, as a single atomic operation. This
+can be done by sending a message:
+
+- `Nats-Schedule-Next` header set to `purge`.
+- `Nats-Scheduler` header set to the subject of the schedule.
+- The message's subject equals:
+  - The target subject (`Nats-Schedule-Target`) of the original schedule to publish the delayed message earlier than the
+    schedule would.
+  - Or, any other subject to publish to (except for the schedule subject itself). For example, with a schedule subject
+    of `schedules.orders.delayed` and a target subject of `orders`, which publishes a delayed message after 5 minutes.
+    You could publish to `schedules.orders.canceled` with the aforementioned headers to cancel the schedule, ensure no
+    message is published to the target subject, and signal the canceled schedule to a potentially different set of
+    consumers.
+
+This is also used by single delayed scheduled messages to automatically stop the schedule after the delayed message is
+published.
+
+Clients can also use this in combination with `Nats-Expected-Last-Subject-Sequence` and
+`Nats-Expected-Last-Subject-Sequence-Subject` to only end a schedule if the schedule still exists. Useful in cases
+where:
+
+- You want to make sure the schedule still exists and didn't fire already.
+- You want to stop the schedule AND send a message to a different subject in one atomic operation.
+- Similarly, you want to publish to the selected `Nats-Schedule-Target` earlier than the schedule would, but ensure the
+  schedule doesn't duplicate the message when the schedule would (eventually) trigger.
+
+NOTE: The selected subject in `Nats-Scheduler` can NOT equal the publish subject itself, as this would mean this message
+would be purged as well due to `Nats-Schedule-Next: purge`. If the intention was to update the schedule, replacing the
+former, then these headers aren't required to be set. The server already does this by default when publishing an updated
+schedule. These headers are only intended to be used when desiring to stop a schedule early and publishing a message to
+a different subject in one atomic operation.
 
 ## Stream Configuration
 
