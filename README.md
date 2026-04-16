@@ -31,6 +31,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |-----|----|-----------|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
 |[ADR-51](adr/ADR-51.md)|jetstream, 2.12, 2.14|JetStream Message Scheduler|
+|[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 
 ## Client
 
@@ -68,6 +69,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
+|[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 
 ## Jetstream
 
@@ -103,6 +105,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
+|[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 
 ## Kv
 
@@ -183,6 +186,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|
 |[ADR-56](adr/ADR-56.md)|server, 2.12|JetStream Consistency Models|
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
+|[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 
 ## Spec
 
