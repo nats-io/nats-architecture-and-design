@@ -13,6 +13,7 @@
 | 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                  | 2.12.0         |
 | 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                              | 2.14.0         |
 | 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules | 2.14.0         |
+| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages            | 2.14.0         |
 
 ## Context and Motivation
 
@@ -137,14 +138,14 @@ Here the local site would produce high frequency temperature readings into `sens
 
 These headers can be set on message that define a schedule:
 
-| Header                    | Description                                                                                                                                                     |
-|---------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Nats-Schedule`           | The schedule the message will be published on                                                                                                                   |
-| `Nats-Schedule-Target`    | The subject the message will be delivered to                                                                                                                    |
-| `Nats-Schedule-Source`    | Instructs the schedule to read the last message on the given subject and publish it. If the Subject is empty, nothing is published, wildcards are not supported |
-| `Nats-Schedule-TTL`       | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                               |
-| `Nats-Schedule-Time-Zone` | The time zone used for the Cron schedule. If not specified, the Cron schedule will be in UTC. Not allowed to be used if the schedule is not a Cron schedule.    |
-| `Nats-Schedule-Rollup`    | When publishing sets a Rollup on the message, only `sub` is a valid value                                                                                       |
+| Header                    | Description                                                                                                                                                                                                                                 |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Nats-Schedule`           | The schedule the message will be published on                                                                                                                                                                                               |
+| `Nats-Schedule-Target`    | The subject the message will be delivered to                                                                                                                                                                                                |
+| `Nats-Schedule-Source`    | Instructs the schedule to read the last message on the given subject and publish it to the target. If no message exists on the source subject, the schedule's own body and headers is published as a fallback. Wildcards are not supported. |
+| `Nats-Schedule-TTL`       | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                                                                                                           |
+| `Nats-Schedule-Time-Zone` | The time zone used for the Cron schedule. If not specified, the Cron schedule will be in UTC. Not allowed to be used if the schedule is not a Cron schedule.                                                                                |
+| `Nats-Schedule-Rollup`    | When publishing sets a Rollup on the message, only `sub` is a valid value                                                                                                                                                                   |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
