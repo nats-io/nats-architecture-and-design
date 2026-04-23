@@ -7,13 +7,14 @@
 | Status   | Approved              |
 | Tags     | jetstream, 2.12, 2.14 |
 
-| Revision | Date       | Author                      | Info                                                     | Server Version |
-|----------|------------|-----------------------------|----------------------------------------------------------|----------------|
-| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                  | 2.12.0         |
-| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                  | 2.12.0         |
-| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                              | 2.14.0         |
-| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules | 2.14.0         |
-| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages            | 2.14.0         |
+| Revision | Date       | Author                      | Info                                                       | Server Version |
+|----------|------------|-----------------------------|------------------------------------------------------------|----------------|
+| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                    | 2.12.0         |
+| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                    | 2.12.0         |
+| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                                | 2.14.0         |
+| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules   | 2.14.0         |
+| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages              | 2.14.0         |
+| 6        | 2026-04-23 | @MauriceVanVeen             | Clarify stream retention interaction & auto-applied rollup | 2.14.0         |
 
 ## Context and Motivation
 
@@ -231,9 +232,40 @@ type StreamConfig struct {
 * Setting this on a Source or Mirror should be denied
 * This feature can be enabled on existing streams but not disabled
 * A Stream with this feature on should require API level 2
+* Schedules are stored as rollup-subject messages: the server auto-applies `Nats-Rollup: sub` if the publisher did not set it. This is why enabling `AllowMsgSchedules` implicitly enables `AllowRollup` and clears `DenyPurge`. Publishing a new schedule to an existing schedule subject replaces the prior one.
+* All three stream retention policies are supported with schedules, each with different caveats, see [Stream Retention Interaction](#stream-retention-interaction).
 
 #### Stream Subjects
 As already noted, every schedule must have its own unique subject, so it is recommended that the stream subject contain wild cards to easily allow for many schedules. 
 For instance adding `schedules.>` as a stream subject would allow for all the example subjects: `schedules.orders.single`, `schedules.orders.hourly` and `schedules.sensors.cnc_temperature_sampled`
 
 The target subjects just normal subjects like `orders`, `sensors.cnc.temperature` or `sensors.sampled.cnc.temperature` and their pattern must also be added as a stream subject. 
+
+#### Stream Retention Interaction
+
+Schedules occupy a sequence on the schedule subject and must remain stored for as long as the schedule should keep producing messages. Once a schedule message is removed from storage, by any mechanism, its schedule stops firing. Generated target messages follow normal retention with no special treatment or warnings.
+
+The table below summarizes how each scheduling use case behaves under the three retention policies.
+
+| Use case                                      | `Limits` (default)                                                                                                                                                                                                                       | `WorkQueue`                                                                                                                          | `Interest`                                                                                                         |
+|-----------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------------------------|
+| **Single delayed publish** (`@at`)            | Works as documented.                                                                                                                                                                                                                     | Works, provided no consumer acknowledges the message before the schedule fires (unless that was intentional to cancel the schedule). | Works, provided at least one consumer has interest in the schedule subject, plus the mentioned `WorkQueue` caveat. |
+| **Cron schedule** (`@hourly`, `@every`, ...)  | Works as documented.                                                                                                                                                                                                                     | Works under the same condition above.                                                                                                | Works under the same condition above.                                                                              |
+| **Subject sampling** (`Nats-Schedule-Source`) | Works as documented.                                                                                                                                                                                                                     | Works under the same condition above; source subject must also fit within `WorkQueue` semantics.                                     | Works under the same condition above; source subject must also fit within `Interest` semantics.                    |
+| **Stream limits on schedule lifetime**        | `MaxAge` shorter than the firing interval deletes the schedule before it fires, prefer `Nats-TTL` on the schedule itself. Schedule removal due to `DiscardOld`, `MaxMsgs`, `MaxBytes`, etc. similarly removes and disables the schedule. | Same as `Limits`, plus the `WorkQueue` caveats above.                                                                                | Same as `Limits`, plus the `Interest` caveats above.                                                               |
+| **Consumer acknowledges the schedule**        | Standard consumer behaviour. If the schedule is consumed and acknowledged, it is not removed.                                                                                                                                            | Consumer removes the schedule if acknowledged.                                                                                       | Consumer removes the schedule if (all) acknowledged, or the schedule is removed if no interest remains.            |
+
+Operational notes:
+
+- **Limits** is the simplest configuration for most scheduling use cases and is recommended unless there is a specific reason to use the other policies for the same stream.
+- **WorkQueue**: a consumer filtered on a schedule subject will remove the schedule on ack, permanently stopping it. It is valid for no consumer to exist on the schedule subjects, such that the schedules fire independently and aren't removed via acks. If schedules are consumed and acknowledged, this disables the schedule but this can pose a race condition, since message deletion as a result of acknowledgement isn't immediate. If used in this way, be aware not to use a schedule interval that triggers very quickly if you want to optimistically acknowledge it to stop it.
+- **Interest**: if no consumer has interest in the schedule subject, the schedule will not be stored, nor will it trigger scheduled messages.
+
+Acknowledging a schedule on `WorkQueue` or `Interest` retention can be used to remove the schedule, but more reliable ways exist to disable a schedule in general, see [Ending/stopping schedules early](#endingstopping-schedules-early).
+
+There are two ways to combine schedules with `Interest` retention:
+
+1. **Pinning consumer on the Interest stream (single-stream workaround).** Configure at least one consumer with a `FilterSubject` covering the schedule subject pattern on the same `Interest` stream that holds the schedules. The consumer does not need to deliver anywhere; `AckPolicy=none` or an unconsumed durable is enough to pin interest and prevent schedules from being removed. Simple to set up, but the pinning consumer becomes load-bearing configuration: if it is deleted or its filter drifts, schedules silently stop. Although this is a "mostly" functional configuration, it's not recommended to be used since the pinning consumer adds overhead, especially when replicated.
+2. **Separate WorkQueue source stream (two-stream composition).** Place the schedules in a dedicated `WorkQueue` stream (with `AllowMsgSchedules=true` and subjects covering both schedule and target patterns), and have the `Interest` stream source the target subjects from it. Schedules live entirely in the `WorkQueue` stream, where nothing removes them so long as no consumer acknowledges the message containing the schedule. The schedule fires into the target subject inside the `WorkQueue` stream; the source relationship drains the generated target messages into the `Interest` stream for application consumers. This isolates schedule state from interest-driven retention and does not require a pinning consumer, at the cost of an extra stream and sourcing configuration. Note that `AllowMsgSchedules` must be set on the `WorkQueue` source stream only, the `Interest` stream cannot set it because it has sources configured.
+
+Option 2 is generally the more robust configuration because schedule persistence no longer depends on a consumer that exists solely to hold interest.
