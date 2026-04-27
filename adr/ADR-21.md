@@ -15,23 +15,23 @@ In the `nats` CLI this is used extensively, for example `nats stream ls --contex
 
 The intention of the ADR is to document the storage of these contexts so that clients can, optionally, support using them.
 
-## Version History
+## Revision history
 
-| Date       | Revision                                   |
-|------------|--------------------------------------------|
-| 2020-08-12 | Initial basic design                       |
-| 2020-05-07 | JetStream Domains                          |
-| 2021-12-13 | Custom Inbox Prefix                        |
-| 2024-12-03 | Windows Cert Store, User JWT and TLS First |
-| 2026-04-27 | Credential URI schemes, deprecate `nsc`    |
+| Revision | Date       | Author     | Info                                       |
+|----------|------------|------------|--------------------------------------------|
+| 1        | 2020-08-12 | @ripienaar | Initial basic design                       |
+| 2        | 2020-05-07 | @ripienaar | JetStream Domains                          |
+| 3        | 2021-12-13 | @ripienaar | Custom Inbox Prefix                        |
+| 4        | 2024-12-03 | @ripienaar | Windows Cert Store, User JWT and TLS First |
+| 5        | 2026-04-27 | @ripienaar | Credential URI schemes, deprecate `nsc`    |
 
-This reflects a current implementation in use widely via the CLI as such it's a stable release.  Only non breaking additions will be considered.
+This reflects a current implementation in use widely via the CLI; as such it's a stable release. Only non-breaking additions will be considered.
 
 ## Design
 
-Today the design is entirely file based for maximum portability, later we can consider other options like S3 buckets, KV stores etc.
+The design is file based for portability.
 
-### Configuration Paths
+### Configuration paths
 
 There is generally no standard for what goes on in a users home directory on a Unix system. Recently the Free Desktop team have been working on [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) that specifies in detail where configuration, data, binaries and more are to be stored in a way that's compatible with Linux desktops like KDE and Gnome but also with systems such as systemd.
 
@@ -44,7 +44,7 @@ We therefore based the design on this specification as a widely supported standa
 |`~/.config/nats/context.txt`|The current selected (default) context, would contain just `ngs`|
 |`~/.config/nats/context/ngs.json`|The configuration for the `ngs` context|
 
-While this is Linux centered it does work on Windows, we might want to consider a more typical path to replace `~/.config` there and keep the rest as above.
+While this is Linux centered it does work on Windows.
 
 ### Context content
 
@@ -53,16 +53,16 @@ The `~/.config/nats/context/ngs.json` file has the following JSON fields:
 | Key                      | Default                 | Description                                                                                              |
 |--------------------------|-------------------------|----------------------------------------------------------------------------------------------------------|
 | `description`            |                         | A human friendly description for the specific context                                                    |
-| `url`                    | `nats://localhost:4222` | Comma seperated list of server urls                                                                      |
+| `url`                    | `nats://localhost:4222` | Comma separated list of server urls                                                                      |
 | `token`                  |                         | Authentication token                                                                                     |
 | `user`                   |                         | The username to connect with, requires a password                                                        |
 | `password`               |                         | Password to connect with                                                                                 |
-| `creds`                  |                         | Path to a NATS Credentials file, or a credential URI (see *Credential URI Schemes* below)                |
-| `nkey`                   |                         | Path to a NATS Nkey file, or a credential URI (see *Credential URI Schemes* below)                       |
+| `creds`                  |                         | Path to a NATS Credentials file, or a credential URI (see [Credential URI schemes](#credential-uri-schemes)) |
+| `nkey`                   |                         | Path to a NATS Nkey file, or a credential URI (see [Credential URI schemes](#credential-uri-schemes))    |
 | `cert`                   |                         | Path to the x509 public certificate                                                                      |
 | `key`                    |                         | Path to the x509 private key                                                                             |
 | `ca`                     |                         | Path to the x509 Certificate Authority                                                                   |
-| `nsc`                    |                         | **Deprecated.** A `nsc` resolve url; use `creds` with an `nsc://` URI instead. See *Migration* below     |
+| `nsc`                    |                         | **Deprecated.** Use `creds` with an `nsc://` URI instead. See [Migration of the deprecated `nsc` field](#migration-of-the-deprecated-nsc-field) |
 | `jetstream_domain`       |                         | The JetStream Domain to use                                                                              |
 | `jetstream_api_prefix`   |                         | The JetStream API Prefix to use                                                                          |
 | `jetstream_event_prefix` |                         | The JetStream Event Prefix                                                                               |
@@ -74,9 +74,9 @@ The `~/.config/nats/context/ngs.json` file has the following JSON fields:
 | `windows_cert_match`     |                         | How certificates are searched for in the store, `subject` or `issuer`                                    |
 | `windows_ca_certs_match` |                         | Which Certificate Authority to use inside the store                                                      |
 
-All fields are optional, none are marked as `omitempty`, users wishing to edit these with an editor should known all valid key names.
+All fields are optional, none are marked as `omitempty`, users wishing to edit these with an editor should know all valid key names.
 
-### Credential URI Schemes
+### Credential URI schemes
 
 The `creds` and `nkey` fields accept either a bare filesystem path or a URI that names where the credential material is fetched from at connect time. A bare path is equivalent to a `file://` URI. The following schemes are supported:
 
@@ -92,19 +92,19 @@ The `creds` and `nkey` fields accept either a bare filesystem path or a URI that
 
 #### `nsc://` references
 
-The `nsc://` scheme takes a URL-shaped value. Examples:
+The `nsc://` scheme takes a URL-shaped value, where `<operator>`, `<account>`, and `<user>` are placeholders for the corresponding nsc names and the query-string flags are literal:
 
- * `nsc://operator`
- * `nsc://operator/account`
- * `nsc://operator/account/user`
- * `nsc://operator/account/user?operatorSeed&accountSeed&userSeed`
- * `nsc://operator/account/user?operatorKey&accountKey&userKey`
- * `nsc://operator?key&seed`
- * `nsc://operator/account?key&seed`
- * `nsc://operator/account/user?key&seed`
- * `nsc://operator/account/user?store=/a/.nsc/nats&keystore=/foo/.nkeys`
+ * `nsc://<operator>`
+ * `nsc://<operator>/<account>`
+ * `nsc://<operator>/<account>/<user>`
+ * `nsc://<operator>/<account>/<user>?operatorSeed&accountSeed&userSeed`
+ * `nsc://<operator>/<account>/<user>?operatorKey&accountKey&userKey`
+ * `nsc://<operator>?key&seed`
+ * `nsc://<operator>/<account>?key&seed`
+ * `nsc://<operator>/<account>/<user>?key&seed`
+ * `nsc://<operator>/<account>/<user>?store=/a/.nsc/nats&keystore=/foo/.nkeys`
 
-When the credential is resolved the implementation invokes `nsc generate profile <ref>`, where `<ref>` is the URI with any leading `nsc://` stripped. The response is a non zero exit code for error else a structure like:
+When the credential is resolved the implementation invokes `nsc generate profile <ref>`, where `<ref>` is the URI with any leading `nsc://` stripped. The response is a non-zero exit code for error else a structure like:
 
 ```json
 {
@@ -119,36 +119,35 @@ The `user_creds` file is read and used as the credentials. The `service` value i
 
 See `nsc generate profile --help` for details.
 
-### Migration of the deprecated `nsc` Field
+### Migration of the deprecated `nsc` field
 
 The top-level `nsc` field is retained for backward compatibility but is deprecated. New contexts should set `creds` to an `nsc://...` URI instead.
 
-Implementations are expected to migrate the legacy field on write so existing contexts upgrade in place:
+Implementations are expected to migrate the legacy field on write so existing contexts upgrade in place.
 
-- On load, a context that still carries the legacy `nsc` field continues to work: the implementation invokes `nsc generate profile` to populate the effective `creds` and `url` for the connection. An explicitly-set `url` or `creds` in the context overrides the values discovered from `nsc`.
-- On save, the registry rewrites the legacy `nsc` field into `creds` as an `nsc://<ref>` URI and clears the legacy field. If `url` is empty and a service URL was discovered from `nsc` at load time, that URL is captured into `url`. If both `url` and `creds` are empty (a truly legacy context with no override), `nsc generate profile` is invoked at save time to populate `url` from the operator's service URL. When `creds` was overridden the user has opted out of `nsc`-driven resolution, so the migration does not invoke `nsc` and does not fail in environments where `nsc` is unavailable.
+On load, a context that still carries the legacy `nsc` field continues to work. The implementation invokes `nsc generate profile` to populate the effective `creds` and `url` for the connection. An explicitly-set `url` or `creds` in the context overrides the values discovered from `nsc`.
+
+On save, the registry rewrites the legacy `nsc` field into `creds` as an `nsc://<ref>` URI and clears the legacy field. If `url` is empty and a service URL was discovered from `nsc` at load time, that URL is captured into `url`. If both `url` and `creds` are empty — a truly legacy context with no override — `nsc generate profile` is invoked at save time to populate `url` from the operator's service URL. When `creds` was overridden the user has opted out of `nsc`-driven resolution, so the migration does not invoke `nsc` and does not fail in environments where `nsc` is unavailable.
 
 After migration the saved context contains `creds: "nsc://<operator>/<account>/<user>"` and a populated `url`, and the legacy `nsc` field is absent.
 
-## Sample Usage APIs
+## Sample usage APIs
 
-I don't think we really want to dictate standard APIs here, in Go we have 2 main ways to use the package.
+This ADR does not dictate a standard API surface. In Go the package exposes two common patterns; delegating context management to the `nats` CLI is also fine.
 
-It's also fine to delegate management of these to the `nats` CLI.
-
-A very basic and quick way to just connect to a specific context:
+A basic way to connect to a specific context:
 
 ```go
-nc, _ := Connect(os.GetEnv("CONTEXT"), nats.MaxReconnects(-1))
+nc, _ := Connect(os.Getenv("CONTEXT"), nats.MaxReconnects(-1))
 ```
 
-Here Connect will construct `[]nats.Option` based on the context settings and append the user supplied ones to the list.
+Here `Connect` constructs `[]nats.Option` from the context settings and appends the user-supplied options to the list.
 
 A way to load a context and optionally override some options:
 
 ```go
-nctx, _ := Load(os.GetEnv("CONTEXT"), WithServerURL("nats://other:4222"))
+nctx, _ := Load(os.Getenv("CONTEXT"), WithServerURL("nats://other:4222"))
 nc, _ := nctx.Connect(nats.MaxReconnects(-1))
 ```
 
-When `name` is empty it will use the current selected context, if no context is selected and name is empty it's an error.
+When `name` is empty the currently selected context is used; if no context is selected and `name` is empty it is an error.
