@@ -47,7 +47,7 @@ The client will signal batch start and membership using headers on published mes
  * A batch will be started by adding the `Nats-Batch-Id:uuid` and `Nats-Batch-Sequence:1` headers using a *request*, the server will reply with an error or zero byte message. Maximum length of the ID is 64 characters.
  * Following messages in the same batch will include the `Nats-Batch-Id:uuid` header and increment `Nats-Batch-Sequence:n` by one, and might optionally include a reply subject that will receive a zero byte reply
  * If the final message has the headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:1`, the server will store the message, commit the batch and reply with a pub ack. 
- * Otherwise, the final message will have headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will commit the batch without storing the message and reply with a pub ack. The last message will be updated to have the `Nats-Batch-Commit:1` header set by the server before the batch is saved.
+ * Otherwise, the final message will have headers `Nats-Batch-Id:uuid`, `Nats-Batch-Sequence:n` and `Nats-Batch-Commit:eob` and the server will commit the batch without storing the message and reply with a pub ack. The last message will be updated to have the `Nats-Batch-Commit:1` header set by the server before the batch is saved. The pub ack's `BatchSize` will reflect the messages in the batch, without counting the EOB message.
 
 The server will acknowledge in the following manner:
 
@@ -75,7 +75,7 @@ The server will respond with the following errors if committing a batch fails:
  * The server will limit the `Nats-Batch-ID` to 64 characters and respond with an error Pub Ack if it's too long
  * Server will reject messages for which the batch is unknown with an error Pub Ack
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
- * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
+ * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
  * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
  * If a stream is operating on the `PersistMode: async` mode, any batch published to it must fail
@@ -433,7 +433,7 @@ type Advisory struct {
 }
 ```
 
-The event type is `io.nats.jetstream.advisory.v1.batch_abandoned`.
+The event type is `io.nats.jetstream.advisory.v1.stream_batch_abandoned`.
 
 ## Stream Configuration
 
