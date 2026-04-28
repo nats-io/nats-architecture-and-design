@@ -93,6 +93,28 @@ The `LastMsgId` header is currently not supported. A batch will be rejected if t
 
 Initial release of this feature rejects the use of `MsgId`. Starting from 2.12.1 de-duplication is supported and a batch will be rejected with an error if it contains a duplicate message.
 
+### Abandonment Advisories
+
+When an atomic batch is abandoned it might be for reasons that will never be communicated back to clients, so we raise advisories:
+
+```go
+type BatchAbandonReason string
+
+var (
+	BatchTimeout              BatchAbandonReason = "timeout"
+	BatchIncomplete           BatchAbandonReason = "incomplete"
+	BatchRequirementsNotMet   BatchAbandonReason = "unsupported"
+)
+
+type Advisory struct {
+	// ...
+	BatchId      string             `json:"batch"`
+	Reason       BatchAbandonReason `json:"reason"`
+}
+```
+
+The event type is `io.nats.jetstream.advisory.v1.stream_batch_abandoned`.
+
 ## Fast-ingest Batch Publishing
 
 ### Context
@@ -390,7 +412,7 @@ It's a conscious decision to not use the `Error` field in the `PubAck` for this 
 * Server will reject values for `gap` that is not `ok` or `fail`.
 * If messages in a batch are received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration.
 * Check properties like `ExpectedLastSeq` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through flow control, but per-message content can remain the same. This allows to swap between publish implementations as needed.
-* Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case.
+* Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds.
 * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be for earlier sequences.
 
 The server will operate under limits to safeguard itself:
@@ -412,28 +434,6 @@ type PubAck struct {
 	BatchSize  int    `json:"count,omitempty"`
 }
 ```
-
-## Abandonment Advisories
-
-When a batch is abandoned it might be for reasons that will never be communicated back to clients, so we raise advisories:
-
-```go
-type BatchAbandonReason string
-
-var (
-	BatchTimeout              BatchAbandonReason = "timeout"
-	BatchIncomplete           BatchAbandonReason = "incomplete"
-	BatchRequirementsNotMet   BatchAbandonReason = "unsupported"
-)
-
-type Advisory struct {
-	// ...
-	BatchId      string             `json:"batch"`
-	Reason       BatchAbandonReason `json:"reason"`
-}
-```
-
-The event type is `io.nats.jetstream.advisory.v1.stream_batch_abandoned`.
 
 ## Stream Configuration
 
