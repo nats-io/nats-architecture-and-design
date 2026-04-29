@@ -11,6 +11,11 @@
 |----------|------------|------------|----------------------------------------------------------|
 | 1        | 2022-08-08 | @tbeets    | Initial design                                           |
 | 2        | 2024-03-06 | @ripienaar | Adds Multi and Batch behaviors for Server 2.11           |
+| 3        | 2026-04-29 | @ripienaar | Clarifies MIRROR Direct Get responder configuration      |
+| 4        | 2026-04-29 | @ripienaar | Removes stale `max_msgs_per_subject` auto-enable claim   |
+| 5        | 2026-04-29 | @ripienaar | Specifies seq=1 default for batch with no lower bound    |
+| 6        | 2026-04-29 | @ripienaar | Documents `multi_last` pagination cursor (`seq`)         |
+| 7        | 2026-04-29 | @ripienaar | Specifies `batch: 0` as equivalent to a non-batch Get    |
 
 ## Context and motivation 
 
@@ -39,6 +44,33 @@ As mirrors need not be in the same cluster as the upstream, servers that respond
 upstream can be strategically placed for client latency-reduction, e.g. different geographic locations serving distributed
 clients. Also, read availability can be enhanced as mirrors may be available to clients when the upstream is offline.
 
+This participation is controlled by a `mirror_direct` boolean on the **mirror stream's** configuration. The flag
+governs whether the mirror's peers join the upstream's Direct Get queue group; it has no meaning when set on a
+non-mirror stream (where `allow_direct` alone determines whether the stream serves Direct Get for itself). On a
+mirror, `mirror_direct` is independent of the mirror's own `allow_direct` (which controls whether requests
+addressed to the mirror's own subject `$JS.API.DIRECT.GET.<MIRROR>` are served).
+
+- When a mirror is created and the upstream stream is visible to the server (locally or anywhere in the
+  JetStream cluster), the new mirror's `mirror_direct` is set to match the upstream's `allow_direct`. A
+  user-supplied `mirror_direct` that disagrees with the upstream is rejected in pedantic mode and silently
+  aligned with the upstream in non-pedantic mode.
+- When the upstream stream is not visible to the server (for example, an External mirror sourcing across
+  JetStream domains), the user-supplied `mirror_direct` is preserved as-is.
+- A mirror with `mirror_direct: true` queue-subscribes its peers to both the upstream's `$JS.API.DIRECT.GET.<SRC>`
+  and `$JS.API.DIRECT.GET.<SRC>.>` (Subject-Appended) endpoints, in the same `_sys_` queue group used by the
+  upstream's own peers. This is what allows reads to be spread across upstream and mirror servers transparently.
+- The mirror only joins the upstream queue group once it has caught up to within a small lag window of the source
+  (a server implementation detail). Until catch-up, only the upstream's own peers respond, so a freshly-created
+  mirror does not yet contribute to read availability.
+- `mirror_direct` is captured on the mirror at create time and is not automatically refreshed when the
+  upstream's `allow_direct` changes later. Toggling the upstream's `allow_direct` therefore desynchronises
+  mirrors until each mirror is itself updated via `STREAM.UPDATE` — any update on a mirror re-runs the
+  alignment rule and pulls in the upstream's current `allow_direct` (subject to the same pedantic-mode check).
+  To fully enable or disable mirror participation, an operator must update the upstream's `allow_direct` **and**
+  re-issue an update against each mirror.
+
+Due to the ambiguity and non-deterministic behavior it's suggested that users always set `mirror_direct` to their desired value.
+
 ###### A note on read-after-write coherency
 
 The existing Get API `$JS.API.STREAM.MSG.GET.<stream>` provides read-after-write coherency by routing requests to a 
@@ -54,13 +86,14 @@ the latest consensus writes from upstream.
 
 ### Stream property: Allow Direct 
 
-- Stream configuration adds a new Allow Direct boolean property: `allow_direct`
-- Allow Direct is always set to `true` by the server when maximum messages per subject, `max_msgs_per_subject`, is configured to be > 0 (a max limit is specified)
-- If the user passes Allow Direct explicitly in stream create or edit request, the value will be overriden
-based on `max_msgs_per_subject`
+- Stream configuration adds an Allow Direct boolean property: `allow_direct`. Default is `false`.
+- `allow_direct` is opt-in. The server does not enable it implicitly based on other stream settings — clients
+  that want Direct Get must set `allow_direct: true` in the create or update request. Higher-level helpers (for
+  example, the KV API) opt in on the user's behalf when they construct stream configurations for KV buckets.
 
-> Allow Direct is set automatically based on the inferred use case of the stream. Maximum messages per subject is a
-tell-tale of a stream that is a KV bucket.
+> Earlier revisions of this document described the server auto-promoting `allow_direct: true` when
+> `max_msgs_per_subject > 0`. That behaviour existed only briefly and was removed in server v2.9.0; current
+> servers leave `allow_direct` untouched regardless of `max_msgs_per_subject`.
 
 ### Direct Get API 
 
@@ -122,11 +155,16 @@ After the batch is sent a zero length payload message will be sent with the `Nat
 
 When requests are made against servers that do not support `batch` the first response will be received and nothing will follow. Old servers can be detected by the absence of the `Nats-Num-Pending` header in the first reply.
 
-There are 4 viable API calls for a batch. All require a batch amount greater than 0 and a subject which may include a wildcard.
-They also require a start sequence -or- a start time. 
+There are 4 viable API calls for a batch. Each requires a batch amount and a subject which may include a wildcard.
 
-There is a server issue under consideration requesting that if neither start sequence nor a start time is supplied that it defaults to start sequence of 1.
-For now the client can optionally provide the 2 additional calls which provide the start sequence of 1 for the user. 
+If `batch` is omitted or set to `0`, the request is treated as a non-batch single-message Get: the server returns
+exactly one matching message and does not emit an EOB sentinel or `Nats-Num-Pending`. Use `batch >= 1` to opt
+into batched behavior.
+
+A start sequence (`seq`) or a start time (`start_time`) may be supplied to bound the batch from below. If neither is
+supplied the server defaults to `seq: 1` — equivalent to "from the start of the stream". Clients may rely on this
+default; supplying `seq: 1` explicitly is a no-op equivalent. If both `seq` and `start_time` are supplied, behavior
+is implementation-defined and clients should pick one.
 
 1. get up to batch number of messages where the message sequence is >= 1 and for the specified subject
     * API: `batch: number, subject: string`
@@ -172,7 +210,20 @@ If we did a normal multi read using `{"multi_last":["$KV.USERS.1234.>"]}` we wou
 
 A `batch` parameter can be added to restrict the result set to a certain size, otherwise the server will decide when to end the batch using the same `EOB` marker message seen in Batched Mode with the addition of the `Nats-UpTo-Sequence` header.
 
-When the server cannot send any more data it will respond, like the above Batch, with a zero-length payload message including the `Nats-Num-Pending` and `Nats-Last-Sequence` headers enabling clients to determine if further batch calls are needed. In addition, it would also have the `Status` header set to `204` with the `Description` header being `EOB`. The `Nats-UpTo-Sequence` header will be set indicating the last message in the stream that matched criteria. This number would be used in subsequent requests as the `up_to_seq` value to ensure batches of multi-gets are done around a consistent point in time.
+When the server cannot send any more data it will respond, like the above Batch, with a zero-length payload message including the `Nats-Num-Pending` and `Nats-Last-Sequence` headers enabling clients to determine if further batch calls are needed. In addition, it would also have the `Status` header set to `204` with the `Description` header being `EOB`. The `Nats-UpTo-Sequence` header will be set indicating the last message in the stream that matched criteria.
+
+To paginate a multi-subject result set across more than one request the client uses two cursors together:
+
+- `up_to_seq` keeps the snapshot stable. After receiving a partial result, the client passes the EOB's
+  `Nats-UpTo-Sequence` value back as `up_to_seq` so subsequent pages see the same point-in-time view of the
+  stream, even if writes are happening concurrently.
+- `seq` advances the lower bound. The client passes `Nats-Last-Sequence + 1` from the EOB as `seq` on the
+  next request so the server skips past messages already delivered. Internally the server's matched
+  sequences are returned in ascending order, and `seq` is treated as an inclusive lower bound.
+
+A page-2 follow-up therefore looks like
+`{"multi_last":[…], "batch":N, "seq": <Nats-Last-Sequence + 1>, "up_to_seq": <Nats-UpTo-Sequence>}`. Pagination
+ends when `Nats-Num-Pending` reaches `0` on the EOB.
 
 For the multi last API, we can make 6 distinct calls:
 
