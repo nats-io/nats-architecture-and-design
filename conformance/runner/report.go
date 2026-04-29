@@ -287,10 +287,13 @@ func writeReadme(w io.Writer, groups []*harness.Group) error {
 	fmt.Fprintln(w)
 	fmt.Fprintln(w, "| Group | Title | Tests |")
 	fmt.Fprintln(w, "|-------|-------|-------|")
+	total := 0
 	for _, g := range groups {
 		fmt.Fprintf(w, "| [`%s`](#%s) | %s | %d |\n",
 			g.Name, anchorID(g.Name), mdEscape(g.Title), len(g.Tests))
+		total += len(g.Tests)
 	}
+	fmt.Fprintf(w, "| **Total** | | **%d** |\n", total)
 	fmt.Fprintln(w)
 
 	for _, g := range groups {
