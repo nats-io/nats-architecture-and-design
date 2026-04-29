@@ -41,6 +41,7 @@ import (
 	// Blank imports trigger each group's init() so it lands in the
 	// shared registry. Add a new group by adding a line here.
 	_ "github.com/nats-io/nats-architecture-and-design/conformance/ADR-31"
+	_ "github.com/nats-io/nats-architecture-and-design/conformance/ADR-42"
 	_ "github.com/nats-io/nats-architecture-and-design/conformance/ADR-49"
 	_ "github.com/nats-io/nats-architecture-and-design/conformance/ADR-50"
 	_ "github.com/nats-io/nats-architecture-and-design/conformance/ADR-51"
