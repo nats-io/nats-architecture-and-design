@@ -68,9 +68,9 @@ PriorityTimeout time.Duration `json:"priority_timeout,omitempty"` // pinned_clie
 PriorityGroups []PriorityGroupState `json:"priority_groups,omitempty"`
 
 type PriorityGroupState struct {
-    Group          string     `json:"name"`
-    PinnedClientId string     `json:"pinned_id,omitempty"`
-    PinnedTs       *time.Time `json:"pinned_ts,omitempty"`
+    Group          string    `json:"group"`
+    PinnedClientID string    `json:"pinned_client_id,omitempty"`
+    PinnedTS       time.Time `json:"pinned_ts,omitempty"`
 }
 ```
 
@@ -79,8 +79,8 @@ type PriorityGroupState struct {
 | Code / Header                | Meaning                                                                     |
 |------------------------------|-----------------------------------------------------------------------------|
 | `Nats-Pin-Id: <id>` (header) | Set on every message delivered to the pinned client                         |
-| `423 Nats-Wrong-Pin-Id`      | Pull supplied an `id` that does not match the current pin                   |
-| `423 Nats-Pin-Id mismatch`   | Pull omitted `id` while a different client is pinned, or pin has changed    |
+| `423 Nats-Wrong-Pin-Id`      | A waiting pull's stored `id` no longer matches the pin (e.g. after a switch) |
+| `423 Nats-Pin-Id mismatch`   | An inbound pull supplied an `id` that does not match the current pin        |
 
 The exact textual variants of the 423 description (`Nats-Wrong-Pin-Id` vs `Nats-Pin-Id mismatch`) come from ADR-42 revision 5; the harness asserts only that **status is `423`** and records the description.
 
@@ -368,15 +368,17 @@ $JS.EVENT.ADVISORY.CONSUMER.UNPINNED.<STREAM>.<CONSUMER>   # type: io.nats.jetst
   - The delivered message carries a `Nats-Pin-Id: <id>` header with a non-empty `<id>` value.
   - `consumer_info().priority_groups[0]` reports `name: "jobs"`, `pinned_id: "<id>"`, and `pinned_ts` set.
 
-### PG-302 — Subsequent pulls without an `id` are rejected with 423
+### PG-302 — Pulls without an `id` are kept as standby while another client is pinned
 
-- **References** — `pinned_client` policy ("Respond with a 4xx header to any pulls … that have a different ID set"); revision 5 (`423 Nats-Pin-Id mismatch`).
+- **References** — `pinned_client` policy, revision 8 ("A pull request that omits the `id` field while another client is pinned is **not** rejected. The server keeps it on the waiting queue as a standby candidate").
 - **Preconditions** — As PG-301; one client is pinned with `id = X`. Stream contains a second message.
 - **Steps**
   1. From a *different* client (fresh inbox), send a pull `{"batch": 1, "group": "jobs", "expires": 1500000000}` with **no `id` field**.
+  2. Drain the inbox until the pull's `expires` window elapses.
 - **Expected**
-  - A status reply with code `423` is received. No message delivery.
-  - The harness records the description string (expected `Nats-Pin-Id mismatch`).
+  - No JetStream message is delivered (the pinned client holds the pin).
+  - No `423` status reply is received — a no-`id` pull is a standby candidate, not a wrong-id pull.
+  - The pull terminates with either a `408 Request Timeout` after `expires`, or no reply at all (server-implementation choice). The harness records which form occurred.
 
 ### PG-303 — Pull with the wrong `id` is rejected with 423
 
@@ -420,14 +422,15 @@ $JS.EVENT.ADVISORY.CONSUMER.UNPINNED.<STREAM>.<CONSUMER>   # type: io.nats.jetst
   - Every message is delivered to A with `Nats-Pin-Id: <X>` and the same `<X>` throughout.
   - `consumer_info().priority_groups[0].pinned_id` remains `<X>` for the full window.
 
-### PG-307 — Fetch (single non-blocking pull) on `pinned_client` consumer is supported at protocol level
+### PG-307 — `no_wait` pull on `pinned_client` consumer is delivered and pins the caller
 
-- **References** — Client side implementation ("Fetch should not be supported in this mode. At least initially.").
+- **References** — `pinned_client` policy. ADR-42 places no client-side or server-side restriction on `no_wait` pulls in pinning mode; `no_wait` is a wire-level flag that the server treats identically regardless of `PriorityPolicy`.
 - **Preconditions** — Pull consumer with `PriorityPolicy: "pinned_client"`, `PriorityGroups: ["jobs"]`, `PriorityTimeout: 30s`, `AckPolicy: "explicit"`. Stream contains 1 message.
 - **Steps**
   1. Send a single pull `{"batch": 1, "group": "jobs", "no_wait": true}`.
 - **Expected**
-  - The harness records the observed result: server delivers the message and pins the caller, OR server returns an error. Conformance is **inconclusive** — ADR-42 leaves this as a client-side recommendation rather than a server-enforced rule.
+  - The pull is delivered with `Nats-Pin-Id: <X>`.
+  - `consumer_info().priority_groups[0].pinned_client_id` is `<X>`.
 
 ---
 
@@ -638,11 +641,11 @@ The following ADR-42 areas are intentionally **not** covered by this conformance
 
 ## Implementation notes for the harness
 
-- **Server version gating** — Priority Groups are introduced at server 2.11. The 423 description variants `Nats-Wrong-Pin-Id` / `Nats-Pin-Id mismatch` are introduced at 2.12 (revision 5). On older builds, PG-302 / PG-303 should be skipped with reason; the rest of PG-300 must still pass.
+- **Server version gating** — Priority Groups are introduced at server 2.11. The 423 description variants `Nats-Wrong-Pin-Id` / `Nats-Pin-Id mismatch` are introduced at 2.12 (revision 5). On older builds, PG-303 should be skipped with reason; the rest of PG-300 must still pass. PG-302 (no-id standby behaviour) is independent of the 423 description and applies to all versions.
 - **Inbox subscriptions** — every test opens a fresh inbox per pull. Pins are tied to client identity, which the server derives from the pull's reply subject, so the harness MUST use distinct inbox subjects to model "client A" vs "client B".
 - **Time-based tests** — PG-209, PG-305, PG-503 use real-time waits. The harness must allow a generous slack (≥ 1 s above the configured timeout) to absorb scheduling jitter.
 - **Cleanup** — every test deletes its consumer and stream on completion. Advisory subscriptions from PG-500 must be drained before the next test runs.
-- **Reporting** — per-test result is `pass`, `fail`, `skip` (server below required version), or `inconclusive` (used for tests where the ADR allows multiple acceptable behaviours — PG-110, PG-111, PG-210, PG-307, PG-703, PG-704).
+- **Reporting** — per-test result is `pass`, `fail`, `skip` (server below required version), or `inconclusive` (used for tests where the ADR allows multiple acceptable behaviours — PG-110, PG-111, PG-210, PG-703, PG-704).
 - **Standby clients** — for switch tests (PG-305, PG-401), at least one standby pull must be in flight *before* the switch event so the server has a candidate to pin to. Without a standby, the server will simply have no pinned client until the next pull arrives.
 
 ## Ambiguities flagged in this document
@@ -651,7 +654,6 @@ These items in ADR-42 are unclear and the conformance suite currently records ob
 
 - **Exact 4xx status code** for a pull missing `group`, having an unknown `group`, an out-of-range `priority`, or an out-of-range `failover`. Currently asserted only as "some 4xx".
 - **AckPolicy enforcement strength** (PG-110, PG-111). The ADR says the server MUST error in pedantic mode but is silent on non-pedantic mode — implementations may either reject or silently coerce to `explicit`.
-- **Fetch / `no_wait` interaction with `pinned_client`** (PG-307). The ADR places this constraint on clients but does not require server enforcement.
 - **`priority_groups` consumer-info shape** when no policy is configured (PG-704) — absent vs empty array is implementation-defined.
 - **Failover under a competing nearer pull that has not yet been *served*** (PG-210). The "nearer client resets the timer" wording assumes the server can detect pull presence even when the pull's criteria are not satisfied; this is reasonable but not formally specified.
 - **"Wait for in-flight messages to be completed"** (Step 1 of pinned-client switch flow). The ADR does not specify a maximum time, retry behaviour, or interaction with redelivery. Not directly tested.

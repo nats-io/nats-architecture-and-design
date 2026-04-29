@@ -42,15 +42,18 @@ Tests publish under nats.adr.conformance.<test-id>.* and create their own
 streams named CONF_<test-id>_<rand>. Streams are torn down per test, plus
 a startup sweep removes leftovers from prior aborted runs.
 
-The 'slow' flag gates tests that block on real-time waits: PG-209
-(failover), PG-305 (pin idle switch), PG-503 (timeout-reason advisory),
-PG-306 (long pin retention).`,
+The 'slow' flag gates tests that block on real-time waits: PG-305 (pin
+idle switch), PG-503 (timeout-reason advisory), PG-306 (long pin
+retention).
+
+The ADR-42 'failover' overflow option is not implemented in NATS Server
+as of 2.14, so PG-206..PG-210 are intentionally absent.`,
 		References: []string{
 			"../adr/ADR-42.md",
 			"ADR-42.md",
 		},
 		Flags: []harness.FlagSpec{
-			{Name: "slow", Help: "Run real-time-wait tests (PG-209, PG-305, PG-306, PG-503)", Type: harness.FlagBool, Default: "true"},
+			{Name: "slow", Help: "Run real-time-wait tests (PG-305, PG-306, PG-503)", Type: harness.FlagBool, Default: "true"},
 		},
 		Tests:    allTests(),
 		Setup:    groupSetup,

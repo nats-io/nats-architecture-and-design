@@ -21,12 +21,12 @@ import (
 func pg300Tests() []harness.Test {
 	return []harness.Test{
 		{ID: "PG-301", Title: "First pull becomes the pinned client", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG301},
-		{ID: "PG-302", Title: "Subsequent pulls without an id are rejected with 423", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG302},
+		{ID: "PG-302", Title: "Pulls without an id are kept as standby while another client is pinned", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG302},
 		{ID: "PG-303", Title: "Pull with the wrong id is rejected with 423", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG303},
 		{ID: "PG-304", Title: "Pinned client receives messages with same Nats-Pin-Id", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG304},
 		{ID: "PG-305", Title: "Pinned client times out and the pin switches", Section: "PG-300", Tags: []string{"pinned", "slow"}, SkipReason: requiresSlow(), Run: testPG305},
 		{ID: "PG-306", Title: "Pin survives across pulls within PriorityTimeout", Section: "PG-300", Tags: []string{"pinned", "slow"}, SkipReason: requiresSlow(), Run: testPG306},
-		{ID: "PG-307", Title: "Fetch on pinned_client consumer (server enforcement)", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG307},
+		{ID: "PG-307", Title: "no_wait pull on pinned_client is delivered and pins the caller", Section: "PG-300", Tags: []string{"pinned"}, Run: testPG307},
 	}
 }
 
@@ -99,10 +99,10 @@ func testPG301(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	g := info.PriorityGroups[0]
 	if g.Group != "jobs" {
-		return fail("priority_groups[0].name=%q want %q", g.Group, "jobs")
+		return fail("priority_groups[0].group=%q want %q", g.Group, "jobs")
 	}
 	if g.PinnedClientId != pin {
-		return fail("priority_groups[0].pinned_id=%q want %q", g.PinnedClientId, pin)
+		return fail("priority_groups[0].pinned_client_id=%q want %q", g.PinnedClientId, pin)
 	}
 	if g.PinnedTs == nil || g.PinnedTs.IsZero() {
 		return fail("priority_groups[0].pinned_ts is empty after pin")
@@ -124,7 +124,10 @@ func testPG302(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	if _, err := publishMsg(h, h.Subject("a"), []byte("y")); err != nil {
 		return fail("publish 2: %v", err)
 	}
-	// Different client (fresh inbox) WITHOUT id — must get 423.
+	// Different client (fresh inbox) WITHOUT id — must NOT receive a delivery
+	// (pin is held) and must NOT receive a 423 (no-id pulls are standby
+	// candidates, not wrong-id pulls). 408 on expiry, or silence, are both
+	// acceptable per ADR-42 revision 8.
 	replies, err := pull(h, stream, cname, pullRequest{
 		Batch:   1,
 		Group:   "jobs",
@@ -135,13 +138,13 @@ func testPG302(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	for _, r := range replies {
 		if r.IsMessage() {
-			return fail("non-pinned client got a delivery; expected 423 status")
+			return fail("non-pinned no-id client got a delivery while another client is pinned")
 		}
 		if r.Status == StatusPinMismatch {
-			return pass()
+			return fail("no-id pull got 423; ADR keeps no-id pulls as standby (got %v)", summary(replies))
 		}
 	}
-	return fail("expected status 423 from non-pinned client; got replies=%v", summary(replies))
+	return pass()
 }
 
 func testPG303(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
@@ -359,9 +362,6 @@ func testPG307(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	if _, err := publishMsg(h, h.Subject("a"), []byte("x")); err != nil {
 		return fail("publish: %v", err)
 	}
-	// Single pull with NoWait: this is what a "Fetch" looks like. ADR
-	// places the no-Fetch rule on clients, not on the server, so this
-	// is recorded as inconclusive.
 	replies, err := pull(h, stream, cname, pullRequest{
 		Batch:  1,
 		Group:  "jobs",
@@ -370,22 +370,28 @@ func testPG307(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	if err != nil {
 		return fail("pull: %v", err)
 	}
-	gotMsg := false
-	gotErr := false
+	var msg *pullReply
 	for _, r := range replies {
 		if r.IsMessage() {
-			gotMsg = true
-		} else if r.Status != "" && r.Status != "404" {
-			gotErr = true
+			msg = r
+			break
 		}
 	}
-	if gotMsg {
-		return inconclusive("server delivered to a Fetch (no_wait) on pinned_client; ADR client guidance, not server-enforced")
+	if msg == nil {
+		return fail("expected a delivered message, got %s", summary(replies))
 	}
-	if gotErr {
-		return inconclusive("server rejected a Fetch (no_wait) on pinned_client; behaviour recorded")
+	pin := msg.PinID()
+	if pin == "" {
+		return fail("delivered message missing %s header (replies=%s)", HdrPinID, summary(replies))
 	}
-	return inconclusive("server did not deliver and did not error explicitly; behaviour recorded")
+	info, err := consumerInfo(h, stream, cname)
+	if err != nil {
+		return fail("consumer info: %v", err)
+	}
+	if len(info.PriorityGroups) == 0 || info.PriorityGroups[0].PinnedClientId != pin {
+		return fail("priority_groups pinned_client_id mismatch: got %+v want %q", info.PriorityGroups, pin)
+	}
+	return pass()
 }
 
 // summary renders a slice of pullReplies in a compact, log-friendly

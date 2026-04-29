@@ -128,8 +128,8 @@ type consumerInfoResp struct {
 }
 
 type priorityGroupState struct {
-	Group          string     `json:"name"`
-	PinnedClientId string     `json:"pinned_id,omitempty"`
+	Group          string     `json:"group"`
+	PinnedClientId string     `json:"pinned_client_id,omitempty"`
 	PinnedTs       *time.Time `json:"pinned_ts,omitempty"`
 }
 
@@ -143,7 +143,6 @@ type pullRequest struct {
 	Group         string `json:"group,omitempty"`
 	MinPending    int64  `json:"min_pending,omitempty"`
 	MinAckPending int64  `json:"min_ack_pending,omitempty"`
-	Failover      int    `json:"failover,omitempty"`
 	ID            string `json:"id,omitempty"`
 	Priority      int    `json:"priority,omitempty"`
 }
