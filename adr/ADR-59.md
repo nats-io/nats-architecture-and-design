@@ -7,9 +7,10 @@
 | Status   | Implemented          |
 | Tags     | server, jetstream, spec |
 
-| Revision | Date       | Author      | Info                                          |
-|----------|------------|-------------|-----------------------------------------------|
-| 1        | 2026-03-03 | @ripienaar  | Initial spec, documents features up to 2.12.5 |
+| Revision | Date       | Author     | Info                                                         |
+|----------|------------|------------|--------------------------------------------------------------|
+| 1        | 2026-03-03 | @ripienaar | Initial spec, documents features up to 2.12.5                |
+| 2        | 2026-04-29 | @ripienaar | Aligns Mirror Direct Access with ADR-31 rev 3 clarifications |
 
 ## Context
 
@@ -175,9 +176,15 @@ deleted and recreated. However, a mirror can be "promoted" by removing the strea
 
 ### Mirror Direct Access
 
-When the upstream stream has `allow_direct` enabled, the mirror stream can set `mirror_direct` to enable high-performance
-direct get access. This is particularly useful for Key-Value store mirrors where reads should be served
-from the nearest replica.
+A mirror can participate in the upstream stream's Direct Get queue group, allowing
+client `$JS.API.DIRECT.GET.<UPSTREAM>` requests to be served by the nearest mirror
+peer instead of always routing to the origin. This is particularly useful for KV
+store mirrors where reads should land on the closest replica.
+
+This participation is controlled by `mirror_direct` on the **mirror's** Stream
+configuration; it has no meaning when set on a non-mirror stream. `mirror_direct`
+is independent of the mirror's own `allow_direct` (which only governs requests
+addressed to the mirror's own subject `$JS.API.DIRECT.GET.<MIRROR>`).
 
 ```json
 {
@@ -187,9 +194,41 @@ from the nearest replica.
 }
 ```
 
-When `mirror_direct` is enabled and the mirror has caught up to the upstream stream, direct get requests can be served
-by the nearest mirror rather than routing to the origin stream. The `StreamInfo` response includes an `alternates`
-field listing available mirrors sorted by RTT proximity.
+#### Defaulting and alignment
+
+- When a mirror is created and the upstream stream is visible to the server
+  (locally or anywhere in the JetStream cluster), the new mirror's `mirror_direct`
+  is set to match the upstream's `allow_direct`. A user-supplied `mirror_direct`
+  that disagrees with the upstream is rejected in pedantic mode and silently
+  aligned with the upstream in non-pedantic mode.
+- When the upstream is not visible (e.g. an External mirror sourcing across
+  JetStream domains), the user-supplied value is preserved as-is.
+- The mirror only joins the upstream queue group once it has caught up to within
+  a small lag window of the source. Until catch-up, only the upstream's own peers
+  respond and the mirror does not yet contribute to read availability.
+
+#### Updating
+
+`mirror_direct` is captured at mirror creation and is **not** automatically
+refreshed when the upstream's `allow_direct` changes later. To enable or disable
+mirror participation after the fact, the operator must update the upstream's
+`allow_direct` **and** re-issue an update against each mirror — any update on a
+mirror re-runs the alignment rule against the upstream's current value (subject
+to the same pedantic-mode check).
+
+Because of this, we recommend that operators always set `mirror_direct`
+explicitly to the desired value on both create and update, rather than relying
+on inheritance.
+
+#### Discoverability
+
+When a mirror has `mirror_direct: true`, the upstream's `StreamInfo` response
+includes an `alternates` field listing available mirrors sorted by RTT proximity,
+so clients and tooling can discover where Direct Get reads will be routed.
+
+The full Direct Get request/response protocol — request payload shape, EOB
+sentinel, status codes, and how the queue-group dispatch works at the wire level
+— is specified in [ADR-31](ADR-31.md).
 
 ### Restrictions
 
