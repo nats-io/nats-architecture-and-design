@@ -15,6 +15,8 @@
 | 4        | 2025-07-17 | @ripienaar      | Add priority client policy                               |
 | 5        | 2026-02-10 | @MauriceVanVeen | Add `423 Nats-Wrong-Pin-Id` & `423 Nats-Pin-Id mismatch` |
 | 6        | 2026-02-12 | @MauriceVanVeen | Clarify `pinned_client` policy                           |
+| 7        | 2026-04-29 | @ripienaar      | Align `PriorityGroupState` JSON tags with shipped server |
+| 8        | 2026-04-29 | @ripienaar      | Clarify handling of pulls with no `id` while pinned      |
 
 ## Context and Problem Statement
 
@@ -115,6 +117,10 @@ cause those to get all the messages and so forth.
 
 The minimum value for `failover` is `5` and maximum is `3600`, any out of bounds or non numeric value will result in a pull error. 
 
+> [!NOTE]
+> As of NATS Server 2.14 the `failover` option is not implemented; the server silently
+> ignores the field and does not enforce the bounds described above.
+
 Once multiple groups are supported consumer updates could add and remove groups.
 
 ### `pinned_client` policy
@@ -166,7 +172,13 @@ When a new pinned client needs to be picked - after timeout, admin action, first
  3. Store the new pinned `nuid`
  4. Deliver the message to the new pinned client with the ID set
  5. Create an advisory that a new pinned client was picked
- 6. Respond with a 4xx header to any pulls, including waiting ones, that have a different ID set. Client that received this error will clear the ID and pull with no ID
+ 6. Respond with a `423` status reply to any pulls, including waiting ones, that supply an `id` field whose value does not match the new pin. The client that receives this error will clear its stored ID and issue subsequent pull requests with no ID set so it remains in the candidate pool.
+
+A pull request that omits the `id` field while another client is pinned is **not** rejected. The server keeps it on the
+waiting queue as a standby candidate; if the current pin is cleared (via `PriorityTimeout` expiry or an UNPIN call) and
+the standby pull is still active, that pull is eligible to become the next pinned client following the flow above. The
+`423` response is therefore reserved for the unambiguous "stale or wrong ID" case — pulls that explicitly set `id` to a
+value other than the current pin.
 
 If no pulls from the pinned client are received within `PriorityTimeout` the server will switch again using the same
 flow as above. The pinned timeout only resets back to `PriorityTimeout` if the pinned client starts a new pull request
@@ -195,9 +207,9 @@ Consumer state to include a new field `PriorityGroups` of type `[]PriorityGroupS
 
 ```go
 type PriorityGroupState struct {
-	Group          string `json:"name"`
-	PinnedClientId string `json:"pinned_id,omitempty"`
-	PinnedTs       *time.Time `json:"pinned_ts,omitempty"`
+	Group          string    `json:"group"`
+	PinnedClientID string    `json:"pinned_client_id,omitempty"`
+	PinnedTS       time.Time `json:"pinned_ts,omitempty"`
 }
 ```
 
@@ -290,8 +302,7 @@ When Consumer is in `overflow` mode, user should be able to optionally specify t
 #### Pinning
 
 In pinning mode, user does not have to provide anything beyond `group`.
-Client needs to properly handle the `id` sent by the server. That applies only to ` Consume`. Fetch should not be supported in this mode.
-At least initially.
+Clients must track the `id` issued by the server and apply the rules below on every pull request:
 
 1. When client receives the `id` from the server via `Nats-Pin-Id` header, it needs to store it and use it in every subsequent pull request for this group.
 2. If client receives `423` Status error (`Nats-Pin-Id mismatch` or `Nats-Wrong-Pin-Id`), it should clear the `id` and continue pulling without it.
