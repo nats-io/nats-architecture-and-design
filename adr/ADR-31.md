@@ -16,6 +16,7 @@
 | 5        | 2026-04-29 | @ripienaar | Specifies seq=1 default for batch with no lower bound    |
 | 6        | 2026-04-29 | @ripienaar | Documents `multi_last` pagination cursor (`seq`)         |
 | 7        | 2026-04-29 | @ripienaar | Specifies `batch: 0` as equivalent to a non-batch Get    |
+| 8        | 2026-04-29 | @ripienaar | Cross-references ADR-59 for source/mirror feature scope  |
 
 ## Context and motivation 
 
@@ -35,6 +36,10 @@ store. With Direct Get the number of servers eligible to respond to read request
 count of the stream.
 
 ### Extended feature: MIRROR Direct Get responders
+
+This section covers Direct Get behaviour as it applies to mirrors. The broader stream sourcing and mirroring
+feature — `mirror` / `sources` configuration, replication semantics, External streams, and operational guidance
+— is specified in [ADR-59](ADR-59.md).
 
 For streams that are _Direct Get_ enabled and are also an upstream source of a MIRROR stream, the mirror's peer
 servers will also participate in the responder queue group for Direct Get calls _to the upstream_. In this manner,
