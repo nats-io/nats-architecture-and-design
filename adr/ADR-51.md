@@ -7,14 +7,15 @@
 | Status   | Approved              |
 | Tags     | jetstream, 2.12, 2.14 |
 
-| Revision | Date       | Author                      | Info                                                       | Server Version |
-|----------|------------|-----------------------------|------------------------------------------------------------|----------------|
-| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                    | 2.12.0         |
-| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                    | 2.12.0         |
-| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                                | 2.14.0         |
-| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules   | 2.14.0         |
-| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages              | 2.14.0         |
-| 6        | 2026-04-23 | @MauriceVanVeen             | Clarify stream retention interaction & auto-applied rollup | 2.14.0         |
+| Revision | Date       | Author                      | Info                                                                                       | Server Version |
+|----------|------------|-----------------------------|--------------------------------------------------------------------------------------------|----------------|
+| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                                                    | 2.12.0         |
+| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                                                    | 2.12.0         |
+| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                                                                | 2.14.0         |
+| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules                                   | 2.14.0         |
+| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages                                              | 2.14.0         |
+| 6        | 2026-04-23 | @MauriceVanVeen             | Clarify stream retention interaction & auto-applied rollup                                 | 2.14.0         |
+| 7        | 2026-04-28 | @ripienaar                  | Document `Nats-Schedule-Time-Zone` format, `@every` minimum & `Nats-Scheduler` error 10212 | 2.14.0         |
 
 ## Context and Motivation
 
@@ -119,7 +120,7 @@ You may also schedule a job to execute at fixed intervals, starting at the time 
 
 `@every 1m`
 
-The time specification complies with go `time.ParseDuration()` format.
+The time specification complies with go `time.ParseDuration()` format. The minimum supported interval is `1s`; shorter intervals are rejected.
 
 ## Subject Sampling
 
@@ -163,11 +164,24 @@ Valid schedule header can match normal cron behavior as defined earlier
 
 All time calculations will be done in UTC, a Cron schedule like `* 0 5 * * *` means exactly 5AM UTC.
 
-Cron schedules may use different time zones, if specified in the `Nats-Schedule-Time-Zone` header. Although time zones
-are supported, it's not recommended to use Cron schedules that trigger during daylight saving time (DST) changes. If
-time moves forward due to DST, a schedule could be skipped if its time was not reached. If time moves backward due to
-DST, a schedule could be executed twice if its time was reached twice. Additionally, the server's time zones need to be
-kept up to date; otherwise servers might not run the Cron schedule at the expected time.
+Cron schedules may use different time zones, if specified in the `Nats-Schedule-Time-Zone` header. The accepted values
+are those that go's `time.LoadLocation()` understands:
+
+- An IANA Time Zone database name such as `America/New_York`, `Europe/Amsterdam`, or `Asia/Tokyo`.
+- The literal `UTC` (equivalent to omitting the header).
+- The literal `Local`, which uses the server's local time zone.
+
+Fixed UTC offsets like `+02:00` and time zone abbreviations like `EST` or `CET` are not accepted. The header is only
+allowed on Cron schedules; using it with `@at` or `@every` is rejected.
+
+The server resolves IANA names against its host's tzdata at runtime — if the server has no tzdata available for the
+requested zone, the schedule is rejected as an invalid pattern. Operators must therefore install and keep tzdata up to
+date on every server that is expected to evaluate Cron schedules in named time zones; otherwise schedules might not
+run, or might not run at the expected time.
+
+Although time zones are supported, it's not recommended to use Cron schedules that trigger during daylight saving time
+(DST) changes. If time moves forward due to DST, a schedule could be skipped if its time was not reached. If time
+moves backward due to DST, a schedule could be executed twice if its time was reached twice.
 
 ### Ending/stopping schedules early
 
@@ -210,17 +224,19 @@ where:
 - Similarly, you want to publish to the selected `Nats-Schedule-Target` earlier than the schedule would, but ensure the
   schedule doesn't duplicate the message when the schedule would (eventually) trigger.
 
-NOTE: The selected subject in `Nats-Scheduler` can NOT equal the publish subject itself, as this would mean this message
-would be purged as well due to `Nats-Schedule-Next: purge`. If the intention was to update the schedule, replacing the
-former, then these headers aren't required to be set. The server already does this by default when publishing an updated
-schedule. These headers are only intended to be used when desiring to stop a schedule early and publishing a message to
-a different subject in one atomic operation.
+NOTE: The selected subject in `Nats-Scheduler` can NOT equal the publish subject itself; the server rejects such
+publishes with error code `10212`. The same error is returned when `Nats-Scheduler` is empty or is not a valid publish
+subject. The constraint exists because, without it, the cancel message would be purged together with the schedule via
+the auto-applied `Nats-Rollup: sub`, leaving no record of the cancellation. If the intention was to update the schedule,
+replacing the former, then these headers aren't required to be set. The server already does this by default when
+publishing an updated schedule. These headers are only intended to be used when desiring to stop a schedule early and
+publishing a message to a different subject in one atomic operation.
 
 ## Stream Configuration
 
 #### Creating the stream.
 
-The `AllowMsgSchedules` field is new, added specifically for this feature and must be set to true for the feature to be enabled.
+The `AllowMsgSchedules` field is new, added specifically for this feature, and must be set to true for the feature to be enabled.
 
 ```go
 type StreamConfig struct {
