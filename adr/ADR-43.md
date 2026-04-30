@@ -53,7 +53,7 @@ This behavior is off by default unless opted in on the `SubjectDeleteMarkerTTL` 
 ### Delete API Call Marker
 
 > [!IMPORTANT]
-> This feature will come either later in 2.11.x series or in 2.12.
+> As of Server version 2.14 this feature is not currently implemented
 
 When someone calls the delete message API of a stream the server will place a marker carrying `Nats-Marker-Reason: Remove` and a `Nats-TTL` set to the stream's `SubjectDeleteMarkerTTL` (formatted as a Go duration string). For example, with `SubjectDeleteMarkerTTL: 60s`:
 
@@ -65,7 +65,7 @@ Nats-TTL: 1m0s
 ### Purge API Call Marker
 
 > [!IMPORTANT]
-> This feature will come either later in 2.11.x series or in 2.12.
+> As of Server version 2.14 this feature is not currently implemented
 
 
 When someone calls the purge subject API of a stream the server will place a marker carrying `Nats-Marker-Reason: Purge` and a `Nats-TTL` set to the stream's `SubjectDeleteMarkerTTL` (formatted as a Go duration string). For example, with `SubjectDeleteMarkerTTL: 60s`:
@@ -107,21 +107,21 @@ Restrictions:
  * When  `AllowMsgTTL` or `SubjectDeleteMarkerTTL` are set the Stream should require API level `1`.
  * `AllowRollup` must be `true`, stream update and create should set this unless pedantic mode is enabled.
  * `DenyPurge` must be `false`, stream update and create should set this unless pedantic mode is enabled.
- * Unless `MaxMsgsPer` equals 1 the server treats `SubjectDeleteMarkerTTL` as the minimum effective `Nats-TTL`. A publish with a `Nats-TTL` below this floor is **not** rejected — instead the server raises the effective TTL to the floor and rewrites the stored `Nats-TTL` header to the clamped value (formatted as integer seconds). This may change in 2.12 depending on internal implementation fixes in the server.
+ * Unless `MaxMsgsPer` equals 1 the server treats `SubjectDeleteMarkerTTL` as the minimum effective `Nats-TTL`. A publish with a `Nats-TTL` below this floor is **not** rejected — instead the server raises the effective TTL to the floor and rewrites the stored `Nats-TTL` header to the clamped value (formatted as integer seconds).
 
 ## Error Codes
 
 The server returns the following `err_code` values for rejection paths defined in this ADR:
 
-| Rejection path                                                                | `err_code` | Description                            |
-|-------------------------------------------------------------------------------|-----------:|----------------------------------------|
-| Publish with `Nats-TTL` header to a stream where `AllowMsgTTL` is `false`     | `10166`    | `per-message TTL is disabled`          |
-| `Nats-TTL` header value is unparsable, sub-second, or a literal `0`           | `10165`    | `invalid per-message TTL`              |
-| `SubjectDeleteMarkerTTL` configured below `1s`                                | `10052`    | `subject delete marker TTL must be at least 1 second` |
-| `SubjectDeleteMarkerTTL` set on a Mirror stream                               | `10052`    | `subject delete markers forbidden on mirrors` |
-| `SubjectDeleteMarkerTTL` set with `AllowRollup: false` in pedantic mode       | `10052`    | `subject delete marker cannot be set if roll-ups are disabled` |
-| `SubjectDeleteMarkerTTL` set with `AllowRollup: true` and `DenyPurge: true`   | `10052`    | `roll-ups require the purge permission` |
-| Stream update attempting to set `AllowMsgTTL: false` after it was `true`      | `10052`    | `message TTL status can not be disabled` |
+| Rejection path                                                              | `err_code` | Description                                                    |
+|-----------------------------------------------------------------------------|-----------:|----------------------------------------------------------------|
+| Publish with `Nats-TTL` header to a stream where `AllowMsgTTL` is `false`   |    `10166` | `per-message TTL is disabled`                                  |
+| `Nats-TTL` header value is unparsable, sub-second, or a literal `0`         |    `10165` | `invalid per-message TTL`                                      |
+| `SubjectDeleteMarkerTTL` configured below `1s`                              |    `10052` | `subject delete marker TTL must be at least 1 second`          |
+| `SubjectDeleteMarkerTTL` set on a Mirror stream                             |    `10052` | `subject delete markers forbidden on mirrors`                  |
+| `SubjectDeleteMarkerTTL` set with `AllowRollup: false` in pedantic mode     |    `10052` | `subject delete marker cannot be set if roll-ups are disabled` |
+| `SubjectDeleteMarkerTTL` set with `AllowRollup: true` and `DenyPurge: true` |    `10052` | `roll-ups require the purge permission`                        |
+| Stream update attempting to set `AllowMsgTTL: false` after it was `true`    |    `10052` | `message TTL status can not be disabled`                       |
 
 All `10052` (`JSStreamInvalidConfigF`) responses share a common shape — the description field carries the underlying reason as enumerated above.
 
