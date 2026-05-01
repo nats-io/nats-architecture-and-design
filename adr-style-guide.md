@@ -125,7 +125,38 @@ Whatever names you choose, the document should answer these questions in roughly
 
 For larger documents (ADR-50 covers two related sub-features), introduce a top-level section per sub-feature, then repeat the Context → Design → Specifics layering inside each.
 
+## Conventions for document layout and style
+
+### General
+
+These details show up in nearly every ADR — be consistent:
+
+- **Subject patterns** — backtick the whole pattern, use angle-bracketed placeholders: `<prefix>.<uuid>.<seq>.$FI`. Document each placeholder.
+- **Headers** — backtick every header reference (`Nats-Batch-Id`). When introducing a header, give a concrete example value (`Nats-Batch-Sequence:1`).
+- **Go types** — use a fenced ```go block. Keep struct comments brief; they will be read as the spec. Include `json:` tags exactly as the wire format requires. Show a one-line example JSON payload immediately after the struct.
+- **Error tables** — three columns, `ErrCode | Code | Description`. `ErrCode` is the NATS-internal numeric code, `Code` is the HTTP-style status. Keep the description short and parenthesise the offending header or value.
+- **Limits** — express them as bullet lists with concrete numbers. State per-stream and per-server limits separately.
+- **Shell examples** — fenced ```bash blocks using the `nats` CLI to demonstrate user-visible behavior. Useful in the early sections to ground the design in something tangible.
+- **Field names** — when referencing struct fields in prose, backtick them (`AllowAtomicPublish`, `BatchSize`).
+
+### Cross-references
+
+- Link to other ADRs as `[ADR-8](adr/ADR-8.md)` from the README, or `ADR-8` in inline prose. The index already links them, so plain text is fine in body copy.
+- When refining another ADR, set the `Updates` metadata field and call out the relationship in the opening paragraph.
+- External references (blog posts, papers) go under a short `Related:` bullet list in the context section.
+
+### What to avoid
+
+- Don't fill the document with `MUST` / `SHOULD` / `MAY` language as if it were an IETF RFC.
+- Don't document individual minor decisions as standalone ADRs — see the README's "When to write an ADR" section.
+- Don't edit prior revisions in place to reflect a change of mind. Add a new revision row and update the body.
+- Don't invent variations of established protocol names (header casing, JSON field names) — match the existing convention exactly.
+- 
 ## Design principles
+
+When designing server features, we follow the principals below, now all ADRs require these sections or require this to be checked against. If in doubt ask the user if this is a NATS Server feature that might need these checks and balanced.
+
+### No unbound resource usage
 
 ADRs describe behavior that runs inside long-lived servers. Designs must make that sustainable. The single most important principle: **nothing in the design may grow without a bound.** Anything that consumes memory, holds state, queues work, or extends startup or runtime cost has to have an explicit cap.
 
@@ -188,27 +219,3 @@ If a single ADR contains multiple sub-features that ship at different times, giv
 
 ADR-44 (Versioning for JetStream Assets) is the authoritative reference for how API Level works; cross-reference it rather than restating the mechanism.
 
-## Conventions for specifics
-
-These details show up in nearly every ADR — be consistent:
-
-- **Subject patterns** — backtick the whole pattern, use angle-bracketed placeholders: `<prefix>.<uuid>.<seq>.$FI`. Document each placeholder.
-- **Headers** — backtick every header reference (`Nats-Batch-Id`). When introducing a header, give a concrete example value (`Nats-Batch-Sequence:1`).
-- **Go types** — use a fenced ```go block. Keep struct comments brief; they will be read as the spec. Include `json:` tags exactly as the wire format requires. Show a one-line example JSON payload immediately after the struct.
-- **Error tables** — three columns, `ErrCode | Code | Description`. `ErrCode` is the NATS-internal numeric code, `Code` is the HTTP-style status. Keep the description short and parenthesise the offending header or value.
-- **Limits** — express them as bullet lists with concrete numbers. State per-stream and per-server limits separately.
-- **Shell examples** — fenced ```bash blocks using the `nats` CLI to demonstrate user-visible behavior. Useful in the early sections to ground the design in something tangible.
-- **Field names** — when referencing struct fields in prose, backtick them (`AllowAtomicPublish`, `BatchSize`).
-
-## Cross-references
-
-- Link to other ADRs as `[ADR-8](adr/ADR-8.md)` from the README, or `ADR-8` in inline prose. The index already links them, so plain text is fine in body copy.
-- When refining another ADR, set the `Updates` metadata field and call out the relationship in the opening paragraph.
-- External references (blog posts, papers) go under a short `Related:` bullet list in the context section.
-
-## What to avoid
-
-- Don't fill the document with `MUST` / `SHOULD` / `MAY` language as if it were an IETF RFC.
-- Don't document individual minor decisions as standalone ADRs — see the README's "When to write an ADR" section.
-- Don't edit prior revisions in place to reflect a change of mind. Add a new revision row and update the body.
-- Don't invent variations of established protocol names (header casing, JSON field names) — match the existing convention exactly.
