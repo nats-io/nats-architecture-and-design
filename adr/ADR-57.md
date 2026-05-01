@@ -1,12 +1,12 @@
 # KV Subject Transforms
 
-| Metadata | Value                              |
-|----------|------------------------------------|
-| Date     | 2025-12-09                         |
-| Author   | @piotrpio                          |
-| Status   | Proposed                           |
-| Tags     | jetstream, client, spec, kv        |
-| Updates  | ADR-8                              |
+| Metadata | Value                                   |
+|----------|-----------------------------------------|
+| Date     | 2025-12-09                              |
+| Author   | @piotrpio                               |
+| Status   | Proposed                                |
+| Tags     | jetstream, client, spec, kv, refinement |
+| Updates  | ADR-8                                   |
 
 | Revision | Date       | Author    | Info           |
 |----------|------------|-----------|----------------|
