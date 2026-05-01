@@ -44,7 +44,8 @@ const (
 	RollupSub         = "sub"
 
 	// Server error codes.
-	ErrCodeSchedulerInvalid = 10212 // JSMessageSchedulesSchedulerInvalidErr — Nats-Scheduler self-target / empty / not a valid publish subject.
+	ErrCodeSchedulerInvalid        = 10212 // JSMessageSchedulesSchedulerInvalidErr — Nats-Scheduler self-target / empty / not a valid publish subject.
+	ErrCodeScheduleTimeZoneInvalid = 10223 // JSMessageSchedulesTimeZoneInvalidErr — Nats-Schedule-Time-Zone empty value, fixed offset, or unresolvable name.
 )
 
 // ---- Wire types ----

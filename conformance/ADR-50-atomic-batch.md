@@ -765,7 +765,6 @@ These tests require a clustered server (R3 stream).
 
 The following ADR-50 areas are intentionally **not** covered by this conformance document:
 
-- Fast-ingest Batch Publishing (`AllowBatchPublish`, `BatchFlowAck`, `BatchFlowGap`, `BatchFlowErr`, the `<prefix>.<uuid>.<flow>.<gap>.<seq>.<op>.$FI` reply pattern). A separate conformance document should cover those.
 - Async publish API ergonomics on the client side. Conformance is asserted at the protocol layer (request/reply with explicit headers), not via any specific client library.
 - Performance and throughput characteristics. The harness validates correctness only.
 

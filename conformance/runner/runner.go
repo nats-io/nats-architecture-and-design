@@ -30,14 +30,6 @@ func runRun(groups []*harness.Group, opts *harness.Options) error {
 		return fmt.Errorf("no groups to run")
 	}
 
-	var matchRE *regexp.Regexp
-	if runShared.match != "" {
-		re, err := regexp.Compile(runShared.match)
-		if err != nil {
-			return fmt.Errorf("invalid --match regex: %w", err)
-		}
-		matchRE = re
-	}
 	tagFilter := splitCSV(runShared.tags)
 
 	nctx, err := connectContext(runShared.context)
@@ -82,7 +74,7 @@ func runRun(groups []*harness.Group, opts *harness.Options) error {
 	}
 
 	for _, g := range groups {
-		runGroup(parentCtx, h, g, &runFilter{matchRE: matchRE, tags: tagFilter}, report, prog, runShared.testTimeout)
+		runGroup(parentCtx, h, g, &runFilter{matchRE: runShared.match, tags: tagFilter}, report, prog, runShared.testTimeout)
 		// Final per-group sweep: any stream still listening on the
 		// shared subject namespace is a leak from a panic'd test.
 		if names, err := h.StreamsBySubject("nats.adr.conformance.>"); err == nil {

@@ -29,6 +29,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -62,7 +63,7 @@ var listOpts struct {
 // any descendant — `conformance run adr-50-ab --context X` works.
 var runShared struct {
 	context     string
-	match       string
+	match       *regexp.Regexp
 	tags        string
 	json        bool
 	output      string
@@ -89,7 +90,7 @@ func main() {
 
 	runCmd := app.Command("run", "Execute conformance groups (use a sub-command per group, or `all`)")
 	runCmd.Flag("context", "NATS context to connect with (default: selected context)").Short('c').StringVar(&runShared.context)
-	runCmd.Flag("match", "Regex applied to test IDs within selected groups").Short('m').StringVar(&runShared.match)
+	runCmd.Flag("match", "Regex applied to test IDs within selected groups").Short('m').RegexpVar(&runShared.match)
 	runCmd.Flag("tags", "Comma-separated tag filter (any-of)").StringVar(&runShared.tags)
 	runCmd.Flag("json", "Emit a machine-readable JSON report instead of a table").BoolVar(&runShared.json)
 	runCmd.Flag("output", "Write report to a file (alongside stdout)").Short('o').StringVar(&runShared.output)

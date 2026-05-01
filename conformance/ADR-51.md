@@ -48,7 +48,7 @@ Schedule-defining headers (set by the publisher of the schedule message):
 - `Nats-Schedule-Target` — subject the generated message will be delivered to. Must be a subject covered by the same stream.
 - `Nats-Schedule-Source` — subject whose last message is read and republished to the target. Wildcards are not allowed.
 - `Nats-Schedule-TTL` — TTL applied to the generated message via `Nats-TTL`.
-- `Nats-Schedule-Time-Zone` — time zone applied to a cron schedule. Accepted values are exactly those Go's `time.LoadLocation` understands: an IANA Time Zone database name (e.g. `America/New_York`, `Europe/Amsterdam`, `Asia/Tokyo`), the literal `UTC`, or the literal `Local`. Fixed UTC offsets (`+02:00`) and time-zone abbreviations (`EST`, `CET`, …) are NOT accepted. Not allowed on `@at` or `@every` schedules. Resolution happens against the server host's tzdata at runtime — if tzdata is missing or stale for the requested zone the schedule is rejected as an invalid pattern.
+- `Nats-Schedule-Time-Zone` — time zone applied to a cron schedule. Accepted values are exactly those Go's `time.LoadLocation` understands: an IANA Time Zone database name (e.g. `America/New_York`, `Europe/Amsterdam`, `Asia/Tokyo`), the literal `UTC`, the literal `Local`, or a time-zone abbreviation such as `EST` / `CET` when the server's host tzdata provides it (use of abbreviations is discouraged because they are ambiguous and DST-naive). Fixed UTC offsets (`+02:00`) are NOT accepted. Supplying the header with an empty value is also rejected — to default to UTC, omit the header. Not allowed on `@at` or `@every` schedules. Resolution happens against the server host's tzdata at runtime — if tzdata is missing or stale for the requested zone the schedule is rejected as an invalid pattern. Invalid time-zone values fail with the dedicated error `JSMessageSchedulesTimeZoneInvalidErr` (`10223`).
 - `Nats-Schedule-Rollup` — only `sub` is accepted. Applies a `Nats-Rollup: sub` header to the generated message.
 - `Nats-TTL` — bounds the lifetime of the schedule message itself (standard JetStream per-message TTL).
 
@@ -404,7 +404,7 @@ These tests use schedules that fire frequently so the harness can observe firing
 
 ### SCH-501 — `Nats-Schedule-Time-Zone` applies to a cron schedule
 
-- **References** — Cron-like schedules ("Cron schedules may use different time zones, if specified in the `Nats-Schedule-Time-Zone` header"). The accepted values are those Go's `time.LoadLocation` understands: IANA zone names (`America/New_York`, …), `UTC`, and `Local`. Fixed offsets and abbreviations are not accepted.
+- **References** — Cron-like schedules ("Cron schedules may use different time zones, if specified in the `Nats-Schedule-Time-Zone` header"). The accepted values are those Go's `time.LoadLocation` understands: IANA zone names (`America/New_York`, `Europe/Amsterdam`, …), `UTC`, `Local`, and abbreviations such as `EST` / `CET` when host tzdata provides them. Fixed offsets are not accepted.
 - **Preconditions** — Default stream.
 - **Steps**
   1. Probe: publish a schedule on `schedules.cron.tz.probe` with `Nats-Schedule-Time-Zone: UTC` and a valid 6-field cron. `UTC` always resolves regardless of host tzdata, so this confirms the header plumbing.
@@ -434,16 +434,13 @@ These tests use schedules that fire frequently so the harness can observe firing
 
 ### SCH-504 — Invalid `Nats-Schedule-Time-Zone` value rejected
 
-- **References** — Cron-like schedules; Headers (accepted forms are IANA names, `UTC`, and `Local`; fixed offsets and abbreviations are not accepted).
+- **References** — Cron-like schedules; Headers (accepted forms are exactly those Go's `time.LoadLocation` understands; fixed offsets are not).
 - **Preconditions** — Default stream.
 - **Steps** — for each value below, publish a cron schedule (`Nats-Schedule: * * * * * *`) with `Nats-Schedule-Time-Zone` set to the value:
-  1. `Not/A_Zone` (nonsense IANA-shaped name)
-  2. `+02:00` (fixed UTC offset — explicitly not supported)
-  3. `EST` (time-zone abbreviation — explicitly not supported)
-  4. `CET` (time-zone abbreviation)
-  5. `` (empty value)
+  1. `Not/A_Zone` (nonsense IANA-shaped name — `time.LoadLocation` returns an error)
+  2. `+02:00` (fixed UTC offset — `time.LoadLocation` does not accept fixed offsets)
 - **Expected**
-  - Every publish is rejected with an error pub ack.
+  - Every publish is rejected with `JSMessageSchedulesTimeZoneInvalidErr` (`10223`).
   - No schedule is stored on the schedule subject for any of the rejected values.
 
 ### SCH-505 — `Nats-Schedule-Rollup: sub` produces `Nats-Rollup: sub` on the generated message
@@ -484,6 +481,16 @@ These tests use schedules that fire frequently so the harness can observe firing
 - **Expected**
   - The generated message does **not** carry `Nats-Schedule`, `Nats-Schedule-Target`, `Nats-Schedule-TTL`, or `Nats-Schedule-Rollup`.
   - It does carry `Nats-Scheduler`, `Nats-Schedule-Next: purge`, `Nats-TTL: 1m`, `Nats-Rollup: sub`, and `X-Keep: yes`.
+
+### SCH-509 — Empty `Nats-Schedule-Time-Zone` is rejected (omit the header for UTC)
+
+- **References** — Cron-like schedules ("If not specified, the Cron schedule will be in UTC"). The server distinguishes "header omitted" (treated as UTC) from "header present with an empty value" (rejected). This pins that distinction so a future server change cannot silently start accepting an empty value as UTC, which would mask client bugs that produce empty headers.
+- **Preconditions** — Default stream.
+- **Steps**
+  1. Publish a cron schedule on `schedules.tz.empty` with `Nats-Schedule: * * * * * *`, `Nats-Schedule-Time-Zone:` (empty value), and `Nats-Schedule-Target: target.tz.empty`.
+- **Expected**
+  - The publish is rejected with an error pub ack carrying `JSMessageSchedulesTimeZoneInvalidErr` (`10223`).
+  - No schedule is stored on `schedules.tz.empty`.
 
 ---
 

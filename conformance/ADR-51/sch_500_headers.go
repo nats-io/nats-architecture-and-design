@@ -24,6 +24,7 @@ func sch500Tests() []harness.Test {
 		{ID: "SCH-506", Title: "Nats-Schedule-Rollup with non-sub value rejected", Section: "SCH-500", Tags: []string{"rollup"}, Run: testSCH506},
 		{ID: "SCH-507", Title: "Nats-Schedule-Target outside the stream's subjects rejected", Section: "SCH-500", Tags: []string{"validation"}, Run: testSCH507},
 		{ID: "SCH-508", Title: "Schedule headers are stripped from the generated message", Section: "SCH-500", Tags: []string{"headers"}, Run: testSCH508},
+		{ID: "SCH-509", Title: "Empty Nats-Schedule-Time-Zone is rejected (omit the header for UTC)", Section: "SCH-500", Tags: []string{"timezone"}, Run: testSCH509},
 	}
 }
 
@@ -117,18 +118,19 @@ func testSCH504(_ context.Context, h *harness.Harness) (harness.Status, string, 
 	if err != nil {
 		return fail("stream create: %v", err)
 	}
-	// ADR-51 §"Cron-like schedules" / Headers: only IANA names, `UTC`,
-	// and `Local` are accepted; fixed offsets and abbreviations must
-	// be rejected.
+	// ADR-51 §"Cron-like schedules" / Headers: accepted values are
+	// exactly those Go's `time.LoadLocation()` understands. Values it
+	// rejects (nonsense names, fixed UTC offsets) must be rejected by
+	// the server too. Abbreviations like `EST`/`CET` and the empty
+	// string are intentionally NOT in this rejection set — the empty
+	// case is covered by SCH-509 and abbreviations are accepted when
+	// host tzdata provides them.
 	cases := []struct {
 		zone string
 		why  string
 	}{
 		{"Not/A_Zone", "nonsense IANA-shaped name"},
-		{"+02:00", "fixed UTC offset (not supported)"},
-		{"EST", "time-zone abbreviation (not supported)"},
-		{"CET", "time-zone abbreviation (not supported)"},
-		{"", "empty value"},
+		{"+02:00", "fixed UTC offset (not accepted by time.LoadLocation)"},
 	}
 	for i, c := range cases {
 		schedSubj := h.Subject(fmt.Sprintf("schedules.tz.bad.%d", i))
@@ -143,11 +145,49 @@ func testSCH504(_ context.Context, h *harness.Harness) (harness.Status, string, 
 		if ack.Error == nil {
 			return fail("expected zone=%q (%s) to be rejected, got success %+v", c.zone, c.why, ack)
 		}
+		if ack.Error.ErrCode != ErrCodeScheduleTimeZoneInvalid {
+			return fail("zone=%q (%s): expected err_code=%d (JSMessageSchedulesTimeZoneInvalidErr), got %s", c.zone, c.why, ErrCodeScheduleTimeZoneInvalid, ack.Error)
+		}
 		if m, err := lastMsgFor(h, name, schedSubj); err != nil {
 			return fail("post-reject lookup for zone=%q: %v", c.zone, err)
 		} else if m != nil {
 			return fail("rejected schedule (zone=%q) was stored anyway on %s", c.zone, schedSubj)
 		}
+	}
+	return pass()
+}
+
+func testSCH509(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name, err := scheduleDefaultStream(h)
+	if err != nil {
+		return fail("stream create: %v", err)
+	}
+	// ADR-51: "If not specified, the Cron schedule will be in UTC." The
+	// server distinguishes "header omitted" (treated as UTC) from
+	// "header present with an empty value" (rejected with the dedicated
+	// JSMessageSchedulesTimeZoneInvalidErr / 10223). This pins that
+	// distinction so a future server change cannot silently accept an
+	// empty value as UTC, which would mask client bugs producing empty
+	// headers.
+	schedSubj := h.Subject("schedules.tz.empty")
+	ack, err := publishSchedule(h, schedSubj, []byte("body"),
+		schedHeader{HdrSchedule, "* * * * * *"},
+		schedHeader{HdrScheduleTimeZone, ""},
+		schedHeader{HdrScheduleTarget, h.Subject("target.tz.empty")},
+	)
+	if err != nil {
+		return fail("publish: %v", err)
+	}
+	if ack.Error == nil {
+		return fail("expected empty Nats-Schedule-Time-Zone to be rejected, got success %+v", ack)
+	}
+	if ack.Error.ErrCode != ErrCodeScheduleTimeZoneInvalid {
+		return fail("expected err_code=%d (JSMessageSchedulesTimeZoneInvalidErr), got %s", ErrCodeScheduleTimeZoneInvalid, ack.Error)
+	}
+	if m, err := lastMsgFor(h, name, schedSubj); err != nil {
+		return fail("post-reject lookup: %v", err)
+	} else if m != nil {
+		return fail("rejected schedule (empty time zone) was stored anyway on %s", schedSubj)
 	}
 	return pass()
 }
