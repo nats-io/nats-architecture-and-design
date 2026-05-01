@@ -1,12 +1,12 @@
 # JetStream reliable stream sourcing/mirroring on WQ/Interest streams
 
-| Metadata | Value                           |
-|----------|---------------------------------|
-| Date     | 2026-03-11                      |
-| Author   | @MauriceVanVeen                 |
-| Status   | Implemented                     |
-| Tags     | jetstream, client, server, 2.14 |
-| Updates  | ADR-59                          |
+| Metadata | Value                                       |
+|----------|---------------------------------------------|
+| Date     | 2026-03-11                                  |
+| Author   | @MauriceVanVeen                             |
+| Status   | Implemented                                 |
+| Tags     | jetstream, client, server, 2.14, refinement |
+| Updates  | ADR-59                                      |
 
 | Revision | Date       | Author          | Info           |
 |----------|------------|-----------------|----------------|

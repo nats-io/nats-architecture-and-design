@@ -1,12 +1,12 @@
 # KV Codecs
 
-| Metadata | Value                              |
-|----------|------------------------------------|
-| Date     | 2025-08-06                         |
-| Author   | @piotrpio                          |
-| Status   | Proposed                           |
-| Tags     | jetstream, client, spec, orbit, kv |
-| Updates  | ADR-8                              |
+| Metadata | Value                                          |
+|----------|------------------------------------------------|
+| Date     | 2025-08-06                                     |
+| Author   | @piotrpio                                      |
+| Status   | Proposed                                       |
+| Tags     | jetstream, client, spec, orbit, kv, refinement |
+| Updates  | ADR-8                                          |
 
 | Revision | Date       | Author    | Info           |
 |----------|------------|-----------|----------------|

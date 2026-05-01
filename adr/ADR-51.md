@@ -170,8 +170,12 @@ are those that go's `time.LoadLocation()` understands:
 - An IANA Time Zone database name such as `America/New_York`, `Europe/Amsterdam`, or `Asia/Tokyo`.
 - The literal `UTC` (equivalent to omitting the header).
 - The literal `Local`, which uses the server's local time zone.
+- A time zone abbreviation such as `EST` or `CET`, when the server's host tzdata provides it. Abbreviations are
+  ambiguous (for example `EST` may resolve to a different zone on different hosts) and are not DST-aware on their own,
+  so IANA names like `America/New_York` or `Europe/Amsterdam` are strongly recommended instead.
 
-Fixed UTC offsets like `+02:00` and time zone abbreviations like `EST` or `CET` are not accepted. The header is only
+Fixed UTC offsets such as `+02:00` are not accepted, since `time.LoadLocation()` does not understand them. Supplying
+the header with an empty value is also rejected — to default to UTC, omit the header entirely. The header is only
 allowed on Cron schedules; using it with `@at` or `@every` is rejected.
 
 The server resolves IANA names against its host's tzdata at runtime — if the server has no tzdata available for the
