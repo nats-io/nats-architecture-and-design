@@ -23,6 +23,7 @@ func ctr200Tests() []harness.Test {
 		{ID: "CTR-204", Title: "Signed zero increment is accepted and leaves value unchanged", Section: "CTR-200", Tags: []string{"increment"}, Run: testCTR204},
 		{ID: "CTR-205", Title: "Malformed Nats-Incr values are rejected", Section: "CTR-200", Tags: []string{"increment"}, Run: testCTR205},
 		{ID: "CTR-206", Title: "BigInt-sized increments are accepted", Section: "CTR-200", Tags: []string{"increment", "bigint"}, Run: testCTR206},
+		{ID: "CTR-207", Title: "Non-counter streams reject Nats-Incr", Section: "CTR-200", Tags: []string{"increment"}, Run: testCTR207},
 	}
 }
 
@@ -247,6 +248,28 @@ func testCTR206(_ context.Context, h *harness.Harness) (harness.Status, string, 
 	}
 	if !bigEq(val, expected.String()) {
 		return fail("stored val=%s, want %s", val, expected.String())
+	}
+	return pass()
+}
+
+func testCTR207(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	ack, err := publishIncr(h, h.Subject("hits"), "+1", nil)
+	if err != nil {
+		return fail("publish: %v", err)
+	}
+	if ack.Error == nil {
+		return fail("expected error pub ack publishing Nats-Incr to non-counter stream, got %+v", ack)
+	}
+	last, err := streamLastSeq(h, name)
+	if err != nil {
+		return fail("last seq: %v", err)
+	}
+	if last != 0 {
+		return fail("non-counter stream stored a Nats-Incr message (last seq=%d)", last)
 	}
 	return pass()
 }

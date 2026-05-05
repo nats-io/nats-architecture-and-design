@@ -7,6 +7,8 @@ package adr49
 import (
 	"context"
 
+	"github.com/nats-io/nats.go"
+
 	"github.com/nats-io/nats-architecture-and-design/conformance/harness"
 )
 
@@ -16,6 +18,7 @@ func ctr400Tests() []harness.Test {
 		{ID: "CTR-401", Title: "Stored body is {\"val\":\"<decimal>\"}", Section: "CTR-400", Tags: []string{"storage"}, Run: testCTR401},
 		{ID: "CTR-402", Title: "Nats-Incr and extra headers preserved on stored message", Section: "CTR-400", Tags: []string{"storage", "audit"}, Run: testCTR402},
 		{ID: "CTR-403", Title: "PubAck.val equals post-increment total", Section: "CTR-400", Tags: []string{"storage", "puback"}, Run: testCTR403},
+		{ID: "CTR-404", Title: "Non-counter publish to a counter stream is rejected on every subject", Section: "CTR-400", Tags: []string{"storage"}, Run: testCTR404},
 	}
 }
 
@@ -98,6 +101,33 @@ func testCTR403(_ context.Context, h *harness.Harness) (harness.Status, string, 
 		if ack.Sequence == 0 {
 			return fail("step %d ack.seq=0, want non-zero", i)
 		}
+	}
+	return pass()
+}
+
+func testCTR404(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowMsgCounter: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	// Counter streams reject any publish without Nats-Incr regardless of
+	// subject — the "all subjects must be counters" constraint is
+	// stream-wide, not per-subject.
+	m := nats.NewMsg(h.Subject("misc"))
+	m.Data = []byte("not a counter publish")
+	ack, err := publishMsg(h, m)
+	if err != nil {
+		return fail("publish: %v", err)
+	}
+	if ack.Error == nil {
+		return fail("expected error pub ack publishing without Nats-Incr to counter stream, got %+v", ack)
+	}
+	last, err := streamLastSeq(h, name)
+	if err != nil {
+		return fail("last seq: %v", err)
+	}
+	if last != 0 {
+		return fail("counter stream stored a non-counter message (last seq=%d)", last)
 	}
 	return pass()
 }

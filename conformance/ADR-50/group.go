@@ -71,6 +71,7 @@ func allTests() []harness.Test {
 	out = append(out, ab600Tests()...)
 	out = append(out, ab700Tests()...)
 	out = append(out, ab800Tests()...)
+	out = append(out, ab900Tests()...)
 	out = append(out, ab1000Tests()...)
 	out = append(out, ab1100Tests()...)
 	out = append(out, ab1200Tests()...)

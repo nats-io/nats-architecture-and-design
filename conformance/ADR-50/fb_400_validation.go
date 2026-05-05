@@ -20,6 +20,7 @@ func fb400Tests() []harness.Test {
 		{ID: "FB-403", Title: "Batch ID accepted at boundary length 64", Section: "FB-400", Tags: []string{"validation"}, Run: testFB403},
 		{ID: "FB-404", Title: "Batch ID rejected at length 65", Section: "FB-400", Tags: []string{"validation"}, Run: testFB404},
 		{ID: "FB-405", Title: "Append for unknown batch ID", Section: "FB-400", Tags: []string{"validation"}, Run: testFB405},
+		{ID: "FB-406", Title: "Malformed reply subject (missing $FI)", Section: "FB-400", Tags: []string{"validation"}, Run: testFB406},
 	}
 }
 
@@ -144,6 +145,54 @@ func testFB405(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	if m.Error == nil || m.Error.ErrCode != FBErrCodeUnknownID {
 		return fail("expected ErrCode %d, got %+v", FBErrCodeUnknownID, m)
+	}
+	return pass()
+}
+
+func testFB406(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowBatchPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	handle, err := openFastBatch(h, name, 10, "ok")
+	if err != nil {
+		return fail("open batch: %v", err)
+	}
+	defer handle.Close()
+	// Reply subject without the $FI sentinel.
+	reply := handle.inboxPrefix + "." + handle.batchID + ".10.ok.1.0"
+	if err := handle.publishWithRawReply(h.Subject("a"), reply, nil, []byte("x")); err != nil {
+		return fail("publish: %v", err)
+	}
+
+	// Acceptable outcomes per ADR-50 FB-406:
+	//   * BatchFlowErr with ErrCode 10206
+	//   * Treated as a non-batch publish (ordinary PubAck)
+	//   * Silent drop (no reply)
+	// MUST NOT: a fast batch is started.
+	m, mErr := handle.readNext(5 * time.Second)
+	if mErr == nil {
+		switch {
+		case m.Error != nil && m.Error.ErrCode == FBErrCodeBadPattern:
+			// Branch (a): explicit error reply.
+		case m.classify() == "pubAck" && m.Error == nil && m.BatchID == "" && m.BatchSize == 0:
+			// Branch (b): treated as a normal non-batch publish.
+		default:
+			return fail("unexpected response to malformed reply subject: %+v", m)
+		}
+	}
+
+	// MUST: no fast batch was started. Probe with an append at seq=2 on
+	// the same batch_id; server must report unknown-batch.
+	if err := handle.publishAtSeq(h.Subject("a"), FBOpAppend, 2, nil, []byte("probe")); err != nil {
+		return fail("probe publish: %v", err)
+	}
+	probe, err := handle.readNext(5 * time.Second)
+	if err != nil {
+		return fail("read probe reply: %v", err)
+	}
+	if probe.Error == nil || probe.Error.ErrCode != FBErrCodeUnknownID {
+		return fail("malformed reply subject implicitly started a fast batch — append at seq=2 returned %+v, expected ErrCode %d", probe, FBErrCodeUnknownID)
 	}
 	return pass()
 }

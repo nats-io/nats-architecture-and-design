@@ -29,6 +29,11 @@ func ab500Tests() []harness.Test {
 			Section: "AB-500", Tags: []string{"dedup"},
 			SkipReason: skip, Run: testAB502,
 		},
+		{
+			ID: "AB-503", Title: "Nats-Msg-Id colliding with an existing stream message",
+			Section: "AB-500", Tags: []string{"dedup"},
+			SkipReason: skip, Run: testAB503,
+		},
 	}
 }
 
@@ -99,6 +104,51 @@ func testAB502(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	if last != 0 {
 		return fail("batch should be abandoned, but stream last seq is %d", last)
+	}
+	return pass()
+}
+
+func testAB503(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowAtomicPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	// Pre-publish a non-batch message with Nats-Msg-Id:keep.
+	pre := nats.NewMsg(h.Subject("a"))
+	pre.Header.Set(HdrMsgID, "keep")
+	pre.Data = []byte("seed")
+	if _, err := h.NC.RequestMsg(pre, 5*time.Second); err != nil {
+		return fail("seed publish: %v", err)
+	}
+	preLast, err := streamLastSeq(h, name)
+	if err != nil {
+		return fail("seed last seq: %v", err)
+	}
+
+	batch := newUUID()
+	hdrs := nats.Header{HdrMsgID: []string{"keep"}}
+	if _, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 1, "", hdrs, []byte("a")), 5*time.Second); err != nil {
+		return fail("initial publish: %v", err)
+	}
+	if _, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 2, "", nil, []byte("b")), 5*time.Second); err != nil {
+		return fail("seq 2 publish: %v", err)
+	}
+	commitAck, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 3, "1", nil, []byte("c")), 5*time.Second)
+	if err != nil {
+		return fail("commit: %v", err)
+	}
+	// Server may flag this as a duplicate (commit error or commit ack
+	// with duplicate flag set) — either way the batch must not persist
+	// new members.
+	last, err := streamLastSeq(h, name)
+	if err != nil {
+		return fail("post last seq: %v", err)
+	}
+	if last != preLast {
+		return fail("stream advanced past seed (was %d, now %d) — batch should have been rejected as duplicate", preLast, last)
+	}
+	if commitAck.Error == nil && !commitAck.Duplicate {
+		return inconclusive("commit succeeded without error or duplicate flag (server may not surface dedup against pre-batch state at commit time)")
 	}
 	return pass()
 }

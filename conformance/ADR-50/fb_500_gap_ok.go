@@ -16,6 +16,7 @@ import (
 func fb500Tests() []harness.Test {
 	return []harness.Test{
 		{ID: "FB-501", Title: "Gap reported via BatchFlowGap; batch continues", Section: "FB-500", Tags: []string{"gap", "ok"}, Run: testFB501},
+		{ID: "FB-502", Title: "Multiple gaps in ok mode", Section: "FB-500", Tags: []string{"gap", "ok"}, Run: testFB502},
 		{ID: "FB-503", Title: "BatchFlowGap carries no flow update (msgs absent)", Section: "FB-500", Tags: []string{"gap", "ok"}, Run: testFB503},
 	}
 }
@@ -76,6 +77,72 @@ func testFB501(_ context.Context, h *harness.Harness) (harness.Status, string, e
 		return fail("pub ack count=%d, want 10", ack.BatchSize)
 	}
 	return pass()
+}
+
+func testFB502(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowBatchPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	handle, err := openFastBatch(h, name, 5, "ok")
+	if err != nil {
+		return fail("open batch: %v", err)
+	}
+	defer handle.Close()
+
+	// Send seqs 1, 2, 5, 6, 9 then commit at seq 10.
+	if err := handle.publish(h.Subject("a"), FBOpStart, nil, []byte("1")); err != nil {
+		return fail("seq 1: %v", err)
+	}
+	if _, err := handle.awaitFlowAck(5 * time.Second); err != nil {
+		return fail("first flow ack: %v", err)
+	}
+	if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte("2")); err != nil {
+		return fail("seq 2: %v", err)
+	}
+	// Skip 3, 4 — jump to 5
+	handle.seq += 2
+	if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte("5")); err != nil {
+		return fail("seq 5 (gap-trigger 1): %v", err)
+	}
+	if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte("6")); err != nil {
+		return fail("seq 6: %v", err)
+	}
+	// Skip 7, 8 — jump to 9
+	handle.seq += 2
+	if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte("9")); err != nil {
+		return fail("seq 9 (gap-trigger 2): %v", err)
+	}
+	if err := handle.publish(h.Subject("a"), FBOpCommitStore, nil, []byte("end")); err != nil {
+		return fail("commit: %v", err)
+	}
+
+	gapsSeen := 0
+	deadline := time.Now().Add(15 * time.Second)
+	for time.Now().Before(deadline) {
+		m, err := handle.readNext(time.Until(deadline))
+		if err != nil {
+			return fail("read inbox: %v", err)
+		}
+		switch m.classify() {
+		case "gap":
+			gapsSeen++
+		case "pubAck":
+			if m.Error != nil {
+				return fail("pub ack error: %s", m.Error)
+			}
+			if m.BatchSize != 10 {
+				return fail("pub ack count=%d, want 10", m.BatchSize)
+			}
+			if gapsSeen < 2 {
+				return fail("expected at least 2 BatchFlowGap messages, saw %d", gapsSeen)
+			}
+			return pass()
+		case "err":
+			return fail("unexpected BatchFlowErr: %+v", m)
+		}
+	}
+	return fail("timed out waiting for final PubAck (gapsSeen=%d)", gapsSeen)
 }
 
 func testFB503(_ context.Context, h *harness.Harness) (harness.Status, string, error) {

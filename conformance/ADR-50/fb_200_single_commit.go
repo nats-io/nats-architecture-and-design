@@ -83,23 +83,21 @@ func testFB202(_ context.Context, h *harness.Harness) (harness.Status, string, e
 		return fail("last seq: %v", err)
 	}
 
-	// Per FB-202 (post-clarification): either successful PubAck with
-	// count=0 (single EOB doesn't count toward BatchSize) and zero
-	// stored, or an error reply. Both are acceptable per the ADR.
-	if m.classify() == "pubAck" && m.Error == nil {
-		if m.BatchSize != 0 {
-			return fail("pub ack count=%d, want 0 (EOB sentinel does not count toward BatchSize)", m.BatchSize)
-		}
-		if last != 0 {
-			return fail("EOB sentinel should not be stored, but stream last seq is %d", last)
-		}
-		return pass()
+	// Per ADR-50 FB-202 both branches are acceptable:
+	//   - successful PubAck with count=0 (EOB doesn't count) and zero stored
+	//   - error reply (initial-EOB treated as invalid)
+	// MUST NOT: silently store the EOB sentinel.
+	if last != 0 {
+		return fail("server stored the single-EOB message (last seq=%d)", last)
 	}
 	if m.Error != nil {
-		if last != 0 {
-			return fail("server returned error AND stored a message (last seq %d)", last)
-		}
-		return inconclusive("server rejected single-message EOB; ADR allows either branch")
+		return pass()
 	}
-	return fail("unexpected response shape for single-message EOB: %+v", m)
+	if m.classify() != "pubAck" {
+		return fail("unexpected response shape for single-message EOB: %+v", m)
+	}
+	if m.BatchSize != 0 {
+		return fail("pub ack count=%d, want 0 (EOB sentinel does not count toward BatchSize)", m.BatchSize)
+	}
+	return pass()
 }

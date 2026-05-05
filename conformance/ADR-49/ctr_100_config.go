@@ -23,6 +23,7 @@ func ctr100Tests() []harness.Test {
 		{ID: "CTR-106", Title: "AllowMsgCounter rejected with non-Limits retention", Section: "CTR-100", Tags: []string{"config"}, Run: testCTR106},
 		{ID: "CTR-107", Title: "AllowMsgCounter rejected with Discard:new", Section: "CTR-100", Tags: []string{"config"}, Run: testCTR107},
 		{ID: "CTR-108", Title: "AllowMsgCounter rejected with per-message TTLs", Section: "CTR-100", Tags: []string{"config"}, Run: testCTR108},
+		{ID: "CTR-109", Title: "Counter stream may have Sources", Section: "CTR-100", Tags: []string{"config", "sources"}, Run: testCTR109},
 	}
 }
 
@@ -175,6 +176,23 @@ func testCTR108(_ context.Context, h *harness.Harness) (harness.Status, string, 
 	err := createStream(h, streamConfig{Name: name, AllowMsgCounter: true, AllowMsgTTL: true})
 	if err == nil {
 		return fail("expected error creating counter stream with AllowMsgTTL, got success")
+	}
+	return pass()
+}
+
+func testCTR109(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	src := h.MintStreamName("CTR_109_SRC")
+	if err := createStream(h, streamConfig{Name: src, AllowMsgCounter: true}); err != nil {
+		return fail("create source counter: %v", err)
+	}
+	dst := h.MintStreamName("CTR_109_DST")
+	err := createStream(h, streamConfig{
+		Name:            dst,
+		AllowMsgCounter: true,
+		Sources:         []source{{Name: src}},
+	})
+	if err != nil {
+		return fail("create counter stream with Sources: %v", err)
 	}
 	return pass()
 }

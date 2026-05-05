@@ -44,6 +44,13 @@ func ab200Tests() []harness.Test {
 			Tags:    []string{"happy-path"},
 			Run:     testAB204,
 		},
+		{
+			ID:      "AB-205",
+			Title:   "Member ack omission is permitted",
+			Section: "AB-200",
+			Tags:    []string{"happy-path"},
+			Run:     testAB205,
+		},
 	}
 }
 
@@ -198,6 +205,42 @@ func testAB204(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	if ack.Sequence != s0+5 {
 		return fail("expected ack.seq=%d (s0=%d + 5), got %d", s0+5, s0, ack.Sequence)
+	}
+	return pass()
+}
+
+func testAB205(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowAtomicPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	batch := newUUID()
+	if ack, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 1, "", nil, []byte("a")), 5*time.Second); err != nil || ack.Error != nil {
+		return fail("initial err=%v ack=%+v", err, ack)
+	}
+	// Members 2 and 3 fire-and-forget (no reply).
+	if err := publishFireAndForget(h, newBatchMsg(h.Subject("a"), batch, 2, "", nil, []byte("b"))); err != nil {
+		return fail("seq 2 fire-and-forget: %v", err)
+	}
+	if err := publishFireAndForget(h, newBatchMsg(h.Subject("a"), batch, 3, "", nil, []byte("c"))); err != nil {
+		return fail("seq 3 fire-and-forget: %v", err)
+	}
+	if err := h.NC.FlushTimeout(5 * time.Second); err != nil {
+		return fail("flush: %v", err)
+	}
+	ack, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 4, "1", nil, []byte("d")), 5*time.Second)
+	if err != nil {
+		return fail("commit: %v", err)
+	}
+	if ack.Error != nil || ack.BatchSize != 4 {
+		return fail("commit ack mismatch: %+v", ack)
+	}
+	msgs, err := listMsgs(h, name)
+	if err != nil {
+		return fail("list: %v", err)
+	}
+	if len(msgs) != 4 {
+		return fail("expected 4 stored, got %d", len(msgs))
 	}
 	return pass()
 }

@@ -21,6 +21,8 @@ func fb100Tests() []harness.Test {
 		{ID: "FB-103", Title: "AllowBatchPublish toggles via update", Section: "FB-100", Tags: []string{"config"}, Run: testFB103},
 		{ID: "FB-104", Title: "AllowBatchPublish compatible with PersistMode async", Section: "FB-100", Tags: []string{"config"}, Run: testFB104},
 		{ID: "FB-105", Title: "AllowBatchPublish and AllowAtomicPublish may coexist", Section: "FB-100", Tags: []string{"config"}, Run: testFB105},
+		{ID: "FB-106", Title: "Mirrors cannot enable AllowBatchPublish", Section: "FB-100", Tags: []string{"config", "mirrors"}, Run: testFB106},
+		{ID: "FB-107", Title: "Sources may enable AllowBatchPublish", Section: "FB-100", Tags: []string{"config", "sources"}, Run: testFB107},
 	}
 }
 
@@ -210,6 +212,78 @@ func testFB105(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	if last != 6 {
 		return fail("expected 6 messages stored, last seq is %d", last)
+	}
+	return pass()
+}
+
+func testFB106(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	src := h.MintStreamName("FB_106_SRC")
+	if err := createStream(h, streamConfig{Name: src}); err != nil {
+		return fail("create source: %v", err)
+	}
+	mir := h.MintStreamName("FB_106_MIR")
+	err := createStream(h, streamConfig{
+		Name:              mir,
+		Mirror:            &source{Name: src},
+		AllowBatchPublish: true,
+	})
+	if err == nil {
+		return fail("expected error creating mirror with AllowBatchPublish, got success")
+	}
+	return pass()
+}
+
+func testFB107(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	src := h.MintStreamName("FB_107_SRC")
+	srcSubj := h.Subject("src") + ".>"
+	if err := createStream(h, streamConfig{
+		Name:              src,
+		Subjects:          []string{srcSubj},
+		AllowBatchPublish: true,
+	}); err != nil {
+		return fail("create source: %v", err)
+	}
+	dst := h.MintStreamName("FB_107_DST")
+	dstSubj := h.Subject("dst") + ".>"
+	if err := createStream(h, streamConfig{
+		Name:              dst,
+		Subjects:          []string{dstSubj},
+		AllowBatchPublish: true,
+		Sources:           []source{{Name: src}},
+	}); err != nil {
+		return fail("create dst with sources + AllowBatchPublish: %v", err)
+	}
+
+	handle, err := openFastBatch(h, src, 10, "ok")
+	if err != nil {
+		return fail("open batch: %v", err)
+	}
+	defer handle.Close()
+	pubSubj := h.Subject("src") + ".a"
+	if err := handle.publish(pubSubj, FBOpStart, nil, []byte("a")); err != nil {
+		return fail("initial: %v", err)
+	}
+	if err := handle.publish(pubSubj, FBOpAppend, nil, []byte("b")); err != nil {
+		return fail("append: %v", err)
+	}
+	if err := handle.publish(pubSubj, FBOpCommitStore, nil, []byte("c")); err != nil {
+		return fail("commit: %v", err)
+	}
+	ack, err := handle.awaitPubAck(10 * time.Second)
+	if err != nil {
+		return fail("await pubAck: %v", err)
+	}
+	if ack.Error != nil || ack.BatchSize != 3 {
+		return fail("commit ack mismatch: %+v", ack)
+	}
+
+	caught := waitFor(10*time.Second, func() bool {
+		last, err := streamLastSeq(h, dst)
+		return err == nil && last == 3
+	})
+	if !caught {
+		last, _ := streamLastSeq(h, dst)
+		return fail("DST did not converge to 3 sourced messages (last=%d)", last)
 	}
 	return pass()
 }

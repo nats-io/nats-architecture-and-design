@@ -19,6 +19,8 @@ import (
 func fb1000Tests() []harness.Test {
 	return []harness.Test{
 		{ID: "FB-1001", Title: "Idle batch is abandoned after 10s", Section: "FB-1000", Tags: []string{"idle", "slow"}, SkipReason: requiresSlow(), Run: testFB1001},
+		{ID: "FB-1002", Title: "Idle timeout resets on traffic", Section: "FB-1000", Tags: []string{"idle", "slow"}, SkipReason: requiresSlow(), Run: testFB1002},
+		{ID: "FB-1003", Title: "Ping resets the idle timer", Section: "FB-1000", Tags: []string{"idle", "slow"}, SkipReason: requiresSlow(), Run: testFB1003},
 	}
 }
 
@@ -67,6 +69,91 @@ func testFB1001(_ context.Context, h *harness.Harness) (harness.Status, string, 
 	}
 	if last != 1 {
 		return fail("expected the pre-timeout initial message to remain (last seq=1), got last seq %d", last)
+	}
+	return pass()
+}
+
+func testFB1002(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowBatchPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	handle, err := openFastBatch(h, name, 10, "ok")
+	if err != nil {
+		return fail("open batch: %v", err)
+	}
+	defer handle.Close()
+	if err := handle.publish(h.Subject("a"), FBOpStart, nil, []byte("1")); err != nil {
+		return fail("initial: %v", err)
+	}
+	if _, err := handle.awaitFlowAck(5 * time.Second); err != nil {
+		return fail("first flow ack: %v", err)
+	}
+
+	// Append one message every 5s for ~15s. Each gap is < 10s so the
+	// idle timer must reset on traffic.
+	for i := 0; i < 3; i++ {
+		time.Sleep(5 * time.Second)
+		if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte("x")); err != nil {
+			return fail("append %d: %v", i+2, err)
+		}
+	}
+
+	if err := handle.publish(h.Subject("a"), FBOpCommitStore, nil, []byte("end")); err != nil {
+		return fail("commit: %v", err)
+	}
+	ack, err := handle.awaitPubAck(10 * time.Second)
+	if err != nil {
+		return fail("await pubAck: %v", err)
+	}
+	if ack.Error != nil {
+		return fail("pub ack error (idle timer must have reset on each append): %s", ack.Error)
+	}
+	if ack.BatchSize != 5 {
+		return fail("pub ack count=%d, want 5", ack.BatchSize)
+	}
+	return pass()
+}
+
+func testFB1003(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowBatchPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	handle, err := openFastBatch(h, name, 10, "ok")
+	if err != nil {
+		return fail("open batch: %v", err)
+	}
+	defer handle.Close()
+
+	if err := handle.publish(h.Subject("a"), FBOpStart, nil, []byte("1")); err != nil {
+		return fail("initial: %v", err)
+	}
+	if _, err := handle.awaitFlowAck(5 * time.Second); err != nil {
+		return fail("first flow ack: %v", err)
+	}
+
+	time.Sleep(7 * time.Second)
+	if err := handle.publishAtSeq(h.Subject("a"), FBOpPing, handle.seq, nil, nil); err != nil {
+		return fail("ping: %v", err)
+	}
+	time.Sleep(7 * time.Second)
+
+	if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte("2")); err != nil {
+		return fail("append seq 2 after ping: %v", err)
+	}
+	if err := handle.publish(h.Subject("a"), FBOpCommitStore, nil, []byte("3")); err != nil {
+		return fail("commit: %v", err)
+	}
+	ack, err := handle.awaitPubAck(10 * time.Second)
+	if err != nil {
+		return fail("await pubAck: %v", err)
+	}
+	if ack.Error != nil {
+		return fail("pub ack error (ping must have kept batch alive): %s", ack.Error)
+	}
+	if ack.BatchSize != 3 {
+		return fail("pub ack count=%d, want 3", ack.BatchSize)
 	}
 	return pass()
 }

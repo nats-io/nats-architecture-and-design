@@ -27,6 +27,11 @@ func ab700Tests() []harness.Test {
 			SkipReason: eobSkip, Run: testAB702,
 		},
 		{
+			ID: "AB-703", Title: "Nats-Batch-Commit:eob on the very first message",
+			Section: "AB-700", Tags: []string{"commit", "api-level-4"},
+			SkipReason: eobSkip, Run: testAB703,
+		},
+		{
 			ID: "AB-704", Title: "Nats-Batch-Commit with an unknown value",
 			Section: "AB-700", Tags: []string{"commit"}, Run: testAB704,
 		},
@@ -92,6 +97,37 @@ func testAB702(_ context.Context, h *harness.Harness) (harness.Status, string, e
 	}
 	if ack.Sequence != msgs[1].Sequence {
 		return fail("ack.seq=%d != stored last seq %d", ack.Sequence, msgs[1].Sequence)
+	}
+	return pass()
+}
+
+func testAB703(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowAtomicPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	batch := newUUID()
+	ack, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 1, "eob", nil, []byte("only")), 5*time.Second)
+	if err != nil {
+		return fail("eob initial: %v", err)
+	}
+	last, err := streamLastSeq(h, name)
+	if err != nil {
+		return fail("last seq: %v", err)
+	}
+	// Per ADR-50 AB-703 both outcomes are acceptable:
+	//   - success with count=0 and zero stored (EOB applied; EOB doesn't count)
+	//   - error pub ack (e.g. ErrCodeIncomplete 10176 — server treats a
+	//     lone EOB as an incomplete batch)
+	// MUST NOT: silently store the message.
+	if last != 0 {
+		return fail("server stored the EOB-only first message (last=%d)", last)
+	}
+	if ack.Error != nil {
+		return pass()
+	}
+	if ack.BatchSize != 0 {
+		return fail("EOB-on-first acked with count=%d, want 0 (EOB does not count toward BatchSize)", ack.BatchSize)
 	}
 	return pass()
 }

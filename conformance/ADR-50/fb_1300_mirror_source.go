@@ -17,8 +17,63 @@ import (
 // fast-batch state — sourced/mirrored messages are ordinary entries.
 func fb1300Tests() []harness.Test {
 	return []harness.Test{
+		{ID: "FB-1301", Title: "Mirrors do not propagate fast-batch state", Section: "FB-1300", Tags: []string{"mirrors"}, Run: testFB1301},
 		{ID: "FB-1302", Title: "Sources do not propagate fast-batch state", Section: "FB-1300", Tags: []string{"sources"}, Run: testFB1302},
 	}
+}
+
+func testFB1301(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	tag := strings.ReplaceAll(h.TestID, "-", "_")
+	src := h.MintStreamName(tag + "_SRC")
+	mir := h.MintStreamName(tag + "_MIR")
+
+	if err := createStream(h, streamConfig{
+		Name:              src,
+		AllowBatchPublish: true,
+	}); err != nil {
+		return fail("create source: %v", err)
+	}
+	if err := createStream(h, streamConfig{
+		Name:   mir,
+		Mirror: &source{Name: src},
+	}); err != nil {
+		return fail("create mirror: %v", err)
+	}
+
+	handle, err := openFastBatch(h, src, 10, "ok")
+	if err != nil {
+		return fail("open batch: %v", err)
+	}
+	defer handle.Close()
+
+	if err := handle.publish(h.Subject("a"), FBOpStart, nil, []byte("a")); err != nil {
+		return fail("initial: %v", err)
+	}
+	for i := 2; i <= 4; i++ {
+		if err := handle.publish(h.Subject("a"), FBOpAppend, nil, []byte(fmt.Sprintf("%d", i))); err != nil {
+			return fail("append seq %d: %v", i, err)
+		}
+	}
+	if err := handle.publish(h.Subject("a"), FBOpCommitStore, nil, []byte("e")); err != nil {
+		return fail("commit: %v", err)
+	}
+	ack, err := handle.awaitPubAck(10 * time.Second)
+	if err != nil {
+		return fail("await pubAck: %v", err)
+	}
+	if ack.Error != nil || ack.BatchSize != 5 {
+		return fail("commit ack mismatch: %+v", ack)
+	}
+
+	caught := waitFor(10*time.Second, func() bool {
+		last, err := streamLastSeq(h, mir)
+		return err == nil && last == 5
+	})
+	if !caught {
+		last, _ := streamLastSeq(h, mir)
+		return fail("MIR did not catch up to 5 messages (last=%d)", last)
+	}
+	return pass()
 }
 
 func testFB1302(_ context.Context, h *harness.Harness) (harness.Status, string, error) {

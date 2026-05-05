@@ -28,6 +28,10 @@ func ab1000Tests() []harness.Test {
 			Section: "AB-1000", Tags: []string{"advisory"}, Run: testAB1002,
 		},
 		{
+			ID: "AB-1003", Title: "Advisory reason: unsupported",
+			Section: "AB-1000", Tags: []string{"advisory"}, Run: testAB1003,
+		},
+		{
 			ID: "AB-1004", Title: "Advisory reason: large",
 			Section: "AB-1000", Tags: []string{"advisory", "resource-intensive"},
 			SkipReason: requiresResourceIntensive(), Run: testAB1004,
@@ -114,6 +118,32 @@ func testAB1002(_ context.Context, h *harness.Harness) (harness.Status, string, 
 	})
 	if !got {
 		return inconclusive("gap rejected but no advisory with reason=incomplete observed (server may not emit one for direct gap rejections)")
+	}
+	return pass()
+}
+
+func testAB1003(_ context.Context, h *harness.Harness) (harness.Status, string, error) {
+	name := streamName(h)
+	if err := createStream(h, streamConfig{Name: name, AllowAtomicPublish: true}); err != nil {
+		return fail("stream create: %v", err)
+	}
+	get, cancel := captureAdvisories(h)
+	defer cancel()
+	hdrs := nats.Header{HdrRequiredAPILvl: []string{"99"}}
+	batch := newUUID()
+	if ack, err := publishRequest(h, newBatchMsg(h.Subject("a"), batch, 1, "", hdrs, []byte("x")), 5*time.Second); err != nil || ack.Error == nil {
+		return fail("expected error pub ack on unsatisfied API level: err=%v ack=%+v", err, ack)
+	}
+	got := waitFor(5*time.Second, func() bool {
+		for _, a := range get() {
+			if a.BatchID == batch && a.Reason == "unsupported" {
+				return true
+			}
+		}
+		return false
+	})
+	if !got {
+		return fail("did not observe stream_batch_abandoned advisory with reason=unsupported")
 	}
 	return pass()
 }
