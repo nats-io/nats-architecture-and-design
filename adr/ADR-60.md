@@ -125,8 +125,8 @@ type StreamSource struct {
 }
 
 type StreamConsumerSource struct {
-    Name           string `json:"name,omitempty"`
-    DeliverSubject string `json:"deliver_subject,omitempty"`
+    Name           string `json:"name"`
+    DeliverSubject string `json:"deliver_subject"`
 }
 ```
 
