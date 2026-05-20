@@ -106,6 +106,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
+|[ADR-61](adr/ADR-61.md)|server, jetstream|Reconfiguring the JetStream meta peer set for disaster recovery|
 
 ## Kv
 
@@ -190,6 +191,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-56](adr/ADR-56.md)|server, 2.12|JetStream Consistency Models|
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
+|[ADR-61](adr/ADR-61.md)|server, jetstream|Reconfiguring the JetStream meta peer set for disaster recovery|
 
 ## Spec
 
