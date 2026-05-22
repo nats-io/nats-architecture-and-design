@@ -7,15 +7,16 @@
 | Status   | Approved              |
 | Tags     | jetstream, 2.12, 2.14 |
 
-| Revision | Date       | Author                      | Info                                                                                       | Server Version |
-|----------|------------|-----------------------------|--------------------------------------------------------------------------------------------|----------------|
-| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                                                    | 2.12.0         |
-| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                                                    | 2.12.0         |
-| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                                                                | 2.14.0         |
-| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules                                   | 2.14.0         |
-| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages                                              | 2.14.0         |
-| 6        | 2026-04-23 | @MauriceVanVeen             | Clarify stream retention interaction & auto-applied rollup                                 | 2.14.0         |
-| 7        | 2026-04-28 | @ripienaar                  | Document `Nats-Schedule-Time-Zone` format, `@every` minimum & `Nats-Scheduler` error 10212 | 2.14.0         |
+| Revision | Date       | Author                      | Info                                                                                        | Server Version |
+|----------|------------|-----------------------------|---------------------------------------------------------------------------------------------|----------------|
+| 1        | 2025-03-21 | @ripienaar                  | Document Initial Design                                                                     | 2.12.0         |
+| 2        | 2025-09-30 | @ripienaar                  | Use `omitempty` on configuration fields                                                     | 2.12.0         |
+| 3        | 2026-01-05 | @MauriceVanVeen             | Support time zones for cron                                                                 | 2.14.0         |
+| 4        | 2026-04-08 | @ripienaar, @MauriceVanVeen | Add `Nats-Schedule-Rollup` & document stopping schedules                                    | 2.14.0         |
+| 5        | 2026-04-20 | @MauriceVanVeen             | Clarify `Nats-Schedule-Source` on no messages                                               | 2.14.0         |
+| 6        | 2026-04-23 | @MauriceVanVeen             | Clarify stream retention interaction & auto-applied rollup                                  | 2.14.0         |
+| 7        | 2026-04-28 | @ripienaar                  | Document `Nats-Schedule-Time-Zone` format, `@every` minimum & `Nats-Scheduler` error 10212  | 2.14.0         |
+| 8        | 2026-05-22 | @MauriceVanVeen             | Accept `@at` `Nats-Schedule-TTL`; require it after an `@at` schedule, forbid with repeating | TBD            |
 
 ## Context and Motivation
 
@@ -50,6 +51,13 @@ Messages produced from this kind of schedule will have a `Nats-Schedule-Next` he
 The generated message has a Message TTL of `5m`.
 
 The time format is RFC3339 and may include a timezone which the server will convert to UTC when received and execute according to UTC time later.
+
+`Nats-Schedule-TTL` accepts the same values of `Nats-TTL` as defined in [ADR-43](ADR-43.md), which is applied verbatim to the generated message as `Nats-TTL: <value>`. However, there are rules around the `@at` syntax when using the `Nats-Schedule-TTL` header:
+
+- `Nats-Schedule: @at <schedule-time>` publishes a single message at an absolute time, as shown above.
+- `Nats-Schedule-TTL: @at <ttl-time>` gives the generated message an absolute `Nats-TTL: @at <ttl-time>` rather than a duration.
+- When both `Nats-Schedule` and `Nats-Schedule-TTL` use `@at`, the TTL time must be at least 1 second after the schedule time. The generated message is published at the schedule time, so a TTL time equal to, before, or less than 1 second after it would yield a message that is already expired or below the 1 second per-message TTL minimum. Such a schedule is rejected as an invalid pattern when published.
+- `Nats-Schedule-TTL: @at` may only be combined with a single `@at` schedule. Combining it with a repeating schedule (`@every`, predefined, or Cron) is rejected as an invalid pattern, because a fixed absolute expiry would make every generated message expire at the same instant and later messages immediately expire. Use a duration-form `Nats-Schedule-TTL` with repeating schedules.
 
 There may only be one message per subject that holds a schedule, if a user wishes to have many delayed messages all publishing into the same subject the scheduled messages need to go into something like `orders.schedule.UUID` where UUID is a unique identifier, set the `Nats-Schedule-Target` to the desired target subject.
 
@@ -145,18 +153,18 @@ These headers can be set on message that define a schedule:
 | `Nats-Schedule`           | The schedule the message will be published on                                                                                                                                                                                               |
 | `Nats-Schedule-Target`    | The subject the message will be delivered to                                                                                                                                                                                                |
 | `Nats-Schedule-Source`    | Instructs the schedule to read the last message on the given subject and publish it to the target. If no message exists on the source subject, the schedule's own body and headers is published as a fallback. Wildcards are not supported. |
-| `Nats-Schedule-TTL`       | When publishing sets a TTL on the message if the stream supports per message TTLs                                                                                                                                                           |
+| `Nats-Schedule-TTL`       | When publishing sets a TTL on the generated message if the stream supports per message TTLs. Accepts a duration or the absolute `@at <timestamp>` form (see [ADR-43](ADR-43.md) and the `@at` rules above).                                 |
 | `Nats-Schedule-Time-Zone` | The time zone used for the Cron schedule. If not specified, the Cron schedule will be in UTC. Not allowed to be used if the schedule is not a Cron schedule.                                                                                |
 | `Nats-Schedule-Rollup`    | When publishing sets a Rollup on the message, only `sub` is a valid value                                                                                                                                                                   |
 
 Messages that the Schedules produce will have these headers set in addition to any other headers on that was found in the message.
 
-| Header               | Description                                                                              |
-|----------------------|------------------------------------------------------------------------------------------|
-| `Nats-Scheduler`     | The subject holding the schedule                                                         |
-| `Nats-Schedule-Next` | Timestamp for next invocation for cron schedule messages or `purge` for delayed messages |
-| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is given with value `5m`                                   |
-| `Nats-Rollup`        | `sub` when `Nats-Schedule-Rollup` is set to `sub`                                        |
+| Header               | Description                                                                                       |
+|----------------------|---------------------------------------------------------------------------------------------------|
+| `Nats-Scheduler`     | The subject holding the schedule                                                                  |
+| `Nats-Schedule-Next` | Timestamp for next invocation for cron schedule messages or `purge` for delayed messages          |
+| `Nats-TTL`           | `5m` when `Nats-Schedule-TTL` is `5m`; `@at 2026-06-01T23:00:00Z` when the absolute form is given |
+| `Nats-Rollup`        | `sub` when `Nats-Schedule-Rollup` is set to `sub`                                                 |
 
 The body of the message will simply be the provided body in the schedule.
 

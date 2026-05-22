@@ -7,6 +7,12 @@
 | Status   | Implemented                     |
 | Tags     | jetstream, client, server, 2.11 |
 
+| Revision | Date       | Author                      | Info                                                                                       | Server Version |
+|----------|------------|-----------------------------|--------------------------------------------------------------------------------------------|----------------|
+| 1        | 2024-07-11 | @ripienaar                  | Document initial design                                                                    | 2.11.0         |
+| 2        | 2026-04-30 | @ripienaar                  | Add error codes, marker clamping behavior & 2.14 conformance notes                         | 2.14.0         |
+| 3        | 2026-05-22 | @MauriceVanVeen             | Add absolute `@at` timestamp support to `Nats-TTL`                                         | TBD            |
+
 ## Context and motivation
 
 Streams support a one-size-fits-all approach to message TTL based on the MaxAge setting. This causes any message in the Stream to expire at that age.
@@ -34,6 +40,26 @@ below the 1 second minimum (including a literal `0`), will result in an error re
 being discarded.
 
 When a message with the `Nats-TTL` header is published to a stream with the feature disabled the message will be rejected with an error.
+
+### Absolute Timestamps
+
+> [!NOTE]
+> As of Server version 2.14 absolute-timestamp TTLs are not yet implemented.
+
+In addition to a relative duration, the `Nats-TTL` header may carry an absolute expiry time using the `@at` form borrowed from the Message Scheduler (see [ADR-51](ADR-51.md)):
+
+```
+Nats-TTL: @at 2026-06-01T23:00:00Z
+```
+
+This instructs the server to remove the message at the supplied instant rather than a fixed duration after it was stored. The rules for the `@at` form are:
+
+- The time format is RFC3339 and may include a time zone, which the server converts to UTC when received.
+- The server may rewrite the stored header value. For example, normalized to UTC, or clamped up to the `SubjectDeleteMarkerTTL` minimum-effective-TTL floor. But it always remains in `@at <timestamp>` form. It is never converted to a duration or to seconds.
+- The expiry time must be at least 1 second after the message's Stream timestamp. A timestamp in the past is rejected with error `10165` (`invalid per-message TTL`), consistent with the duration minimum.
+- The `@at` form is mutually exclusive with `never` and with a duration value.
+- Because the expiry is an absolute instant rather than an age, an `@at` TTL still expires at the same wall-clock time after a restore or replication, and unlike a duration-valued `Nats-TTL` it keeps that absolute meaning when the message is sourced or mirrored into another stream instead of being re-anchored to the receiving stream's timestamp (see [Sources and Mirrors](#sources-and-mirrors)).
+- Otherwise, an `@at` TTL behaves exactly like a duration-valued `Nats-TTL`: limit markers and the disabled-feature rejection apply unchanged.
 
 ## Limit Markers
 
@@ -113,15 +139,15 @@ Restrictions:
 
 The server returns the following `err_code` values for rejection paths defined in this ADR:
 
-| Rejection path                                                              | `err_code` | Description                                                    |
-|-----------------------------------------------------------------------------|-----------:|----------------------------------------------------------------|
-| Publish with `Nats-TTL` header to a stream where `AllowMsgTTL` is `false`   |    `10166` | `per-message TTL is disabled`                                  |
-| `Nats-TTL` header value is unparsable, sub-second, or a literal `0`         |    `10165` | `invalid per-message TTL`                                      |
-| `SubjectDeleteMarkerTTL` configured below `1s`                              |    `10052` | `subject delete marker TTL must be at least 1 second`          |
-| `SubjectDeleteMarkerTTL` set on a Mirror stream                             |    `10052` | `subject delete markers forbidden on mirrors`                  |
-| `SubjectDeleteMarkerTTL` set with `AllowRollup: false` in pedantic mode     |    `10052` | `subject delete marker cannot be set if roll-ups are disabled` |
-| `SubjectDeleteMarkerTTL` set with `AllowRollup: true` and `DenyPurge: true` |    `10052` | `roll-ups require the purge permission`                        |
-| Stream update attempting to set `AllowMsgTTL: false` after it was `true`    |    `10052` | `message TTL status can not be disabled`                       |
+| Rejection path                                                                       | `err_code` | Description                                                    |
+|--------------------------------------------------------------------------------------|-----------:|----------------------------------------------------------------|
+| Publish with `Nats-TTL` header to a stream where `AllowMsgTTL` is `false`            |    `10166` | `per-message TTL is disabled`                                  |
+| `Nats-TTL` header value is unparsable, sub-second, `0`, or an `@at` time in the past |    `10165` | `invalid per-message TTL`                                      |
+| `SubjectDeleteMarkerTTL` configured below `1s`                                       |    `10052` | `subject delete marker TTL must be at least 1 second`          |
+| `SubjectDeleteMarkerTTL` set on a Mirror stream                                      |    `10052` | `subject delete markers forbidden on mirrors`                  |
+| `SubjectDeleteMarkerTTL` set with `AllowRollup: false` in pedantic mode              |    `10052` | `subject delete marker cannot be set if roll-ups are disabled` |
+| `SubjectDeleteMarkerTTL` set with `AllowRollup: true` and `DenyPurge: true`          |    `10052` | `roll-ups require the purge permission`                        |
+| Stream update attempting to set `AllowMsgTTL: false` after it was `true`             |    `10052` | `message TTL status can not be disabled`                       |
 
 All `10052` (`JSStreamInvalidConfigF`) responses share a common shape — the description field carries the underlying reason as enumerated above.
 
