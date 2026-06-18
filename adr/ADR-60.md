@@ -81,6 +81,8 @@ The consumer configuration will closely resemble the ephemeral push consumer var
 - Additionally, `MaxDeliver` must be set to `-1` (infinite) to ensure if some messages are lost in transit, they can
   still be reliably redelivered.
 
+
+
 ### Pre-created durable consumer
 
 An alternative to the server creating and managing ephemeral consumers for stream sourcing is the user pre-creating a
@@ -94,7 +96,7 @@ allowing the sourcing to temporarily stop if desired.
 
 WorkQueue streams don't allow having multiple consumers with overlapping filter subjects. This means that a durable
 consumer used for mirroring/sourcing of a WorkQueue stream, would not allow another overlapping consumer to be created
-used for a different purpose. In that case, an Interest or Limits stream should be used.
+used for a different purpose. In that case, an Interest or Limits stream should be used. Note that auto-created consumers on WorkQueue streams may violate the non-overlapping subject contract. Pre-creation fo consumers is preferred for WorkQueue.
 
 Some additional tooling will be required to create the durable consumer with the proper configuration. But through the
 use of a new `AckPolicy=AckFlowControl` field, the server will be able to help enforce the correct configuration.
@@ -112,11 +114,15 @@ for durable sourcing are met. This also allows for new use cases that the epheme
 - Using `DeliverPolicy=last_per_subject` for only sourcing the last message per subject and every update onward.
 - Using `ReplayPolicy=original` to allow sourcing at the speed the messages were received in originally.
 
-### Stream configuration
+### Stream configuration and consumer auto creation
 
 The stream configuration will largely remain the same, as the servers will recognize when the user tries to mirror or
 source a WorkQueue or Interest stream. However, it will be extended to include details about the consumer that should be
 used for the durable sourcing (if any).
+
+Note, that the consumer auto-created on WorkQueue stream will be able to violate the non-overlapping subject rule for WorkQueue. That multiple consumer can be created for the same subjects and messages will potentially be sourced multiple times in addition to a regular consumer on the WorkQueue.
+* To strictly enforce the `consume-once` contract of the WorkQueue the consumer should be pre-created.
+* Deleting one of multiple consumers may not auto-cleanup pending messages (retained because another consumer still holds on to them). 
 
 ```go
 type StreamSource struct {
@@ -178,7 +184,7 @@ These options allow users to choose the best fit for their use case:
     - WorkQueue or Interest stream: durable consumer. The user doesn't (need to) manage the consumer but can see it when
       using the JetStream API. It's automatically created in the background when the mirroring/sourcing starts. The
       consumer is deleted on a best-effort basis if the mirror/source config is removed, however the user may need to
-      manually delete this durable consumer if this fails.
+      manually delete this durable consumer if this fails. Note the potentially unexpected behavior described above for auto-created consumers on WorkQueue streams.
 - Full control over the consumer lifecycle and configuration:
     - The user pre-creates a durable consumer to be used for the stream mirroring/sourcing.
     - Intended to be used if the simple stream config approach doesn't fit the use case, primarily for security reasons
