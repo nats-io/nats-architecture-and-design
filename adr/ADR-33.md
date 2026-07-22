@@ -1,11 +1,11 @@
 # Metadata for Stream and Consumer
 
-|Metadata|Value|
-|--------|-----|
-|Date    |2023-01-23|
-|Author  |@Jarema|
-|Status  |Approved|
-|Tags    |jetstream, client, server|
+| Metadata | Value                     |
+|----------|---------------------------|
+| Date     | 2023-01-23                |
+| Author   | @Jarema                   |
+| Status   | Approved                  |
+| Tags     | jetstream, client, server |
 
 ## Context and Problem Statement
 
@@ -42,7 +42,7 @@ Server can lock its metadata to be immutable and deny any changes.
   "metadata": {
     "owner": "nack",
     "domain": "product",
-    "_nats_created_version": "1.10.0"
+    "_nats.mirror.domain": "OTHER"
   }
 }
 
