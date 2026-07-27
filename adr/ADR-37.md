@@ -42,7 +42,7 @@ and Consumers.
 
 The JetStream Context is mainly responsible for managing streams. It serves as
 the entry point for creating, configuring, and controlling the streams.
-JetStreamContext should also expose methods co-manage consumers directly,
+JetStreamContext should also expose methods to manage consumers directly,
 bypassing the need to get/create a stream.
 
 Example set of methods on JetStreamContext:
@@ -66,7 +66,7 @@ Example set of methods on JetStreamContext:
 Streams are created from the JetStreamContext. They provide a set of operations
 for managing the stream and its contents. With streams, you can perform
 operations such as purging the entire stream and fetching/deleting individual
-messages. Streams also allow for and managing consumers.
+messages. Streams also allow for managing consumers.
 
 Example set of methods on Stream:
 
@@ -119,7 +119,7 @@ Consumers will have the following operations:
 - `Info` - An optional operation that returns the consumer info of the consumer
 - `Delete` - An optional operation to delete the referenced consumer
 
-Lifecycle of Consume may need to be controlled. For example, the ability to stop
+Lifecycle of Consumer may need to be controlled. For example, the ability to stop
 delivering messages to the callback or drain messages already accumulated before
 stopping the consumer. These can be additional methods on the consumer
 implementation if appropriate or an object that is the return value of callback-driven consumers.
