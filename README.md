@@ -38,6 +38,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |Index|Tags|Description|
 |-----|----|-----------|
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
+|[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 
 ## Client
 
@@ -113,6 +114,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
+|[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 
 ## Kv
 
@@ -198,6 +200,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
+|[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 
 ## Spec
 
