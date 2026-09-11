@@ -39,6 +39,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |-----|----|-----------|
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
+|[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
 
 ## Client
 
@@ -77,6 +78,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv, refinement|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
+|[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
 
 ## Jetstream
 
@@ -115,6 +117,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
+|[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
 
 ## Kv
 
@@ -201,6 +204,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
+|[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
 
 ## Spec
 
