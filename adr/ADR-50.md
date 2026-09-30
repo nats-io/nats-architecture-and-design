@@ -19,6 +19,7 @@
 | 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                                | 2.14.0         | 4         |
 | 9        | 2026-01-28 | @MauriceVanVeen                                 | Finalize fast ingest details: type hints & error handling | 2.14.0         | 4         |
 | 10       | 2026-03-13 | @MauriceVanVeen                                 | Update batch limits                                       | 2.14.0         | 4         |
+| 11       | 2026-09-30 | @ripienaar                                      | Clarify atomic errors                                     | 2.14.0         | 4         |
 
 ## Context
 
@@ -58,17 +59,17 @@ The server will acknowledge in the following manner:
 
 ### Server Errors
 
-The server will respond with the following errors if committing a batch fails:
+The server will respond with the following errors when a batch fails. Errors checked on every message are returned on the message that fails the check, when it has a reply subject, and the batch is abandoned. Errors checked at commit are returned on the commit message.
 
-| ErrCode | Code | Description                                                         |
-|---------|------|---------------------------------------------------------------------|
-| 10174   | 400  | Batch publish not enabled on stream                                 |
-| 10176   | 400  | Batch publish is incomplete and was abandoned                       |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 |
-| 10175   | 400  | Batch publish sequence is missing                                   |
-| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          |
-| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) |
-| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         |
+| ErrCode | Code | Description                                                         | Returned on                                                                                               |
+|---------|------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
+| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                  |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                  |
+| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`                                                                 |
+| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, or any message of a batch the server does not hold |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                          |
+| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                        |
+| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                        |
 
 ### Server Behavior Design
 
