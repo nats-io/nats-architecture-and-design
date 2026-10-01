@@ -78,7 +78,7 @@ abandoned.
 
 ### Server Behavior Design
 
- * The server will limit the `Nats-Batch-ID` to 64 characters and respond with an error Pub Ack if it's too long
+ * The server will limit the `Nats-Batch-Id` to 64 characters and respond with an error Pub Ack if it's too long
  * Server will reject messages for which the batch is unknown with an error Pub Ack
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
