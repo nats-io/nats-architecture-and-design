@@ -63,8 +63,8 @@ The server will respond with the following errors when a batch message fails a c
 
 Errors checked on every message are returned on the message that fails the check, when it has a reply subject. Errors checked at commit are returned on the commit message.
 
-In all cases except 10175 the batch is abandoned. A message rejected with 10175 is dropped and its batch is not 
-abandoned.
+In all cases except 10175 the batch is rejected or abandoned. A message rejected with 10175 is dropped and its batch is 
+not abandoned.
 
 | ErrCode | Code | Description                                                         | Returned on                                                                                                                                                       |
 |---------|------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
