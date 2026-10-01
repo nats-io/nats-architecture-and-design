@@ -63,27 +63,28 @@ The server will respond with the following errors when a batch message fails a c
 
 Errors checked on every message are returned on the message that fails the check, when it has a reply subject. Errors checked at commit are returned on the commit message.
 
-In all cases except 10175 the batch is abandoned. A message rejected with 10175 is dropped and its batch is not 
-abandoned.
+In all cases except 10175 the batch is rejected or abandoned. A message rejected with 10175 is dropped and its batch is 
+not abandoned.
 
-| ErrCode | Code | Description                                                         | Returned on                                                                                                                                                                      |
-|---------|------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                                                                                         |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                                         |
-| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                                     |
-| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message of a batch the server does not hold |
-| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                                 |
-| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                               |
-| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                               |
+| ErrCode | Code | Description                                                         | Returned on                                                                                                                                                       |
+|---------|------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                                                                          |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                          |
+| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                      |
+| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message for an unknown batch |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                  |
+| 10210   | 429  | Batch publish too many batches in flight                            | The first message of a batch past the per stream or per server in-flight limit                                                                                    |
+| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                |
+| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                |
 
 ### Server Behavior Design
 
- * The server will limit the `Nats-Batch-ID` to 64 characters and respond with an error Pub Ack if it's too long
- * Server will reject messages for which the batch is unknown with an error Pub Ack
- * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
+ * The server will limit the `Nats-Batch-Id` to 64 characters and respond with an error Pub Ack if it's too long
+ * Server will reject a message whose `Nats-Batch-Id` is an unknown batch, and whose `Nats-Batch-Sequence` is not  1, with error 10176. The message is not stored and no abandonment advisory is raised for it.
+ * If a message's `Nats-Batch-Sequence` is not one more than the previous, a repeat included, the batch is abandoned with error 10176 and an `incomplete` advisory.
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
- * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
+ * Send a pub ack on the final message that includes a new property `BatchId:ID` and `BatchSize:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
  * If a stream is operating on the `PersistMode: async` mode, any batch published to it must fail
 
 The server will operate under limits to safeguard itself:
@@ -107,10 +108,10 @@ When an atomic batch is abandoned it might be for reasons that will never be com
 type BatchAbandonReason string
 
 var (
-	BatchTimeout              BatchAbandonReason = "timeout"
-	BatchLarge                BatchAbandonReason = "large"
-	BatchIncomplete           BatchAbandonReason = "incomplete"
-	BatchRequirementsNotMet   BatchAbandonReason = "unsupported"
+	BatchTimeout              BatchAbandonReason = "timeout"     // no message for the idle timeout
+	BatchLarge                BatchAbandonReason = "large"       // more messages than the batch limit
+	BatchIncomplete           BatchAbandonReason = "incomplete"  // a gap in Nats-Batch-Sequence
+	BatchRequirementsNotMet   BatchAbandonReason = "unsupported" // Nats-Required-Api-Level not met
 )
 
 type Advisory struct {
@@ -144,7 +145,7 @@ The goal is to replace Async publish with one built on these behaviors.
 
 The heart of this design is a control channel that is open and kept open for the duration of the batch. In practice the reply subject uses a wildcard inbox, with all messages in the batch containing a unique reply subject for that message, but all under that wildcard inbox subject hierarchy.
 
-The server will send acks over the channel on a frequency like once every 10. Crucially if at any stage an error is encountered errors can be sent back immediately and received by the client as the channel is always open.
+The server will send acks over the channel every `Messages` messages, as set in `BatchFlowAck`. Crucially if at any stage an error is encountered errors can be sent back immediately and received by the client as the channel is always open.
 
 Clients will not wait for each ack like they would in a standard JS Publish instead they will maintain a count of maximum outstanding acknowledgements from the server, this is part flow-control and part outage detection.
 
@@ -420,7 +421,7 @@ It's a conscious decision to not use the `Error` field in the `PubAck` for this 
 * If messages in a batch are received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration.
 * Check properties like `ExpectedLastSeq` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through flow control, but per-message content can remain the same. This allows to swap between publish implementations as needed.
 * Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds.
-* Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be for earlier sequences.
+* Send a pub ack on the final message that includes a new property `BatchId:ID` and `BatchSize:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be for earlier sequences.
 
 The server will operate under limits to safeguard itself:
 
