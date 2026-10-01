@@ -108,10 +108,10 @@ When an atomic batch is abandoned it might be for reasons that will never be com
 type BatchAbandonReason string
 
 var (
-	BatchTimeout              BatchAbandonReason = "timeout"
-	BatchLarge                BatchAbandonReason = "large"
-	BatchIncomplete           BatchAbandonReason = "incomplete"
-	BatchRequirementsNotMet   BatchAbandonReason = "unsupported"
+	BatchTimeout              BatchAbandonReason = "timeout"     // no message for the idle timeout
+	BatchLarge                BatchAbandonReason = "large"       // more messages than the batch limit
+	BatchIncomplete           BatchAbandonReason = "incomplete"  // a gap in Nats-Batch-Sequence
+	BatchRequirementsNotMet   BatchAbandonReason = "unsupported" // Nats-Required-Api-Level not met
 )
 
 type Advisory struct {
