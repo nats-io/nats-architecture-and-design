@@ -145,7 +145,7 @@ The goal is to replace Async publish with one built on these behaviors.
 
 The heart of this design is a control channel that is open and kept open for the duration of the batch. In practice the reply subject uses a wildcard inbox, with all messages in the batch containing a unique reply subject for that message, but all under that wildcard inbox subject hierarchy.
 
-The server will send acks over the channel on a frequency like once every 10. Crucially if at any stage an error is encountered errors can be sent back immediately and received by the client as the channel is always open.
+The server will send acks over the channel every `Messages` messages, as set in `BatchFlowAck`. Crucially if at any stage an error is encountered errors can be sent back immediately and received by the client as the channel is always open.
 
 Clients will not wait for each ack like they would in a standard JS Publish instead they will maintain a count of maximum outstanding acknowledgements from the server, this is part flow-control and part outage detection.
 
