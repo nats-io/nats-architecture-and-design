@@ -73,6 +73,7 @@ not abandoned.
 | 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                      |
 | 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message for an unknown batch |
 | 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                  |
+| 10210   | 429  | Batch publish too many batches in flight                            | The first message of a batch past the per stream in-flight limit                                                                                                  |
 | 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                |
 | 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                |
 
