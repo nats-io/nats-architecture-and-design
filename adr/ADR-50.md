@@ -7,19 +7,19 @@
 | Status   | Approved                              |
 | Tags     | jetstream, server, client, 2.12, 2.14 |
 
-| Revision | Date       | Author                                          | Info                                                      | Server Version | API Level |
-|----------|------------|-------------------------------------------------|-----------------------------------------------------------|----------------|-----------|
-| 1        | 2025-06-10 | @ripienaar                                      | Initial design                                            | 2.12.0         | 2         |
-| 2        | 2025-09-08 | @MauriceVanVeen                                 | Initial release                                           | 2.12.0         | 2         |
-| 3        | 2025-09-11 | @piotrpio                                       | Add server codes                                          | 2.12.0         | 2         |
-| 4        | 2025-09-11 | @ripienaar                                      | Restore optional ack behavior                             | 2.12.0         | 2         |
-| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message   | 2.14.0         | 4         |
-| 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                     | 2.12.1         | 2         |
-| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                       | 2.14.0         | 4         |
-| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                                | 2.14.0         | 4         |
-| 9        | 2026-01-28 | @MauriceVanVeen                                 | Finalize fast ingest details: type hints & error handling | 2.14.0         | 4         |
-| 10       | 2026-03-13 | @MauriceVanVeen                                 | Update batch limits                                       | 2.14.0         | 4         |
-| 11       | 2026-09-30 | @ripienaar                                      | Clarify atomic errors                                     | 2.14.0         | 4         |
+| Revision | Date       | Author                                          | Info                                                            | Server Version | API Level |
+|----------|------------|-------------------------------------------------|-----------------------------------------------------------------|----------------|-----------|
+| 1        | 2025-06-10 | @ripienaar                                      | Initial design                                                  | 2.12.0         | 2         |
+| 2        | 2025-09-08 | @MauriceVanVeen                                 | Initial release                                                 | 2.12.0         | 2         |
+| 3        | 2025-09-11 | @piotrpio                                       | Add server codes                                                | 2.12.0         | 2         |
+| 4        | 2025-09-11 | @ripienaar                                      | Restore optional ack behavior                                   | 2.12.0         | 2         |
+| 5        | 2025-09-25 | @ripienaar                                      | Support batch commit without storing the commit message         | 2.14.0         | 4         |
+| 6        | 2025-10-02 | @MauriceVanVeen                                 | Support deduplication                                           | 2.12.1         | 2         |
+| 7        | 2025-10-08 | @ripienaar, @MauriceVanVeen, @piotrpio, @Jarema | Support fast ingest                                             | 2.14.0         | 4         |
+| 8        | 2025-10-09 | @MauriceVanVeen                                 | Update fast ingest details                                      | 2.14.0         | 4         |
+| 9        | 2026-01-28 | @MauriceVanVeen                                 | Finalize fast ingest details: type hints & error handling       | 2.14.0         | 4         |
+| 10       | 2026-03-13 | @MauriceVanVeen                                 | Update batch limits                                             | 2.14.0         | 4         |
+| 11       | 2026-09-30 | @ripienaar                                      | Clarify ADR content for issues found during conformance testing |                |           |
 
 ## Context
 
@@ -59,17 +59,22 @@ The server will acknowledge in the following manner:
 
 ### Server Errors
 
-The server will respond with the following errors when a batch fails. Errors checked on every message are returned on the message that fails the check, when it has a reply subject, and the batch is abandoned. Errors checked at commit are returned on the commit message.
+The server will respond with the following errors when a batch message fails a check. 
 
-| ErrCode | Code | Description                                                         | Returned on                                                                                               |
-|---------|------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------|
-| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                  |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                  |
-| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`                                                                 |
-| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, or any message of a batch the server does not hold |
-| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                          |
-| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                        |
-| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                        |
+Errors checked on every message are returned on the message that fails the check, when it has a reply subject. Errors checked at commit are returned on the commit message.
+
+In all cases except 10175 the batch is abandoned. A message rejected with 10175 is dropped and its batch is not 
+abandoned.
+
+| ErrCode | Code | Description                                                         | Returned on                                                                                                                                                                      |
+|---------|------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                                                                                         |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                                         |
+| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                                     |
+| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message of a batch the server does not hold |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                                 |
+| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                               |
+| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                               |
 
 ### Server Behavior Design
 
