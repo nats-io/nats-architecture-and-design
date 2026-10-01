@@ -80,7 +80,7 @@ abandoned.
 
  * The server will limit the `Nats-Batch-Id` to 64 characters and respond with an error Pub Ack if it's too long
  * Server will reject a message whose `Nats-Batch-Id` is an unknown batch, and whose `Nats-Batch-Sequence` is not  1, with error 10176. The message is not stored and no abandonment advisory is raised for it.
- * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
+ * If a message's `Nats-Batch-Sequence` is not one more than the previous, a repeat included, the batch is abandoned with error 10176 and an `incomplete` advisory.
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
  * Send a pub ack on the final message that includes a new property `Batch:ID` and `Count:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
