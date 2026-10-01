@@ -66,20 +66,20 @@ Errors checked on every message are returned on the message that fails the check
 In all cases except 10175 the batch is abandoned. A message rejected with 10175 is dropped and its batch is not 
 abandoned.
 
-| ErrCode | Code | Description                                                         | Returned on                                                                                                                                                                      |
-|---------|------|---------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                                                                                         |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                                         |
-| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                                     |
-| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message of a batch the server does not hold |
-| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                                 |
-| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                               |
-| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                               |
+| ErrCode | Code | Description                                                         | Returned on                                                                                                                                                       |
+|---------|------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                                                                          |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                          |
+| 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                      |
+| 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message for an unknown batch |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                  |
+| 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                |
+| 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                |
 
 ### Server Behavior Design
 
  * The server will limit the `Nats-Batch-Id` to 64 characters and respond with an error Pub Ack if it's too long
- * Server will reject messages for which the batch is unknown with an error Pub Ack
+ * Server will reject a message whose `Nats-Batch-Id` is an unknown batch, and whose `Nats-Batch-Sequence` is not  1, with error 10176. The message is not stored and no abandonment advisory is raised for it.
  * If messages in a batch is received and any gap is detected the batch will be rejected with a error Pub Ack
  * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
