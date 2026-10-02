@@ -205,7 +205,7 @@ We want to cater for 2 kinds of use cases around gaps:
 
 To support both we set the gap mode to `fail` or `ok` in the reply subject. Invalid values are rejected with error 10206.
 
-Upon detecting a gap, the server immediately sends a `BatchFlowGap` with the `ExpectedLastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
+Upon detecting a gap, the server immediately sends a `BatchFlowGap` with the `ExpectedLastSequence` and `CurrentSequence` values set allowing clients to detect the gaps. A lower or repeated batch sequence also gets a `BatchFlowGap`, then ends the batch with the final pub ack, in either gap mode.
 
 ```go
 // BatchFlowGap is used for reporting gaps when fast batch publishing into a stream.
