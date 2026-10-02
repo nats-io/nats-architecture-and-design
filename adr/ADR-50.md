@@ -203,7 +203,7 @@ We want to cater for 2 kinds of use cases around gaps:
  1. Object store would not be ok with any gaps in the published messages because those would be gaps in files.
  2. Fast metric publishers would be ok with some gaps and would just want to continue publishing.
 
-To support both we set the gap mode to `fail` or `ok` in the reply subject. Invalid values must result in a batch abandon error.
+To support both we set the gap mode to `fail` or `ok` in the reply subject. Invalid values are rejected with error 10206.
 
 Upon detecting a gap, the server immediately sends a `BatchFlowGap` with the `ExpectedLastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
 
