@@ -183,7 +183,7 @@ The server will acknowledge in the following manner:
  * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack with the initial allowed flow rate in `AckMessages`.
  * The server will then send `BatchFlowAck` back based on the flow rate - which might adjust the flow rate.
  * The final message will get a standard pub ack as described later.
- * The server will reject with an error any unsupported operation value.
+ * The server will reject with error 10206 any unsupported operation value.
 
 By always sending the current flow state back in the `BatchFlowAck` we guard against lost acks.
 
@@ -203,9 +203,9 @@ We want to cater for 2 kinds of use cases around gaps:
  1. Object store would not be ok with any gaps in the published messages because those would be gaps in files.
  2. Fast metric publishers would be ok with some gaps and would just want to continue publishing.
 
-To support both we set the gap mode to `fail` or `ok` in the reply subject. Invalid values must result in a batch abandon error.
+To support both we set the gap mode to `fail` or `ok` in the reply subject. Invalid values are rejected with error 10206.
 
-Upon detecting a gap, the server immediately sends a `BatchFlowGap` with the `ExpectedLastSequence` and `CurrentSequence` values set allowing clients to detect the gaps.
+Upon detecting a gap, the server immediately sends a `BatchFlowGap` with the `ExpectedLastSequence` and `CurrentSequence` values set allowing clients to detect the gaps. A lower or repeated batch sequence also gets a `BatchFlowGap`, then ends the batch with the final pub ack, in either gap mode.
 
 ```go
 // BatchFlowGap is used for reporting gaps when fast batch publishing into a stream.
@@ -223,7 +223,7 @@ type BatchFlowGap struct {
 
 The `ExpectedLastSequence` was the expected next sequence to be received by the server before the gap, and the `CurrentSequence` is the sequence of the received batch message. The messages with sequences starting from `ExpectedLastSequence` up to (but not including) `CurrentSequence` were lost. Importantly, this flow control message MUST NOT be used to know whether `ExpectedLastSequence` or `CurrentSequence` was persisted, it's purely informational. Also, this message will be immediately sent upon detecting a gap. This means it can be received out-of-order with the usual flow control messages that signal up to a certain batch sequence was persisted. Crucially, since these gap messages can be sent out-of-order, these messages don't contain any flow updates or information.
 
-Example: `{"type":"gap","last_seq":10,"seq":15}`. The gap was detected at sequence 15, any prior messages up to and including 10 were lost.
+Example: `{"type":"gap","last_seq":10,"seq":15}`. The gap was detected at sequence 15, messages 10 to 14 were lost.
 
 When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap. The client will receive the gap message first, and should use this to stop sending messages before eventually receiving the final ack.
 
@@ -236,8 +236,8 @@ When the leader of the Stream changes:
 
 When using per-message expected header checks, the server will either stop or continue the batch depending on the mode:
 
-* In `fail` gap mode the error will commit/stop the batch. The final pub ack will contain the error, and no more messages are accepted in the batch after the batch sequence that triggered the error.
-* In `ok` gap mode the error will be sent to the client in the `BatchFlowGap` message with the `CurrentSequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
+* In `fail` gap mode the error will commit the batch. No more messages are accepted in the batch after the batch sequence that triggered the error.
+* In `ok` gap mode the error will be sent to the client in a `BatchFlowErr` message with the `Sequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
 
 ### Flow Control
 
