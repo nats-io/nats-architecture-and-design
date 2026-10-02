@@ -183,7 +183,7 @@ The server will acknowledge in the following manner:
  * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack with the initial allowed flow rate in `AckMessages`.
  * The server will then send `BatchFlowAck` back based on the flow rate - which might adjust the flow rate.
  * The final message will get a standard pub ack as described later.
- * The server will reject with an error any unsupported operation value.
+ * The server will reject with error 10206 any unsupported operation value.ccp
 
 By always sending the current flow state back in the `BatchFlowAck` we guard against lost acks.
 
