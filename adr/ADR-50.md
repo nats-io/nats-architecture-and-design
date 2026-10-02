@@ -228,6 +228,7 @@ Example: `{"type":"gap","last_seq":10,"seq":15}`. The gap was detected at sequen
 When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap. The client will receive the gap message first, and should use this to stop sending messages before eventually receiving the final ack.
 
 When `ok` the server will allow the gap, only send the gap message, and continue onward from the received sequence.
+
 When the leader of the Stream changes:
 
 * In `fail` gap mode the new leader will abandon the batch (if a gap resulted from the leader change), send a `BatchFlowGap` out indicating the gap, and send back a final pub ack with details up to the last received message for the batch.
@@ -236,7 +237,7 @@ When the leader of the Stream changes:
 When using per-message expected header checks, the server will either stop or continue the batch depending on the mode:
 
 * In `fail` gap mode the error will commit the batch. No more messages are accepted in the batch after the batch sequence that triggered the error.
-* In `ok` gap mode the error will be sent to the client in the `BatchFlowGap` message with the `CurrentSequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
+* In `ok` gap mode the error will be sent to the client in a `BatchFlowErr` message with the `Sequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
 
 ### Flow Control
 
