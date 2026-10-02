@@ -183,7 +183,7 @@ The server will acknowledge in the following manner:
  * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack with the initial allowed flow rate in `AckMessages`.
  * The server will then send `BatchFlowAck` back based on the flow rate - which might adjust the flow rate.
  * The final message will get a standard pub ack as described later.
- * The server will reject with error 10206 any unsupported operation value.ccp
+ * The server will reject with error 10206 any unsupported operation value.
 
 By always sending the current flow state back in the `BatchFlowAck` we guard against lost acks.
 
@@ -235,7 +235,7 @@ When the leader of the Stream changes:
 
 When using per-message expected header checks, the server will either stop or continue the batch depending on the mode:
 
-* In `fail` gap mode the error will commit/stop the batch. The final pub ack will contain the error, and no more messages are accepted in the batch after the batch sequence that triggered the error.
+* In `fail` gap mode the error will commit the batch. No more messages are accepted in the batch after the batch sequence that triggered the error.
 * In `ok` gap mode the error will be sent to the client in the `BatchFlowGap` message with the `CurrentSequence` set to the sequence of the message that caused the error. The batch will continue to accept messages.
 
 ### Flow Control
