@@ -223,12 +223,11 @@ type BatchFlowGap struct {
 
 The `ExpectedLastSequence` was the expected next sequence to be received by the server before the gap, and the `CurrentSequence` is the sequence of the received batch message. The messages with sequences starting from `ExpectedLastSequence` up to (but not including) `CurrentSequence` were lost. Importantly, this flow control message MUST NOT be used to know whether `ExpectedLastSequence` or `CurrentSequence` was persisted, it's purely informational. Also, this message will be immediately sent upon detecting a gap. This means it can be received out-of-order with the usual flow control messages that signal up to a certain batch sequence was persisted. Crucially, since these gap messages can be sent out-of-order, these messages don't contain any flow updates or information.
 
-Example: `{"type":"gap","last_seq":10,"seq":15}`. The gap was detected at sequence 15, any prior messages up to and including 10 were lost.
+Example: `{"type":"gap","last_seq":10,"seq":15}`. The gap was detected at sequence 15, messages 10 to 14 were lost.
 
 When `fail` the server will abandon the batch and send the final ack back with `BatchSize` set to the last received sequence before the gap. The client will receive the gap message first, and should use this to stop sending messages before eventually receiving the final ack.
 
 When `ok` the server will allow the gap, only send the gap message, and continue onward from the received sequence.
-
 When the leader of the Stream changes:
 
 * In `fail` gap mode the new leader will abandon the batch (if a gap resulted from the leader change), send a `BatchFlowGap` out indicating the gap, and send back a final pub ack with details up to the last received message for the batch.
