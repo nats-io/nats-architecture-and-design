@@ -419,7 +419,7 @@ It's a conscious decision to not use the `Error` field in the `PubAck` for this 
 ### Server Behavior Design
 
 * The server will limit the `uuid` to 64 characters and respond with an error Pub Ack if it's too long.
-* Server will reject messages for which the batch is unknown with an error Pub Ack.
+* Server will reject messages for which the batch is unknown with an error Pub Ack. A ping for an unknown batch gets 10208 at any batch sequence.
 * Server will reject values for `gap` that is not `ok` or `fail`.
 * If messages in a batch are received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration.
 * Check properties like `Nats-Expected-Last-Sequence` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through flow control, but per-message content can remain the same. This allows to swap between publish implementations as needed.
