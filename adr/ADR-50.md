@@ -176,11 +176,11 @@ The server MUST reject any operation that it does not know about
  * Otherwise, the final message will have reply subject `<prefix>.uuid.10.ok.n.3.$FI` the server will end the batch without storing the message and reply with a pub ack.
  * Clients will monitor the `BatchFlowAck` acks and should an ack have different flow settings different from the active one they will adjust accordingly.
  * To deal with lost acks clients will manage outstanding `BatchFlowAck` acks in a way that ensures if an ack for message 30 comes in that it implies all earlier acks were received.
- * The client may send a ping message to keep the batch alive and receive (missed) flow control messages. A ping reports about gaps, if any, and resends the latest flow control message. The client can use this to deal with lost acks. The sequence in the ping message must not itself increment the batch sequence; instead, it should be the highest batch sequence the client has sent. This ensures missed ping messages don't show up as gaps which could otherwise fail the batch.
+ * The client may send a ping message to keep the batch alive and receive (missed) flow control messages. A ping reports about gaps, if any, and resends the latest flow control message. The resent `BatchFlowAck` is unchanged: its `Sequence` is that of the last flow ack sent, not of the last message received. A gap the ping reveals is reported first, in a `BatchFlowGap` whose `CurrentSequence` is the ping's sequence plus one. The client can use this to deal with lost acks. The sequence in the ping message must not itself increment the batch sequence; instead, it should be the highest batch sequence the client has sent. This ensures missed ping messages don't show up as gaps which could otherwise fail the batch.
 
 The server will acknowledge in the following manner:
 
- * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack with the initial allowed flow rate in `AckMessages`.
+ * The initial message will get an error - for example, feature not supported - or `BatchFlowAck` ack with the initial allowed flow rate in `Messages`. This ack has `Sequence` 0 and acknowledges no message.
  * The server will then send `BatchFlowAck` back based on the flow rate - which might adjust the flow rate.
  * The final message will get a standard pub ack as described later.
  * The server will reject with error 10206 any unsupported operation value.
