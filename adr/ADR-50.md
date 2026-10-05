@@ -387,7 +387,7 @@ The server will respond with the following Pub Ack errors if using fast batch fa
 
 The server will always send a `BatchFlowErr` containing an error if a message failed an expected header check, like `Nats-Expected-Last-Sequence`.
 
-There's one exception: a batch with only one message that immediately commits. That will return a `PubAck` like you would receive if you had used `js.Publish` or `js.PublishAsync` instead. 
+There's one exception: in gap mode `fail`, a batch with only one message that immediately commits gets a `PubAck` with the error, like you would receive from `js.Publish` or `js.PublishAsync`, and no `BatchFlowErr`.
 
 ```go
 // BatchFlowErr is used for reporting errors when fast batch publishing into a stream.
@@ -470,6 +470,6 @@ Setting `AllowAtomicPublish` to true should set the API level to 2, setting `All
 
 ## Mirrors and Sources
 
-Mirrors can't enable these settings (error 10198 for atomic, 10209 for fast ingest), and will ignore the various headers like `Nats-Expected-Last-Sequence` and the batching headers.
+Mirrors can't enable these settings (error 10198 for atomic, 10209 for fast ingest), and will remove the batching headers and the `Nats-Expected-` headers from messages mirrored into the stream, so neither is acted on.
 
 Streams with Sources can enable these settings, but sources will remove the batching headers and the `Nats-Expected-` headers from messages sourced into the stream, so neither is acted on.
