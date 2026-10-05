@@ -82,7 +82,7 @@ not abandoned.
  * The server will limit the `Nats-Batch-Id` to 64 characters and respond with an error Pub Ack if it's too long
  * Server will reject a message whose `Nats-Batch-Id` is an unknown batch, and whose `Nats-Batch-Sequence` is not  1, with error 10176. The message is not stored and no abandonment advisory is raised for it.
  * If a message's `Nats-Batch-Sequence` is not one more than the previous, a repeat included, the batch is abandoned with error 10176 and an `incomplete` advisory.
- * Check properties like `ExpectedLastSeq` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
+ * Check properties like `Nats-Expected-Last-Sequence` using the sequences found in the stream prior to the batch, at the time when the batch is committed under lock for consistency. Rejects the batch with an error Pub Ack if any message fails these checks, when the batch tries to commit. Only the first message of the batch may contain `Nats-Expected-Last-Sequence`. Checks using `Nats-Expected-Last-Subject-Sequence` can only be performed if prior entries in the batch do not also write to that same subject.
  * Abandon without error reply anywhere a batch that has not had messages for 10 seconds, an advisory will be raised on abandonment in this case
  * Send a pub ack on the final message that includes a new property `BatchId:ID` and `BatchSize:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be the preceding sequences
  * If a stream is operating on the `PersistMode: async` mode, any batch published to it must fail
@@ -96,9 +96,9 @@ The server will operate under limits to safeguard itself:
 
 ### Stream State Constraints
 
-The `LastMsgId` header is currently not supported. A batch will be rejected if this header is used, but we might support this header in the future.
+The `Nats-Expected-Last-Msg-Id` header is currently not supported. A batch will be rejected if this header is used, but we might support this header in the future.
 
-Initial release of this feature rejects the use of `MsgId`. Starting from 2.12.1 de-duplication is supported and a batch will be rejected with an error if it contains a duplicate message.
+Initial release of this feature rejects the use of `Nats-Msg-Id`. Starting from 2.12.1 de-duplication is supported and a batch will be rejected with an error if it contains a duplicate message.
 
 ### Abandonment Advisories
 
@@ -385,7 +385,7 @@ The server will respond with the following Pub Ack errors if using fast batch fa
 | 10208   | 400  | Batch publish ID is unknown                         |
 | 10211   | 429  | Batch publish too many inflight                     |
 
-The server will always send a `BatchFlowErr` containing an error if a message failed an expected header check, like `ExpectedLastSeq`.
+The server will always send a `BatchFlowErr` containing an error if a message failed an expected header check, like `Nats-Expected-Last-Sequence`.
 
 There's one exception: a batch with only one message that immediately commits. That will return a `PubAck` like you would receive if you had used `js.Publish` or `js.PublishAsync` instead. 
 
@@ -422,7 +422,7 @@ It's a conscious decision to not use the `Error` field in the `PubAck` for this 
 * Server will reject messages for which the batch is unknown with an error Pub Ack.
 * Server will reject values for `gap` that is not `ok` or `fail`.
 * If messages in a batch are received and any gap is detected an ack will be sent back indicating the gap and optionally abandon the batch based on the gap configuration.
-* Check properties like `ExpectedLastSeq` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through flow control, but per-message content can remain the same. This allows to swap between publish implementations as needed.
+* Check properties like `Nats-Expected-Last-Sequence` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through flow control, but per-message content can remain the same. This allows to swap between publish implementations as needed.
 * Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds. Messages already stored stay in the stream. Any later message, ping or commit for an abandoned batch gets an error Pub Ack with 10208.
 * Send a pub ack on the final message that includes a new property `BatchId:ID` and `BatchSize:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be for earlier sequences.
 
@@ -469,6 +469,6 @@ Setting `AllowAtomicPublish` to true should set the API level to 2, setting `All
 
 ## Mirrors and Sources
 
-Mirrors can't enable these settings (error 10198 for atomic, 10209 for fast ingest), and will ignore the various headers like `ExpectedLastSeq` and the batching headers.
+Mirrors can't enable these settings (error 10198 for atomic, 10209 for fast ingest), and will ignore the various headers like `Nats-Expected-Last-Sequence` and the batching headers.
 
 Streams with Sources can enable these settings, but sources will ignore the batching headers when sourced into the stream similar to how mirrors work.
