@@ -425,6 +425,7 @@ It's a conscious decision to not use the `Error` field in the `PubAck` for this 
 * Check properties like `Nats-Expected-Last-Sequence` are handled as normal to be fully compatible with `Publish` and `PublishAsync`. Fast batch publishing changes the API through flow control, but per-message content can remain the same. This allows to swap between publish implementations as needed.
 * Abandon, without error reply, anywhere a batch that has not had messages for 10 seconds. Messages already stored stay in the stream. Any later message, ping or commit for an abandoned batch gets an error Pub Ack with 10208.
 * Send a pub ack on the final message that includes a new property `BatchId:ID` and `BatchSize:10`. The sequence in the ack would be the final message sequence, previous messages in the batch would be for earlier sequences.
+* `BatchSize` is the batch sequence of the commit, not counting an EOB commit, rather than the number of messages stored. In gap mode `fail`, a failed expected header check ends the batch the same way a gap does, with `BatchSize` set to the sequence before it.
 
 The server will operate under limits to safeguard itself:
 
