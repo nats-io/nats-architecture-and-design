@@ -375,7 +375,7 @@ func (f *FastPublisher) CommitMsg(m *nats.Msg) (*PubAck, error) {
 
 ### Server Errors
 
-The server will respond with the following errors if using fast batch fails:
+The server will respond with the following Pub Ack errors if using fast batch fails:
 
 | ErrCode | Code | Description                                         |
 |---------|------|-----------------------------------------------------|
