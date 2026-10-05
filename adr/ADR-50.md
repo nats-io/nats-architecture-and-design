@@ -261,6 +261,8 @@ Clients should only allow limited configurability of outstanding acks, since eac
 - Outstanding acks = 2, while the server is working on the first batch, continue sending the next batch, and then wait for the first. This setting is generally optimal, as it allows the server to keep working on the next batch while we're waiting for the ack to come in.
 - Outstanding acks = 3, similar to 2, but may work better on setups with larger RTTs to allow the server to have a bit more work to compensate for this higher RTT. This should be a conscious decision though, and not a default. Outstanding acks 1 or 2 will work best for most use cases, especially ones intending to support many concurrent fast publishers.
 
+Clients must not allow more than 3 outstanding acks.
+
 The server can adjust the active flow parameters once the batch is established by sending a new flow rate back to the client in `BatchFlowAck` messages. In effect this will mean that the frequency of acks will change, the client will then have to adjust its expectations accordingly to calculate the outstanding acks against the new expectation for new publishes.
 
 The server must treat the initial flow parameters as the upper bound though, when a client says ack every 10 messages we cannot decide from the server side to change that to > 10. 
