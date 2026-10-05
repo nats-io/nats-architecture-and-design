@@ -437,7 +437,7 @@ The server will operate under limits to safeguard itself:
 
 ## Publish Acknowledgements
 
-When the server sends a Pub Ack at the end of a batch the `PubAck` will set these 2 new fields
+When the server sends a successful Pub Ack at the end of a batch the `PubAck` will set these 2 new fields
 
 ```go
 type PubAck struct {
