@@ -53,7 +53,7 @@ The client will signal batch start and membership using headers on published mes
 The server will acknowledge in the following manner:
 
  * The initial message will get an error - for example, feature not supported - or a zero byte ack
- * Following messages, that have a reply set, will get a zero byte ack
+ * Following messages, that have a reply set, will get a zero byte ack, or an error pub ack when they fail a check listed in Server Errors
  * The final message will get a pub ack as described later
  * The server will check `Nats-Required-Api-Level` for every batch related message. If for any message the check fails the batch is abandoned, with advisory, and if a reply is set a full error ack is sent.
 
@@ -69,13 +69,13 @@ not abandoned.
 | ErrCode | Code | Description                                                         | Returned on                                                                                                                                                       |
 |---------|------|---------------------------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | 10174   | 400  | Batch publish not enabled on stream                                 | Every batch message, including the first                                                                                                                          |
-| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                          |
 | 10175   | 400  | Batch publish sequence is missing                                   | The message without `Nats-Batch-Sequence`, or whose `Nats-Batch-Sequence` is empty, negative or not a number                                                      |
 | 10176   | 400  | Batch publish is incomplete and was abandoned                       | The message that shows a gap in `Nats-Batch-Sequence`, including a sequence of 0 and a first message whose sequence is not 1, or any message for an unknown batch |
-| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                  |
-| 10210   | 429  | Batch publish too many batches in flight                            | The first message of a batch past the per stream or per server in-flight limit                                                                                    |
 | 10177   | 400  | Batch publish unsupported header used (`Nats-Expected-Last-Msg-Id`) | The commit message                                                                                                                                                |
+| 10179   | 400  | Batch publish ID is invalid (exceeds 64 characters)                 | Every batch message, including the first                                                                                                                          |
+| 10199   | 400  | Batch publish sequence exceeds server limit (default 1000)          | The first message past the limit                                                                                                                                  |
 | 10201   | 400  | Batch publish contains duplicate message id (`Nats-Msg-Id`)         | The commit message                                                                                                                                                |
+| 10210   | 429  | Batch publish too many batches in flight                            | The first message of a batch past the per stream or per server in-flight limit                                                                                    |
 
 ### Server Behavior Design
 
