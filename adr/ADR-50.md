@@ -383,6 +383,7 @@ The server will respond with the following Pub Ack errors if using fast batch fa
 | 10206   | 400  | Batch publish invalid pattern used                  |
 | 10207   | 400  | Batch publish ID is invalid (exceeds 64 characters) |
 | 10208   | 400  | Batch publish ID is unknown                         |
+| 10211   | 429  | Batch publish too many inflight                     |
 
 The server will always send a `BatchFlowErr` containing an error if a message failed an expected header check, like `ExpectedLastSeq`.
 
@@ -429,6 +430,7 @@ The server will operate under limits to safeguard itself:
 
 * Each stream can only have 1,000 batches in flight at any time
 * Each server can only have 50,000 batches in flight at any time
+* The first message of a batch past either limit gets an error Pub Ack with 10211; batches already in flight are not affected
 * A batch that has not had traffic for 10 seconds since the last message will be abandoned
 * There will be no maximum size for fast ingest batches
 * Streams with `PersistMode: async` set are compatible with fast ingest
