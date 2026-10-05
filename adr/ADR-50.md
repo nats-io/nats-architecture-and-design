@@ -463,7 +463,7 @@ These settings can be disabled and enabled using configuration updates. Both can
 
 Disabling a setting abandons the batches of that kind in flight on the stream. Their next message gets error 10174 (atomic) or 10205 (fast ingest) while the setting is off, and 10176 or 10208 once it is enabled again.
 
-Setting `AllowAtomicPublish` and `PersistMode: async` must error, but this is allowed for `AllowBatchPublish`
+Setting `AllowAtomicPublish` and `PersistMode: async` must error with 10052, but this is allowed for `AllowBatchPublish`
 
 Setting `AllowAtomicPublish` to true should set the API level to 2, setting `AllowBatchPublish` to true should set the API level to 3.
 
