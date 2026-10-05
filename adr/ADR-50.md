@@ -471,4 +471,4 @@ Setting `AllowAtomicPublish` to true should set the API level to 2, setting `All
 
 Mirrors can't enable these settings (error 10198 for atomic, 10209 for fast ingest), and will ignore the various headers like `Nats-Expected-Last-Sequence` and the batching headers.
 
-Streams with Sources can enable these settings, but sources will ignore the batching headers when sourced into the stream similar to how mirrors work.
+Streams with Sources can enable these settings, but sources will remove the batching headers and the `Nats-Expected-` headers from messages sourced into the stream, so neither is acted on.
