@@ -282,6 +282,7 @@ be created using `addGroup(name)` method on a Service. Group name should be a
 valid NATS subject or an empty string, but cannot contain `>` wildcard (as group
 name serves as subject prefix).
 Group can have a default `queueGroup` for endpoints that overrides service `queueGroup`.
+A group created inside another group inherits that group's `queueGroup` unless it sets its own.
 
 Group should expose following methods:
 
