@@ -349,7 +349,8 @@ functionality such as:
 This enables a service to easily on-board the service error without requiring
 users to create their own shims. The above adds two required arguments: the
 error code, and description, the rest should match the client's implementation
-of `respond()`.
+of `respond()`. The return value, too, follows `respond()`: it reports success or
+failure in the way idiomatic to the language.
 
 ## Request Handling
 
