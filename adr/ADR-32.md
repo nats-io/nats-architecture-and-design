@@ -256,11 +256,11 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     data?: unknown;
     /**
-    * Total processing_time for the service
+    * Total time spent in this endpoint's request handler, in nanoseconds
     */
     processing_time: Nanos;
     /**
-    * Average processing_time is the total processing_time divided by the num_requests
+    * Average processing_time is the total processing_time divided by the num_requests, in nanoseconds
     */
     average_processing_time: Nanos;
 }
