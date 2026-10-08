@@ -176,8 +176,12 @@ Returns a JSON having the following structure:
 }
 ```
 
-All the fields above map 1-1 to the metadata provided when the service was
-created.
+All the fields above reflect the current state of the service: the
+configuration it was created with, and every endpoint it has, including
+endpoints added after the service was started. Each endpoint reports the
+`subject` and `queue_group` it actually uses, including values that come from
+defaults, such as a subject taken from the endpoint name or the default queue
+group `q`.
 
 The type for this is `io.nats.micro.v1.info_response`.
 
