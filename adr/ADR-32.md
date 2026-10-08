@@ -109,7 +109,7 @@ All discovery and status responses contain the following fields:
 
 ```typescript
 /**
- * An identifier of the message type for example io.nats.micro.v1.stats
+ * An identifier of the message type for example io.nats.micro.v1.stats_response
  */
 type: string,
 /**
