@@ -248,9 +248,9 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     num_errors: number;
     /**
-    * If set, the last error triggered by the endpoint
+    * The last error triggered by the endpoint, or an empty string when there has been none
     */
-    last_error?: Error;
+    last_error: string;
     /**
     * A field that can be customized with any data as returned by stats handler see {@link ServiceConfig}
     */
