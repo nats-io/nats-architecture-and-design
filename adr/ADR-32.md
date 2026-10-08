@@ -317,6 +317,10 @@ or on a group (`Group.addEndpoint`).
 Clients should provide an idiomatic way to set no `queueGroup` when unset the subscription
 for the endpoint will be a normal subscribe instead of a queue subscribe.
 
+No `queueGroup` can be set on the service, a group or an endpoint, and passes down like a
+`queueGroup`: each level uses its own setting if it has one, otherwise its parent's, otherwise the
+default `q`. A level that sets nothing is not the same as one that sets no `queueGroup`.
+
 ## Error Handling
 
 Services may communicate request errors back to the client as they see fit, but
