@@ -331,10 +331,10 @@ and `Nats-Service-Error-Code`.
 always safe to parse as a number. `Nats-Service-Error` should be a string 
 describing the error that could be shown to the user.
 
-This means that clients making request from the service _must_ check if the
-response is an error by looking for these headers. This allows client code to be
-fairly standard in terms of handling regardless of additional error handling
-conventions.
+This means that applications making requests to the service _must_ check if the
+response is an error by looking for these headers; client libraries are not
+required to do this for them. This allows client code to be fairly standard in 
+terms of handling regardless of additional error handling conventions.
 
 Service API libraries _must_ provide an error formatting function that users can
 use to produce the properly formatted response headers.
