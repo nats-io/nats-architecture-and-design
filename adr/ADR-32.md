@@ -360,7 +360,7 @@ Its possible to send request to multiple services, for example to minimize respo
 the quickest responder. To achieve that, it requires running some service instances with different `queueGroup`.
 
 For each configured endpoint, a queue subscription should be created. Unless the option to create
-a normal enqueued subscription is activated.
+a normal subscription without a queue group is activated.
 
 > Note: Handler subject does not contain the `$SRV` prefix. This prefix is
 > reserved for internal handlers.
