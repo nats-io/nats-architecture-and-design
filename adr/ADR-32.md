@@ -327,9 +327,9 @@ Services may communicate request errors back to the client as they see fit, but
 to help standardization they also must include the headers: `Nats-Service-Error`
 and `Nats-Service-Error-Code`.
 
-`Nats-Service-Error-Code` should be a value that is always safe to parse as a
-number. `Nats-Service-Error` should be a string describing the error that could
-be shown to the user.
+`Nats-Service-Error-Code` is an integer, sent in its decimal form, so it is
+always safe to parse as a number. `Nats-Service-Error` should be a string 
+describing the error that could be shown to the user.
 
 This means that clients making request from the service _must_ check if the
 response is an error by looking for these headers. This allows client code to be
