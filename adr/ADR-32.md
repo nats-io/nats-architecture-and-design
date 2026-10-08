@@ -293,6 +293,9 @@ Group should expose following methods:
 - `addGroup(name)` - creates and returns a new group. The prefix for this group
   is created as follows: `{this.group_name}.{name}`.
 
+When the group name is empty, no prefix is added: the endpoint is registered on `{name}`, or on
+`{subject}` when one is given, and a group created inside it has the prefix `{name}`.
+
 ### Endpoints
 
 Each service endpoint consists of the following fields:
