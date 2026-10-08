@@ -260,7 +260,8 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     processing_time: Nanos;
     /**
-    * Average processing_time is the total processing_time divided by the num_requests, in nanoseconds
+    * Average processing_time is the total processing_time divided by the num_requests, in nanoseconds,
+    * truncated to a whole number; it is 0 when num_requests is 0
     */
     average_processing_time: Nanos;
 }
