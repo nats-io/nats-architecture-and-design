@@ -301,7 +301,7 @@ When the group name is empty, no prefix is added: the endpoint is registered on 
 
 Each service endpoint consists of the following fields:
 
-- `name` - an alphanumeric human-readable string used to describe the endpoint.
+- `name` - a human-readable string used to describe the endpoint, a `restricted-term` as defined in [ADR-6](ADR-6.md). 
   Multiple endpoints can have the same names.
 - `handler` - request handler - see [Request Handling](#Request-Handling)
 - `metadata` - an optional `Record<string,string>` providing additional
