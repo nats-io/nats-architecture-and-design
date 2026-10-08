@@ -370,6 +370,11 @@ standard subscription handler. This means that no assumption is made on whether
 returning from the callback signals that the request is completed. The framework
 will dispatch requests as fast as the handler returns.
 
+A request is counted in the endpoint's statistics when its handler returns: `num_requests` and
+`processing_time` are updated then, and `num_errors` and `last_error` only if the handler responded
+with an error before returning. A response sent after the handler returns does not change the
+statistics.
+
 ### Naming
 
 For consistency of documentation and understanding by users, clients that implement the
