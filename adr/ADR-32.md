@@ -109,7 +109,7 @@ All discovery and status responses contain the following fields:
 
 ```typescript
 /**
- * An identifier of the message type for example io.nats.micro.v1.stats
+ * An identifier of the message type for example io.nats.micro.v1.stats_response
  */
 type: string,
 /**
@@ -176,8 +176,12 @@ Returns a JSON having the following structure:
 }
 ```
 
-All the fields above map 1-1 to the metadata provided when the service was
-created.
+All the fields above reflect the current state of the service: the
+configuration it was created with, and every endpoint it has, including
+endpoints added after the service was started. Each endpoint reports the
+`subject` and `queue_group` it actually uses, including values that come from
+defaults, such as a subject taken from the endpoint name or the default queue
+group `q`.
 
 The type for this is `io.nats.micro.v1.info_response`.
 
@@ -244,19 +248,20 @@ The type for this is `io.nats.micro.v1.ping_response`.
     */
     num_errors: number;
     /**
-    * If set, the last error triggered by the endpoint
+    * The last error triggered by the endpoint, or an empty string when there has been none
     */
-    last_error?: Error;
+    last_error: string;
     /**
     * A field that can be customized with any data as returned by stats handler see {@link ServiceConfig}
     */
     data?: unknown;
     /**
-    * Total processing_time for the service
+    * Total time spent in this endpoint's request handler, in nanoseconds
     */
     processing_time: Nanos;
     /**
-    * Average processing_time is the total processing_time divided by the num_requests
+    * Average processing_time is the total processing_time divided by the num_requests, in nanoseconds,
+    * truncated to a whole number; it is 0 when num_requests is 0
     */
     average_processing_time: Nanos;
 }
@@ -277,6 +282,7 @@ be created using `addGroup(name)` method on a Service. Group name should be a
 valid NATS subject or an empty string, but cannot contain `>` wildcard (as group
 name serves as subject prefix).
 Group can have a default `queueGroup` for endpoints that overrides service `queueGroup`.
+A group created inside another group inherits that group's `queueGroup` unless it sets its own.
 
 Group should expose following methods:
 
@@ -288,11 +294,14 @@ Group should expose following methods:
 - `addGroup(name)` - creates and returns a new group. The prefix for this group
   is created as follows: `{this.group_name}.{name}`.
 
+When the group name is empty, no prefix is added: the endpoint is registered on `{name}`, or on
+`{subject}` when one is given, and a group created inside it has the prefix `{name}`.
+
 ### Endpoints
 
 Each service endpoint consists of the following fields:
 
-- `name` - an alphanumeric human-readable string used to describe the endpoint.
+- `name` - a human-readable string used to describe the endpoint, a `restricted-term` as defined in [ADR-6](ADR-6.md). 
   Multiple endpoints can have the same names.
 - `handler` - request handler - see [Request Handling](#Request-Handling)
 - `metadata` - an optional `Record<string,string>` providing additional
@@ -308,20 +317,24 @@ or on a group (`Group.addEndpoint`).
 Clients should provide an idiomatic way to set no `queueGroup` when unset the subscription
 for the endpoint will be a normal subscribe instead of a queue subscribe.
 
+No `queueGroup` can be set on the service, a group or an endpoint, and passes down like a
+`queueGroup`: each level uses its own setting if it has one, otherwise its parent's, otherwise the
+default `q`. A level that sets nothing is not the same as one that sets no `queueGroup`.
+
 ## Error Handling
 
 Services may communicate request errors back to the client as they see fit, but
 to help standardization they also must include the headers: `Nats-Service-Error`
 and `Nats-Service-Error-Code`.
 
-`Nats-Service-Error-Code` should be a value that is always safe to parse as a
-number. `Nats-Service-Error` should be a string describing the error that could
-be shown to the user.
+`Nats-Service-Error-Code` is an integer, sent in its decimal form, so it is
+always safe to parse as a number. `Nats-Service-Error` should be a string 
+describing the error that could be shown to the user.
 
-This means that clients making request from the service _must_ check if the
-response is an error by looking for these headers. This allows client code to be
-fairly standard in terms of handling regardless of additional error handling
-conventions.
+This means that applications making requests to the service _must_ check if the
+response is an error by looking for these headers; client libraries are not
+required to do this for them. This allows client code to be fairly standard in 
+terms of handling regardless of additional error handling conventions.
 
 Service API libraries _must_ provide an error formatting function that users can
 use to produce the properly formatted response headers.
@@ -336,7 +349,8 @@ functionality such as:
 This enables a service to easily on-board the service error without requiring
 users to create their own shims. The above adds two required arguments: the
 error code, and description, the rest should match the client's implementation
-of `respond()`.
+of `respond()`. The return value, too, follows `respond()`: it reports success or
+failure in the way idiomatic to the language.
 
 ## Request Handling
 
@@ -346,7 +360,7 @@ Its possible to send request to multiple services, for example to minimize respo
 the quickest responder. To achieve that, it requires running some service instances with different `queueGroup`.
 
 For each configured endpoint, a queue subscription should be created. Unless the option to create
-a normal enqueued subscription is activated.
+a normal subscription without a queue group is activated.
 
 > Note: Handler subject does not contain the `$SRV` prefix. This prefix is
 > reserved for internal handlers.
@@ -355,6 +369,11 @@ The handlers specified by the client to process requests should operate as any
 standard subscription handler. This means that no assumption is made on whether
 returning from the callback signals that the request is completed. The framework
 will dispatch requests as fast as the handler returns.
+
+A request is counted in the endpoint's statistics when its handler returns: `num_requests` and
+`processing_time` are updated then, and `num_errors` and `last_error` only if the handler responded
+with an error before returning. A response sent after the handler returns does not change the
+statistics.
 
 ### Naming
 
