@@ -13,6 +13,7 @@
 | 2        | 2024-6-24  | @aricart  | Added protocol error section                 |
 | 3        | 2024-9-30  | @Jarema   | Add connection Statistics                    |
 | 4        | 2025-11-05 | @piotrpio | Add custom server pool and reconnect handler |
+| 5        | 2026-10-16 | @yordis   | Propose credential refresh without reconnect |
 
 ## Summary
 
@@ -111,12 +112,131 @@ those URLs are used.
 
 **TODO**: Add more in-depth explanation how topology discovery works.
 
+### Credential Refresh Without Reconnect (Proposed)
+
+> [!NOTE]
+> This section is a proposal under discussion and is not implemented by
+> servers or clients. See [Open questions](#open-questions).
+
+#### Why
+
+User JWTs are often short-lived, and permissions are frequently granted or
+revoked by issuing a new user JWT. Today the only way a client can apply new
+credentials is an [On-Demand reconnect](#on-demand-reconnect), which drops the
+connection, repeats the TLS handshake, fires disconnect and reconnect events in
+the application, and recreates every subscription and consumer. Messages
+published while the client is disconnected can be missed.
+
+Applications want to rotate an expiring JWT before the server sends
+`User Authentication Expired`, and to apply a JWT with new permissions, without
+paying that cost.
+
+#### Current server behavior
+
+The server already processes a `CONNECT` sent on an established client
+connection (MQTT rejects it). This is undocumented, so no client relies on it.
+On a subsequent `CONNECT` the server:
+
+- Removes every subscription of the connection before authenticating, whether
+  or not the account changes, and places the client in the global account until
+  authentication completes.
+- Runs authentication again with whatever mechanism the `CONNECT` uses. No new
+  nonce is issued, so signatures are verified against the nonce from the
+  initial `INFO`.
+- Decodes the new `CONNECT` on top of the previous options, so fields omitted
+  from it keep their previous values.
+- On success, rebuilds the account binding, permissions, and limits from the
+  new credentials, re-arms the expiration timer, and publishes a new `$SYS`
+  connect event. Nothing is sent back except `+OK` in verbose mode.
+- On failure, sends `-ERR 'Authorization Violation'` and closes the connection.
+
+Nothing in `INFO` tells a client whether the server supports this.
+
+#### Proposed server behavior
+
+- **Advertise support.** `INFO` carries `jwt_refresh: true` on client
+  connections when the server runs in operator mode. The field is present on
+  every `INFO`, including asynchronous ones sent on cluster topology changes or
+  lame duck mode, because clients replace their stored `INFO` on each one. The
+  value cannot change during the lifetime of the server since trusted operators
+  cannot be reloaded. It describes the connected server only, not the cluster.
+- **Acknowledge success.** After a successful subsequent `CONNECT` with
+  `protocol` 1 or greater, the server sends an `INFO` with `connect_info: true`
+  carrying the updated connection details, such as `is_system_account`.
+- **Apply only the new credentials.** Once the new `CONNECT` is accepted:
+  - Limits are evaluated against the account the new credentials belong to,
+    never against the temporary global account.
+  - The user expiration is replaced by the new one, and cleared when the new
+    JWT has none. An account expiration still applies.
+  - A message waiting on a stalled subscriber is not delivered to a
+    subscription the refresh removed.
+- **Keep the connection identity.** The client ID and connection start time
+  stay the same.
+
+A reference implementation is in
+[nats-server#8756](https://github.com/nats-io/nats-server/pull/8756).
+
+#### Proposed client behavior
+
+- Expose an explicit operation on the connection handle, for example:
+
+  ```go
+  // RefreshCredentials re-authenticates the current connection without
+  // reconnecting. It fails if the server does not advertise jwt_refresh.
+  func (nc *Conn) RefreshCredentials(ctx context.Context) error
+  ```
+
+- Only attempt a refresh when the current `INFO` has `jwt_refresh: true`.
+  Otherwise return an error so the application can fall back to an On-Demand
+  reconnect.
+- Send a complete `CONNECT` with every authentication field set, signing the
+  nonce from the initial `INFO` of the current connection, followed by `PING`.
+- Treat an `INFO` with `connect_info: true` followed by `PONG` as success, and
+  `-ERR 'Authorization Violation'` as failure. On failure the server closes the
+  connection and the normal [Reconnect process](#reconnect-process) applies.
+- After success, resend `SUB` for every active subscription, the same way as
+  after a reconnect, without firing disconnect or reconnect events. A
+  subscription rejected with `Permissions Violation` is terminated as described
+  in [Permissions Violation](#permissions-violation).
+- Optionally refresh automatically shortly before the user JWT expires, when the
+  credentials source can provide a newer JWT.
+
+#### Open questions
+
+- Should the server keep subscriptions that the new credentials still allow,
+  instead of removing all of them? Removing them leaves a window between the
+  `CONNECT` and the resent `SUB`s where messages are missed.
+- Should a refresh be allowed to change the user or the account, or be limited
+  to the same user public key? Changing account affects JetStream consumers,
+  request inboxes, and any subject mappings the client relies on.
+- Should the server issue a fresh nonce for each subsequent `CONNECT`, for
+  example in the acknowledging `INFO`, so that a captured signature cannot be
+  replayed?
+- Should other authentication mechanisms (user and password, token, nkey, auth
+  callout) be advertised and supported too, and should the `INFO` field be named
+  more generally than `jwt_refresh`?
+- Should a failed refresh keep the connection with its previous credentials and
+  report an error, instead of closing it?
+- Is an `INFO` with `connect_info: true` a sufficient acknowledgement, or does
+  this need a dedicated protocol message?
+- Should clients hold publishes between the `CONNECT` and its acknowledgement?
+  Publishes sent before the `CONNECT` are authorized with the previous
+  credentials and publishes after it with the new ones.
+- Should the server publish a `$SYS` disconnect event for the previous identity
+  when the account changes?
+- How should WebSocket connections that authenticate with a cookie behave on a
+  subsequent `CONNECT`?
+
 ### Reconnection Strategies (In progress)
 
 #### On-Demand reconnect
 
 Client should have a way that allows users to force reconnection process. This
 can be useful for refreshing auth or rebalancing clients.
+
+When the server supports it, prefer a
+[Credential Refresh](#credential-refresh-without-reconnect-proposed) to apply
+new credentials.
 
 When triggered, client will drop connection to the current server and perform
 standard reconnection process. That means that all subscriptions and consumers
@@ -421,6 +541,10 @@ the client expire while the client is connected to the server. It is followed by
 a server disconnect. This error should be notified in the async handler. On
 reconnect the client is going to be rejected with `Authorization Violation` and
 follow its reconnect logic.
+
+A client that supports
+[Credential Refresh](#credential-refresh-without-reconnect-proposed) can avoid
+this error by refreshing before the user JWT expires.
 
 #### Account Expiration
 
