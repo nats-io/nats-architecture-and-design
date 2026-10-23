@@ -17,6 +17,7 @@
 | 6        | 2026-02-12 | @MauriceVanVeen | Clarify `pinned_client` policy                           |
 | 7        | 2026-04-29 | @ripienaar      | Align `PriorityGroupState` JSON tags with shipped server |
 | 8        | 2026-04-29 | @ripienaar      | Clarify handling of pulls with no `id` while pinned      |
+| 9        | 2026-10-22 | @MauriceVanVeen | Align ack policy requirements with shipped server        |
 
 ## Context and Problem Statement
 
@@ -96,8 +97,8 @@ available (receiving heartbeats etc).
 }
 ```
 
-Here we state that the Consumer has one group called `jobs`, it is operating on the `overflow` policy and requires `explicit`
-Acks, any other Ack policy will produce an error. If we force this ack policy in normal use we should error in Pedantic mode.
+Here we state that the Consumer has one group called `jobs` and it is operating on the `overflow` policy. Any ack policy
+is allowed, but `min_ack_pending` can only be satisfied if the ack policy is not `none`.
 
 Pull requests will have the following additional fields:
 
@@ -153,7 +154,7 @@ This configuration states:
  * We have 1 group defined and all pulls have to belong to this group
  * The policy is `pinned_client` that activates these behaviors
  * When a pinned client has not done any pulls in the last 2 minutes the server will switch to another client
- * AckPolicy has to be `explicit`. If we force this ack policy in normal use we should error in Pedantic mode
+ * AckPolicy is `explicit`, although any ack policy is allowed
 
 A pull request will have the following additional fields:
 
