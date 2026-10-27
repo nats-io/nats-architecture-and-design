@@ -98,7 +98,7 @@ with no `*` or `>` inside a longer token. Some clients reject tokens that embed 
 
 A reply subject is where the responder publishes its response, so it is a `message-subject`. The server does
 not check the syntax of a reply subject, but it rejects a message from a client whose reply subject starts with a
-prefix it reserves for its own replies: `_R_.`, `_GR_.` or (since 2.14) `$JS.ACK.`.
+prefix it reserves for its own replies: `_R_.`, `_GR_.` or `$JS.ACK.`.
 
 ### queue-name
 
