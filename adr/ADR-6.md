@@ -35,8 +35,8 @@ A subject is comprised of 1 or more tokens. Tokens are separated by "." and can 
 
 ## Specification
 
-The rules below describe what is valid. Where the server accepts more than is advisable, the Notes give a
-recommended, stricter form.
+The rules below describe what works end to end. The Notes list where the server accepts more, the names and
+prefixes it reserves, and stricter forms recommended for interoperability.
 
 `literal-token`, `term`, `limited-term` and `restricted-term` are listed from loosest to strictest: each accepts
 only a subset of what the one before it accepts.
@@ -87,26 +87,29 @@ where wildcards are allowed: subscriptions, stream subjects, consumer filter sub
 they are ordinary characters: a subscription on `foo*` receives messages published to `foo*` and nothing else.
 
 The server rejects a subscription with an empty token or with `>` anywhere but the last token. It checks the
-subject of a published message only for connections in pedantic mode, and then only reports an error; the
-message is still delivered.
+subject of a published message only for connections in pedantic mode, and then only reports an error. A message
+whose subject has an empty token is never delivered; one with a `*` or `>` token is delivered to matching
+subscriptions.
 
 Apart from whitespace and dot, the server does not restrict the characters in a token; UTF-8 and control
-characters are accepted. For maximum interoperability, use `term` for every literal token: printable ASCII,
-with no `*` or `>` inside a longer token. Some clients reject tokens that embed `*` or `>`.
+characters are accepted. Form feed is accepted by core publish and subscribe, but the server rejects it wherever
+it validates a subject, such as stream subjects, consumer filters and permissions. For maximum interoperability,
+use `term` for every literal token: printable ASCII, with no `*` or `>` inside a longer token. Some clients
+reject tokens that embed `*` or `>`.
 
 ### reply-to
 
 A reply subject is where the responder publishes its response, so it is a `message-subject`. The server does
 not check the syntax of a reply subject, but it rejects a message from a client whose reply subject starts with a
-prefix it reserves for its own replies: `_R_.`, `_GR_.` or `$JS.ACK.`.
+prefix it reserves for its own replies: `_R_.`, `_GR_.`, `$GR.` or `$JS.ACK.`.
 
 ### queue-name
 
-The server accepts any queue name without whitespace, except `_sys_`, which it reserves. It compares queue names
-as plain strings, so `.`, `*` and `>` have no special meaning in a queue name. The exception is queue permissions
-(`"<subject> <queue>"`): wildcards in the permission's queue are matched against the queue name token by token,
-so the permission `orders workers.*` allows the queue `workers.east`. Queue names written as a `message-subject`
-work with such permissions.
+The server accepts any queue name without a space, tab, carriage return or line feed, except `_sys_`, which it
+reserves. It compares queue names as plain strings, so `.`, `*` and `>` have no special meaning in a queue name.
+The exception is queue permissions (`"<subject> <queue>"`): wildcards in the permission's queue are matched
+against the queue name token by token, so the permission `orders workers.*` allows the queue `workers.east`.
+Queue names written as a `message-subject` work with such permissions.
 
 ### filename-safe
 
@@ -134,7 +137,8 @@ must be `filename-safe`.
 The default JetStream API prefix is `$JS.API`. A JetStream domain `<domain>` uses the prefix `$JS.<domain>.API`.
 A custom prefix, for example `JS.acc1.API` for an account that imports another account's `$JS.API.>`, can be any
 `message-subject` and may start with `$`. Prefixes are written without a trailing dot; the server rejects one in
-a stream source's external API prefix.
+a stream source's external API prefix. Clients should accept a prefix with or without a trailing dot and add the
+dot themselves when they build API subjects.
 
 The server rejects a JetStream `domain` in its configuration that contains whitespace, `.`, `*` or `>`.
 
@@ -153,6 +157,9 @@ The server is the authority on these rules, and clients validate to different de
 ([ADR-8](ADR-8.md)), Object Store ([ADR-20](ADR-20.md)) and Service API ([ADR-32](ADR-32.md)) are client
 constructs, so for their names the clients are the authority on what is valid.
 
-Clients should, at a minimum, reject a subject, reply subject or queue name that is empty or contains whitespace
-before sending it in `PUB`, `HPUB` or `SUB`. Whitespace separates protocol arguments and ends the protocol line,
-so the server would misread such a value or close the connection.
+Clients should, at a minimum, reject a subject, reply subject or queue name that is empty or contains a space,
+tab, carriage return or line feed before sending it in `PUB`, `HPUB` or `SUB`. These characters separate protocol
+arguments or end the protocol line, so the server would misread such a value or close the connection.
+
+When parsing `MSG` and `HMSG`, clients should split arguments on space and tab only, because a subject can
+contain other characters that some parsers treat as whitespace, such as form feed or vertical tab.
