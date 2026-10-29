@@ -7,14 +7,22 @@
 |Status  |Approved|
 |Tags    |server, client|
 
+| Revision | Date       | Author    | Info                                           |
+|----------|------------|-----------|------------------------------------------------|
+| 1        | 2021-08-17 | @scottf   | Initial design                                 |
+| 2        | 2026-10-22 | @piotrpio | Align rules with what the server accepts       |
+
 ## Context
 
 This document describes naming conventions for these protocol components:
 
 * Subjects (including Reply Subjects)
+* Queue Names
 * Stream Names
 * Consumer Names
 * Account Names
+* JetStream API Prefixes and Domains
+* Key-Value and Object Store Names
 
 ## Prior Work
 
@@ -27,64 +35,133 @@ A subject is comprised of 1 or more tokens. Tokens are separated by "." and can 
 
 ## Specification
 
+The rules below describe what works end to end. The Notes list where the server accepts more, the names and
+prefixes it reserves, and stricter forms recommended for interoperability.
+
+`literal-token`, `term`, `limited-term` and `restricted-term` are listed from loosest to strictest: each accepts
+only a subset of what the one before it accepts.
+
 ```
 dot                = "."
 asterisk           = "*"
-lt                 = "<"
 gt                 = ">"
-dollar             = "$"
-colon              = ":"
-double-quote       = ["]
 fwd-slash          = "/"
 backslash          = "\"
-pipe               = "|"
-question-mark      = "?"
-ampersand          = "&"
 dash               = "-"
 underscore         = "_"
 equals             = "="
+whitespace         = space, tab, carriage return, line feed or form feed
 printable          = all printable ascii (33 to 126 inclusive)
+literal-token      = (any character except whitespace or dot)+, other than exactly asterisk or exactly gt
 term               = (printable except dot, asterisk or gt)+
 limited-term       = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals)+
-limited-term-w-sp  = (A-Z, a-z, 0-9, dash, underscore, fwd-slash, equals, space)+
 restricted-term    = (A-Z, a-z, 0-9, dash, underscore)+
-prefix             = (printable except dot, asterisk, gt or dollar)+
-filename-safe      = (printable except dot, asterisk, gt, fwd-slash, backslash)+ maximum 255 characters
+name               = (any character except whitespace, dot, asterisk or gt)+
+filename-safe      = (name except fwd-slash, backslash or NUL) maximum 255 bytes
 
-message-subject    = term (dot term | asterisk)* (dot gt)?
-reply-to           = term (dot term)*
+message-subject    = literal-token (dot literal-token)*
+subject-filter     = (literal-token | asterisk) (dot (literal-token | asterisk))* (dot gt)?
+                   | gt
+reply-to           = message-subject
+queue-name         = (any character except whitespace)+
 stream-name        = filename-safe
 durable-name       = filename-safe
 consumer-name      = filename-safe
-account-name       = filename-safe 
-queue-name         = term
-js-internal-prefix = dollar (prefix dot)+
-js-user-prefix     = (prefix dot)+
+account-name       = filename-safe
+js-api-prefix      = message-subject
+js-domain          = name
 kv-key-name        = limited-term (dot limited-term)*
-kv-bucket-name     = restricted-term
-os-bucket-name     = restricted-term
-os-object-name     = (any-character)+
+kv-bucket-name     = restricted-term maximum 252 characters
+os-bucket-name     = restricted-term maximum 251 characters
+os-object-name     = (any character)+
 ```
 
 ## Notes
 
+### Subjects
+
+A `message-subject` is the subject a message is published to and is always literal. A `subject-filter` is used
+where wildcards are allowed: subscriptions, stream subjects, consumer filter subjects and permissions.
+
+`*` and `>` are wildcards only when they make up a whole token. Inside a longer token, such as `foo*` or `a>b`,
+they are ordinary characters: a subscription on `foo*` receives messages published to `foo*` and nothing else.
+
+The server rejects a subscription with an empty token or with `>` anywhere but the last token. It checks the
+subject of a published message only for connections in pedantic mode, and then only reports an error. A message
+whose subject has an empty token is never delivered; one with a `*` or `>` token is delivered to matching
+subscriptions.
+
+Apart from whitespace and dot, the server does not restrict the characters in a token; UTF-8 and control
+characters are accepted. Form feed is accepted by core publish and subscribe, but the server rejects it wherever
+it validates a subject, such as stream subjects, consumer filters and permissions. For maximum interoperability,
+use `term` for every literal token: printable ASCII, with no `*` or `>` inside a longer token. Some clients
+reject tokens that embed `*` or `>`.
+
+### reply-to
+
+A reply subject is where the responder publishes its response, so it is a `message-subject`. The server does
+not check the syntax of a reply subject, but it rejects a message from a client whose reply subject starts with a
+prefix it reserves for its own replies: `_R_.`, `_GR_.`, `$GR.` or `$JS.ACK.`.
+
+### queue-name
+
+The server accepts any queue name without a space, tab, carriage return or line feed, except `_sys_`, which it
+reserves. It compares queue names as plain strings, so `.`, `*` and `>` have no special meaning in a queue name.
+The exception is queue permissions (`"<subject> <queue>"`): wildcards in the permission's queue are matched
+against the queue name token by token, so the permission `orders workers.*` allows the queue `workers.east`.
+Queue names written as a `message-subject` work with such permissions.
+
 ### filename-safe
 
-The `filename-safe` is designed with unix operating systems in mind. 
-If the server is running on Windows, the `filename-safe` is too lenient and will operate like:  
+The server rejects stream and consumer names that contain whitespace, `.`, `*`, `>`, `/` or `\`, and stream and
+durable names longer than 255 bytes. The limit is in bytes, so names that use multi-byte UTF-8 characters hold
+fewer than 255 characters. Any other character, including non-ASCII and control characters, is accepted.
 
-```
-filename-safe = (printable except dot, asterisk, lt, gt, colon, double-quote, fwd-slash, backslash, pipe, question-mark)+ maximum 255 characters
-```
+The server has no operating-system-specific name checks. When the filesystem cannot create a directory for a
+name (NUL on any platform, or characters that the platform forbids), creating a file-based stream or consumer
+fails with a store error rather than a name error. For names that must work on every platform, also avoid
+control characters, `<`, `:`, `"`, `|`, `?` and names that Windows reserves, such as `CON` or `NUL`.
 
-The server will reject names (return an API error) when it cannot build a valid path.
+On case-insensitive filesystems (the default on macOS and Windows), names that differ only in case share a
+directory. The server does not detect this, so do not rely on case alone to tell stream or consumer names apart.
+
+### account-name
+
+In operator (JWT) mode, an account name is the account's public NKey. In configuration mode, the server does not
+validate account names (other than reserving `$G`), but it uses the account name as the account's JetStream
+storage directory and as a token in system subjects such as `$SYS.ACCOUNT.<account>.CONNECT`, so account names
+must be `filename-safe`.
+
+### js-api-prefix and js-domain
+
+The default JetStream API prefix is `$JS.API`. A JetStream domain `<domain>` uses the prefix `$JS.<domain>.API`.
+A custom prefix, for example `JS.acc1.API` for an account that imports another account's `$JS.API.>`, can be any
+`message-subject` and may start with `$`. Prefixes are written without a trailing dot; the server rejects one in
+a stream source's external API prefix. Clients should accept a prefix with or without a trailing dot and add the
+dot themselves when they build API subjects.
+
+The server rejects a JetStream `domain` in its configuration that contains whitespace, `.`, `*` or `>`.
 
 ### kv-key-name
 
-Keys starting with `_kv` are limited to internal use.
+Keys starting with `_kv` are limited to internal use. The server does not check keys; clients do.
+
+### kv-bucket-name and os-bucket-name
+
+A Key-Value bucket is stored in the stream `KV_<bucket>` and an Object Store bucket in the stream
+`OBJ_<bucket>`. The 255-byte stream name limit therefore caps bucket names at 252 and 251 characters.
 
 ### Client Validation
 
-This note is simply to capture that currently the Go client simply validates that stream and consumer/durable names are not empty, 
-and do not contain `.`. Any other constraints are left to the server. NATS cli, performs additional validations, `.`, `*`, `>`, `/` and `\`
-are not allowed.
+The server is the authority on these rules, and clients validate to different degrees. Key-Value
+([ADR-8](ADR-8.md)), Object Store ([ADR-20](ADR-20.md)) and Service API ([ADR-32](ADR-32.md)) are client
+constructs, so for their names the clients are the authority on what is valid. Outside these constructs, a
+client may check a value against these rules, for example a stream name before it builds an API subject from it,
+but should not reject a value they allow.
+
+Clients should, at a minimum, reject a subject, reply subject or queue name that is empty or contains a space,
+tab, carriage return or line feed before sending it in `PUB`, `HPUB` or `SUB`. These characters separate protocol
+arguments or end the protocol line, so the server would misread such a value or close the connection.
+
+When parsing `MSG` and `HMSG`, clients should split arguments on space and tab only, because a subject can
+contain other characters that some parsers treat as whitespace, such as form feed or vertical tab.
