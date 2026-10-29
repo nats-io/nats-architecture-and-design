@@ -155,7 +155,9 @@ A Key-Value bucket is stored in the stream `KV_<bucket>` and an Object Store buc
 
 The server is the authority on these rules, and clients validate to different degrees. Key-Value
 ([ADR-8](ADR-8.md)), Object Store ([ADR-20](ADR-20.md)) and Service API ([ADR-32](ADR-32.md)) are client
-constructs, so for their names the clients are the authority on what is valid.
+constructs, so for their names the clients are the authority on what is valid. Outside these constructs, a
+client may check a value against these rules, for example a stream name before it builds an API subject from it,
+but should not reject a value they allow.
 
 Clients should, at a minimum, reject a subject, reply subject or queue name that is empty or contains a space,
 tab, carriage return or line feed before sending it in `PUB`, `HPUB` or `SUB`. These characters separate protocol
