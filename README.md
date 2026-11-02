@@ -41,6 +41,12 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
 
+## 2.16
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-64](adr/ADR-64.md)|jetstream, server, client, 2.16|JetStream Max Ack Pending Per Subject|
+
 ## Client
 
 |Index|Tags|Description|
@@ -79,6 +85,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
+|[ADR-64](adr/ADR-64.md)|jetstream, server, client, 2.16|JetStream Max Ack Pending Per Subject|
 
 ## Jetstream
 
@@ -118,6 +125,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
+|[ADR-64](adr/ADR-64.md)|jetstream, server, client, 2.16|JetStream Max Ack Pending Per Subject|
 
 ## Kv
 
@@ -205,6 +213,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
+|[ADR-64](adr/ADR-64.md)|jetstream, server, client, 2.16|JetStream Max Ack Pending Per Subject|
 
 ## Spec
 

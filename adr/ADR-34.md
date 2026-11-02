@@ -7,6 +7,11 @@
 | Status   | Approved                  |
 | Tags     | jetstream, client, server |
 
+| Revision | Date       | Author          | Info                                              |
+|----------|------------|-----------------|---------------------------------------------------|
+| 1        | 2023-01-18 | @Jarema         | Initial design                                    |
+| 2        | 2026-10-22 | @MauriceVanVeen | Align error codes and filter validation to server |
+
 ## Context and Problem Statement
 
 Initially, JetStream Consumers could have only one Filter Subject.
@@ -26,12 +31,14 @@ To implement the feature without any breaking changes, a new field should be add
 1. The new field is:  
 `FilterSubjects []string json:"filter_subjects"`  
 
-2. Subjects can't overlap each other and have to fit the interest of the Stream.
-In case of overlapping subjects, error (10136) will be returned.
+2. Subjects can't overlap each other. They don't have to fit the interest of the Stream. Stream subjects can be
+updated over time, which should not result in later consumer updates being rejected. Streams can also use subject
+transforms, which would make such a check needlessly difficult.
+In case of overlapping subjects, error (10138) will be returned.
 
-3. Only one of `FilterSubject` or `FilterSubjects` can be passed. Passing both results in an error (10134)
+3. Only one of `FilterSubject` or `FilterSubjects` can be passed. Passing both results in an error (10136)
 
-4. Until future improvements, only old JS API for consumer creation can be used (the one without `FilterSubject`) in consumer create request. Using new API will yield an error (10135).
+4. Until future improvements, only old JS API for consumer creation can be used (the one without `FilterSubject`) in consumer create request. Using new API will yield an error (10137).
 
 5. Each client, to support this feature, needs to add a new field that Marshals into a json array of strings.
 
