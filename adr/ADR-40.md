@@ -162,12 +162,23 @@ Nothing in `INFO` tells a client whether the server supports this.
   lame duck mode, because clients replace their stored `INFO` on each one. The
   value cannot change during the lifetime of the server since trusted operators
   cannot be reloaded. It describes the connected server only, not the cluster.
+- **Same account only.** A refresh must resolve to the account the connection
+  is already bound to. When the new credentials resolve to a different account,
+  the server rejects the `CONNECT` with `-ERR 'Authorization Violation'` and
+  closes the connection. Changing accounts remains a reconnect. The client is
+  never placed in the global account during a refresh.
+- **Keep subscriptions.** The server keeps the existing subscriptions and
+  re-evaluates them against the new permissions, the same way it does on a
+  configuration reload or an account JWT update. A subscription the new
+  credentials no longer allow is removed and reported with
+  `-ERR 'Permissions Violation for Subscription to ...'`. Subscriptions that
+  remain allowed never leave the sublist, so queue group membership and
+  JetStream consumer interest are unaffected and no messages are missed.
 - **Acknowledge success.** After a successful subsequent `CONNECT` with
   `protocol` 1 or greater, the server sends an `INFO` with `connect_info: true`
   carrying the updated connection details, such as `is_system_account`.
 - **Apply only the new credentials.** Once the new `CONNECT` is accepted:
-  - Limits are evaluated against the account the new credentials belong to,
-    never against the temporary global account.
+  - Limits are evaluated against the new credentials.
   - The user expiration is replaced by the new one, and cleared when the new
     JWT has none. An account expiration still applies.
   - A message waiting on a stalled subscriber is not delivered to a
@@ -196,21 +207,17 @@ A reference implementation is in
 - Treat an `INFO` with `connect_info: true` followed by `PONG` as success, and
   `-ERR 'Authorization Violation'` as failure. On failure the server closes the
   connection and the normal [Reconnect process](#reconnect-process) applies.
-- After success, resend `SUB` for every active subscription, the same way as
-  after a reconnect, without firing disconnect or reconnect events. A
-  subscription rejected with `Permissions Violation` is terminated as described
-  in [Permissions Violation](#permissions-violation).
+- After success, keep every subscription as is and fire no disconnect or
+  reconnect events. A subscription the server removes with
+  `Permissions Violation` is terminated as described in
+  [Permissions Violation](#permissions-violation).
 - Optionally refresh automatically shortly before the user JWT expires, when the
   credentials source can provide a newer JWT.
 
 #### Open questions
 
-- Should the server keep subscriptions that the new credentials still allow,
-  instead of removing all of them? Removing them leaves a window between the
-  `CONNECT` and the resent `SUB`s where messages are missed.
-- Should a refresh be allowed to change the user or the account, or be limited
-  to the same user public key? Changing account affects JetStream consumers,
-  request inboxes, and any subject mappings the client relies on.
+- Should a refresh be allowed to change the user within the account, or be
+  limited to the same user public key?
 - Should the server issue a fresh nonce for each subsequent `CONNECT`, for
   example in the acknowledging `INFO`, so that a captured signature cannot be
   replayed?
@@ -224,8 +231,6 @@ A reference implementation is in
 - Should clients hold publishes between the `CONNECT` and its acknowledgement?
   Publishes sent before the `CONNECT` are authorized with the previous
   credentials and publishes after it with the new ones.
-- Should the server publish a `$SYS` disconnect event for the previous identity
-  when the account changes?
 - How should WebSocket connections that authenticate with a cookie behave on a
   subsequent `CONNECT`?
 
