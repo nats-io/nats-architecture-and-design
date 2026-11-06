@@ -134,8 +134,10 @@ paying that cost.
 #### Current server behavior
 
 The server already processes a `CONNECT` sent on an established client
-connection (MQTT rejects it). This is undocumented, so no client relies on it.
-On a subsequent `CONNECT` the server:
+connection, any number of times, with no limit per connection (MQTT rejects a
+second `CONNECT`). Since v2.14.0 (nats-server `2d4e3abc`) a subsequent
+`CONNECT` also clears the previous subscriptions. This is undocumented, so no
+client relies on it. On a subsequent `CONNECT` the server:
 
 - Removes every subscription of the connection before authenticating, whether
   or not the account changes, and places the client in the global account until
