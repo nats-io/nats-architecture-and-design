@@ -17,7 +17,7 @@ The server occasionally needs to evolve behaviors in ways that would be breaking
 versions.
 
 When a behavior change is desirable but breaking, there is no supported way for operators to opt in early, nor a way to
-roll it out gradually across a cluster/system. For example, ADR-15 defines two JetStream ACK subject formats: the
+roll it out gradually across a cluster/system. For example, ADR-37 defines two JetStream ACK subject formats: the
 original `$JS.ACK.<stream>.<consumer>.<...>` format and a newer format including the domain and account hash.
 Immediately switching to the newer format in a minor or patch release would be problematic for the following reasons:
 
@@ -61,7 +61,7 @@ However, unknown flags should be logged to inform the user that they can be remo
 
 | Flag           | Description                                                               | Type   | Introduced | Default Flipped | Removed |
 |:---------------|:--------------------------------------------------------------------------|:-------|:-----------|:----------------|:--------|
-| `js_ack_fc_v2` | Use domain/account-aware JetStream ACK and FC subjects (ADR-15 v2 format) | Opt-in | 2.14       | TBD             | TBD     |
+| `js_ack_fc_v2` | Use domain/account-aware JetStream ACK and FC subjects (ADR-37 v2 format) | Opt-in | 2.14       | TBD             | TBD     |
 
 Example:
 
