@@ -41,6 +41,12 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
 
+## 2.16
+
+|Index|Tags|Description|
+|-----|----|-----------|
+|[ADR-64](adr/ADR-64.md)|server, jetstream, 2.16|JetStream server cordoning|
+
 ## Client
 
 |Index|Tags|Description|
@@ -118,6 +124,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
+|[ADR-64](adr/ADR-64.md)|server, jetstream, 2.16|JetStream server cordoning|
 
 ## Kv
 
@@ -205,6 +212,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-61](adr/ADR-61.md)|server, jetstream, 2.15|Unsafe meta group quorum rescue for disaster recovery|
 |[ADR-62](adr/ADR-62.md)|server, jetstream, 2.15|JetStream desired state reconciliation|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
+|[ADR-64](adr/ADR-64.md)|server, jetstream, 2.16|JetStream server cordoning|
 
 ## Spec
 
