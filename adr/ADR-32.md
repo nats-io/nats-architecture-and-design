@@ -45,7 +45,7 @@ Service configuration relies on the following:
 - `statsHandler` - an optional function that returns unknown data that can be
   serialized as JSON. The handler will be provided the endpoint for which it is
   building a `EndpointStats`
-- `queueGroup` - overrides a default queue group.
+- `queueGroup` - overrides a default queue group. It is a `queue-name` as defined in [ADR-6](ADR-6.md).
 
 All services are created using a function called `addService()` where the above
 options are passed. The function returns an object/struct that represents the
@@ -309,7 +309,7 @@ Each service endpoint consists of the following fields:
 - `subject` - an optional NATS subject on which the endpoint will be registered.
   A subject is created by concatenating the subject provided by the user with
   group prefix (if applicable). If subject is not provided, use `name` instead.
-- `queueGroup` - optional override for a service and group `queueGroup`.
+- `queueGroup` - optional override for a service and group `queueGroup`. It is a `queue-name` as defined in [ADR-6](ADR-6.md).
 
 Endpoints can be created either on the service directly (`Service.addEndpoint()`)
 or on a group (`Group.addEndpoint`).
