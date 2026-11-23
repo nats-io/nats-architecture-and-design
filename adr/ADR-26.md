@@ -19,23 +19,25 @@ request mechanism. The mechanism will be used in both server configuration and
 operator mode servers.
 
 The server that the client connects to will send an authorization request that
-includes information about the client, the server, and any client options that
-were set. This will include traditional authentication parameters such as
-username and password, tokens, nkeys, or JWT credentials. It may also include
-TLS information such as fully signed client certificates if presented during the
-`CONNECT` call.
+includes information about the client, the server, and the client options that
+are relevant to authentication. This will include traditional authentication
+parameters such as username and password, tokens, nkeys, or JWT credentials.
+It may also include TLS information such as fully signed client certificates if
+presented during the `CONNECT` call.
 
 The authorization request will be sent to `$SYS.REQ.USER.AUTH` on the default
 `$G` account, or a named account in server configuration mode. In operator mode,
 it will utilize the public ID of the connected account. The request will be signed by the
 server's nkey and can be encrypted if configured.
 
-The response to the request will be a signed user JWT that must be signed by the
-declared issuer in server configuration mode or an account signing key in
-operator mode. If the request was encrypted, the response can also be encrypted
-for the issuing server. The request will contain a public user nkey that will be
-required to be the subject of the user JWT response. An authorization service
-can request that the client be bound to a different account.
+The response to the request will be a signed authorization response JWT, which
+carries either a user JWT or an error. It must be signed by the declared issuer
+in server configuration mode or an account signing key in operator mode. If the
+request was encrypted, the response can also be encrypted for the issuing
+server. The request will contain a public user nkey that will be required to be
+the subject of the authorization response and of the user JWT it carries. An
+authorization service can request that the client be bound to a different
+account.
 
 ### Details and Security
 
@@ -43,8 +45,8 @@ The main security concerns with the auth callout proposal are spoofing of the
 request or response. To address these concerns, the requests sent from the
 server will be signed by the server's nkey and can be encrypted. The requests
 will also contain a public user nkey that must be the subject of the response.
-The responses, which are user JWTs, will be signed by an account nkey and can be
-encrypted.
+The responses, which are authorization response JWTs carrying a user JWT, will
+be signed by an account nkey and can be encrypted.
 
 The server will be configured with an authorization callout issuer, which is a
 public account nkey, in server configuration mode. The response must be signed
@@ -89,9 +91,10 @@ global account and hence that account will not allow any users to send on
 `$SYS.REQ.USER.AUTH`.
 
 The request will be signed by the server and currently is an authorization
-request JWT claim. It includes all client information known by the server, all
-options that were passed to it from the client application, including any
-authentication, and optionally TLS information if client certificates are used.
+request JWT claim. It includes information about the client, the `CONNECT`
+options that are relevant to authentication (user, password, token, nkey,
+signed nonce and JWT, plus the client name, language, version and protocol),
+and TLS information if the connection uses TLS.
 It also sets the public user nkey for any response that the server would accept.
 This assists against replay attacks from the authorization service.
 
@@ -106,46 +109,37 @@ nc, err = nats.Connect(s.ClientURL(), nats.UserInfo("dlc", "zzz")).
 
 ```json
 {
-    "aud": "ABJHLOVMPA4CI6R5KLNGOB4GSLNIY7IOUPAJC4YFNDLQVIOBYQGUWVLA",
+    "aud": "nats-authorization-request",
     "exp": 1669850675,
     "jti": "WHCQ5EYR7NOB5LCJMRI2YYE3NMQE2G6JCKTU56DFFR6LFH7ZOSEQ",
     "iat": 1669850674,
     "iss": "NB5FCQYBGNXSL27AGZYUX5QZ2KKIFUKVDZCL5R7NIUS4562JT4WEWKQV",
-    "sub": "nats_user_auth_request",
+    "sub": "ABJHLOVMPA4CI6R5KLNGOB4GSLNIY7IOUPAJC4YFNDLQVIOBYQGUWVLA",
     "nats": {
+        "server_id": {
+            "name": "A",
+            "host": "127.0.0.1",
+            "id": "NB5FCQYBGNXSL27AGZYUX5QZ2KKIFUKVDZCL5R7NIUS4562JT4WEWKQV",
+            "version": "2.10.0"
+        },
+        "user_nkey": "UBO2MQV67TQTVIRV3XFTEZOACM4WLOCMCDMAWN5QVN5PI2N6JHTVDRON",
         "client_info": {
-        "client_type": "nats",
-        "host": "127.0.0.1",
-        "id": 7,
-        "kind": "Client",
-        "lang": "go",
-        "rtt": 199000,
-        "server": "A",
-        "start": "2022-11-30T23:24:34.239773Z",
-        "user": "dlc",
-        "ver": "1.19.0"
-    },
-    "client_opts": {
-        "echo": true,
-        "headers": true,
-        "lang": "go",
-        "name": "",
-        "no_responders": true,
-        "pass": "zzz",
-        "pedantic": false,
-        "protocol": 1,
-        "tls_required": false,
-        "user": "dlc",
-        "verbose": false,
-        "version": "1.19.0"
-    },
-    "user_nkey": "UBO2MQV67TQTVIRV3XFTEZOACM4WLOCMCDMAWN5QVN5PI2N6JHTVDRON",
-    "server_id": {
-        "host": "127.0.0.1",
-        "id": "NB5FCQYBGNXSL27AGZYUX5QZ2KKIFUKVDZCL5R7NIUS4562JT4WEWKQV",
-        "name": "A"
-    },
-    "version": 2
+            "host": "127.0.0.1",
+            "id": 7,
+            "user": "dlc",
+            "kind": "Client",
+            "type": "nats"
+        },
+        "connect_opts": {
+            "user": "dlc",
+            "pass": "zzz",
+            "lang": "go",
+            "version": "1.19.0",
+            "protocol": 1
+        },
+        "type": "authorization_request",
+        "version": 2
+    }
 }
 ```
 
@@ -159,11 +153,16 @@ error message if not authorized. The signing key must be the private key for the
 authorization callout issuer or the account in operator mode. Also the subject
 must be the public user nkey that was presented in the request and the audience
 (`aud`) needs to be the public key for the issuing server. In the above, the
-public account key can be seen as the audience for this request and the
-user_nkey represents the required subject for the signed user JWT response.
+public account key of the issuer can be seen as the subject (`sub`) of this
+request, the audience (`aud`) of every request is `nats-authorization-request`,
+and the user_nkey represents the required subject for the signed authorization
+response and the user JWT it carries. In operator mode the subject of the
+request is the public key of the account.
 
-The server will make sure that the response is well formed and was properly
-signed by a possessor of the private account key.
+The server will make sure that the response is well formed and, if it was not
+encrypted, that it was properly signed by a possessor of the private account
+key. The server does not check who signed an encrypted authorization response,
+but it still checks the user JWT that the response carries.
 
 ### Changing Accounts
 
@@ -207,7 +206,7 @@ Nkeys now support Xkeys, which are x25519 keys that are compatible with NaCl's
 Seal and Open functions. The nkeys library automatically handles all nonces to
 prevent misuse.
 
-These xkeys enable the encryption and signing of requests and responses to the
+These xkeys enable the encryption of requests and responses to the
 authorization service. In server configuration mode, the auth_callout can
 optionally include a public XKey.
 
@@ -215,7 +214,7 @@ optionally include a public XKey.
 auth_callout {
 	issuer: "ABJHLOVMPA4CI6R5KLNGOB4GSLNIY7IOUPAJC4YFNDLQVIOBYQGUWVLA"
 	auth_users: [ auth ]
-	xkey: “XAB3NANV3M6N7AHSQP2U5FRWKKUT7EG2ZXXABV4XVXYQRJGM4S2CZGHT”
+	xkey: "XAB3NANV3M6N7AHSQP2U5FRWKKUT7EG2ZXXABV4XVXYQRJGM4S2CZGHT"
 }
 ```
 
@@ -225,11 +224,7 @@ request will include the server's public xkey so that it is signed, and it will
 also be included in plaintext in the header of the request message under the key
 `Nats-Server-Xkey`.
 
-The authorization service can also use the server's public key to optionally
+The authorization service can also use the server's public xkey to optionally
 encrypt the response. In operator mode, the auth account claim will include the
-public xkey to be used for encrypting for that account in the `ServerID` portion
-of the `ExternalAuthorization` property for the account.
-
-In operator mode, the auth account claim will have the public xkey to be used
-for encrypting for that account in the `ServerID` portion of the
-`ExternalAuthorization` property for the account.
+public xkey to be used for encrypting for that account in the `xkey` field of
+the `ExternalAuthorization` property (`authorization` in the account JWT).
