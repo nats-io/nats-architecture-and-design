@@ -185,8 +185,9 @@ cluster-agreed API level, and have the servers enforce an agreed-upon API level.
 # Client use of the server version
 
 The `version` field in `INFO` is the release of the server a client is connected to. A JetStream request is answered
-by the meta-leader or by the server hosting the asset, which may run another release, as the Context and Problem
-Statement describes. The release version therefore does not describe the server that handles the request.
+by the meta-leader or by the server hosting the asset, and the connected server may be neither: it may be a leafnode
+on another release, or a server without JetStream, as the Context and Problem Statement describes. The release version
+therefore does not describe the server that handles the request.
 
 The requests a client sends, and how it handles their responses, must not depend on the release version a server
 reports, except as described in [Connection decisions](#connection-decisions). A client must not refuse a feature,
@@ -206,17 +207,15 @@ old the release. See [Consequences](#consequences) for what this rule changes on
 
 ## Checking the API level
 
-The rule does not cover the API level, which has a limit of its own. A client must not check the API level except
-where an ADR asks for it, as [ADR-8](ADR-8.md) and [ADR-48](ADR-48.md) do for limit markers, and then checks it in
-the way that ADR describes. ADR-8 states the same rule for that check: "clients should assert this using the
-`$JS.API.INFO` call or similar means (not connected server version)". When the reported level is lower than the
-feature needs, the client acts as that ADR describes, for example by refusing the feature.
+The rule does not cover the API level. The meta-leader answers `$JS.API.INFO`, and as JetStream clusters are
+expected to run a single release, the level it reports is taken to represent the cluster, which the release version of
+the connected server does not.
 
-The limit has the same reason as the rule: the level that `$JS.API.INFO` reports comes from one server, the
-meta-leader in a cluster, and a single server does not represent a cluster-wide supported API level, as
-[Required API level in API Calls](#required-api-level-in-api-calls) says. The `Nats-Required-Api-Level` header is not
-such a check, since the server that handles the request checks its own level, and sending it stays optional on any
-request.
+A client can use the API level that `$JS.API.INFO` reports to decide whether a feature is available, and does so
+where an ADR asks for it, in the way that ADR describes, as [ADR-8](ADR-8.md) and [ADR-48](ADR-48.md) do for limit
+markers. ADR-8 states the same rule for that check: "clients should assert this using the `$JS.API.INFO` call or
+similar means (not connected server version)". When the reported level is lower than the feature needs, the client
+may refuse the feature. Sending the `Nats-Required-Api-Level` header stays optional on any request.
 
 ## Connection decisions
 
