@@ -7,9 +7,10 @@
 | Status   | Proposed        |
 | Tags     | server          |
 
-| Revision | Date       | Author          | Info           |
-|----------|------------|-----------------|----------------|
-| 1        | 2026-02-20 | @MauriceVanVeen | Initial design |
+| Revision | Date       | Author          | Info                                                    |
+|----------|------------|-----------------|---------------------------------------------------------|
+| 1        | 2026-02-20 | @MauriceVanVeen | Initial design                                          |
+| 2        | 2026-11-24 | @MauriceVanVeen | Add flags introduced in 2.14 and 2.15; fill in versions |
 
 ## Context and Problem Statement
 
@@ -59,9 +60,12 @@ the hot-path (for example, with `js_ack_fc_v2`). For now, we'll only support ser
 Unknown flags are ignored by the server, allowing configuration files to be shared across server versions without error.
 However, unknown flags should be logged to inform the user that they can be removed as they've become ineffective.
 
-| Flag           | Description                                                               | Type   | Introduced | Default Flipped | Removed |
-|:---------------|:--------------------------------------------------------------------------|:-------|:-----------|:----------------|:--------|
-| `js_ack_fc_v2` | Use domain/account-aware JetStream ACK and FC subjects (ADR-15 v2 format) | Opt-in | 2.14       | TBD             | TBD     |
+| Flag                   | Description                                                               | Type   | Introduced | Default Flipped | Removed |
+|:-----------------------|:--------------------------------------------------------------------------|:-------|:-----------|:----------------|:--------|
+| `js_raft_delete_range` | Propose a range of deleted sequences as a single Raft entry               | Opt-in | 2.14       | 2.15            | 2.16    |
+| `js_ack_fc_v2`         | Use domain/account-aware JetStream ACK and FC subjects (ADR-15 v2 format) | Opt-in | 2.14       | 2.16            | TBD     |
+| `js_api_reply_v2`      | Use scoped `$JSC.R` reply subjects for internal JetStream API requests    | Opt-in | 2.15       | 2.16            | TBD     |
+| `js_snapshot_sources`  | Include stream sourcing state in replicated stream snapshots              | Opt-in | 2.15       | 2.16            | TBD     |
 
 Example:
 
