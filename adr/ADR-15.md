@@ -12,6 +12,7 @@
 | Revision | Date       | Description                  |
 |----------|------------|------------------------------|
 | final    | 2024/07/17 | Deprecate in favor of ADR-37 |
+| final.1  | 2026/11/24 | Move JSAck to ADR-37         |
 
 ## Context
 
@@ -137,51 +138,7 @@ When the consumer already exists, for push consumers, the NATS queue subscriptio
 
 ### JSAck 
 
-When the server sends a message to a subscriber, the message will have a reply-to value called the "ACK Reply Subject" aka JSAck.
-
-A message must contain a reply-to in the JSAck format to be considered a JetStream message. JSAck will always start with `$JS.ACK`
-
-The JSAck should be used without modification as the publish subject for the message that ACKs the JetStream message.
-
-This JSAck encodes some delivery information, such as stream and consumer name, stream sequence.
-It contains information allowing proper routing in context of multiple accounts and preventing an ACK for an account to ACK a message for the same stream and consumer names in another account.
-
-There are multiple formats of the JSAck. Both are a period (`.`) delimited strings.
-
-Version 1 (v1) contains 9 fields. It must be supported to ensure clients are backward compatible with previous versions of the server.
-
-For Version 2 (v2), Domain and Account Hash are inserted in positions directly after `$JS.ACK.`, bringing the number of tokens to 11.
-There may be additional tokens added in the future.
-
-You must ensure that your client can support the 9 token version (v1) and versions with 11 or more tokens (v2), as new tokens may be added to the end of the 11 token format.
-If the reply-to does not start with `$JS.ACK`, is not 9 tokens, is not 11 or more tokens, or the tokens are not of the correct data type, the client should raise an error.
-
-_Token Version 1_
-
-Version 1 (v1) is a 9 token format:
-```
-$JS.ACK.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
-```
-
-_Token Version 2_
-
-Version 2 (v2) is an 11 or more token format:
-
-```
-$JS.ACK.<domain>.<account hash>.<stream name>.<consumer name>.<num delivered>.<stream sequence>.<consumer sequence>.<timestamp>.<num pending>
-```
-
-When there is no domain, the server will still set the token to a special value of underscore `_` (the server will make sure that users can't pick this as a domain name.) 
-
-To the user, the client should expose domain values of `_` as either an empty/null string or as the `_`, documenting its meaning of "no domain".
-
-##### V2 Notes
-
-Having the domain always present simplifies the library code which does not have to bother with a variable number of tokens somewhere close to the beginning of the subject, and possibly doing some shifting to find out the location of the fields it cares about.
-
-Why not append those new tokens at the end? This is to simplify the export/import subject, ie `$JS.ACK.<domain>.<account>.>`. Otherwise, you would need to possibly have something like `$JS.ACK.*.*.*.*.*.*.*.<domain>.<account>.>`
-
-The account hash is not used by the client at this time, only used for routing, same for the last (12th) token.
+Moved to ADR-37, section "Ack subject".
 
 ### Ack Handling
 
