@@ -22,6 +22,21 @@ replaces it with one that starts right after the last message it accepted. The b
 the same in push mode, where the server sends messages to a deliver subject, and in pull
 mode, where the client asks for them with pull requests.
 
+An ordered consumer delivers messages in order, but despite its name it is meant for
+reading a stream quickly, not for job processing. It does not redeliver a message the
+application failed to process, and the server keeps no record of how far it has read, so
+an application that restarts has to start it again from a stream sequence it saved itself.
+Ordered job processing should use a durable consumer with `ack_policy: explicit` and
+`max_ack_pending: 1` instead.
+
+An ordered consumer also expects the application to handle each message quickly. In push
+mode flow control only slows the server down: the client answers a stalled heartbeat at
+once, so the server keeps sending while the application is busy. Messages can pile up in
+the client, and if it drops some once it reaches its pending limits, that is a gap that
+makes it recreate the consumer, which repeats for as long as the application stays slow.
+An application that does take time per message and still uses an ordered consumer should
+use pull mode, so the client only asks for messages it is ready to process.
+
 ## Design
 
 ### Configuration
