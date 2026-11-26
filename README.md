@@ -11,14 +11,14 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-41](adr/ADR-41.md)|observability, server, 2.11|NATS Message Path Tracing|
 |[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
-|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, client, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 
 ## 2.12
 
 |Index|Tags|Description|
 |-----|----|-----------|
-|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, client, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
 |[ADR-51](adr/ADR-51.md)|jetstream, 2.12, 2.14|JetStream Message Scheduler|
@@ -71,6 +71,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-40](adr/ADR-40.md)|client, server, spec|NATS Connection|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, client, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-47](adr/ADR-47.md)|client, spec, orbit|Request Many|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
@@ -105,7 +106,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-37](adr/ADR-37.md)|jetstream, client, spec|JetStream Simplification|
 |[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
-|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, client, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-48](adr/ADR-48.md)|jetstream, client, kv, refinement, 2.11|TTL Support for Key-Value Buckets (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-49](adr/ADR-49.md)|jetstream, spec, 2.12|JetStream Distributed Counter CRDT|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
@@ -195,7 +196,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-41](adr/ADR-41.md)|observability, server, 2.11|NATS Message Path Tracing|
 |[ADR-42](adr/ADR-42.md)|jetstream, server, 2.11|Pull Consumer Priority Groups|
 |[ADR-43](adr/ADR-43.md)|jetstream, client, server, 2.11|JetStream Per-Message TTL|
-|[ADR-44](adr/ADR-44.md)|jetstream, server, 2.11, 2.12|Versioning for JetStream Assets|
+|[ADR-44](adr/ADR-44.md)|jetstream, server, client, 2.11, 2.12|Versioning for JetStream Assets|
 |[ADR-50](adr/ADR-50.md)|jetstream, server, client, 2.12, 2.14|JetStream Batch Publishing|
 |[ADR-53](adr/ADR-53.md)|server|Feature flags|
 |[ADR-55](adr/ADR-55.md)|server, 2.12|Trusted Protocol Aware Proxies|

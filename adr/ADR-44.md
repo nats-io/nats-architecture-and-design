@@ -1,17 +1,18 @@
 # Versioning for JetStream Assets
 
-| Metadata | Value                         |
-|----------|-------------------------------|
-| Date     | 2024-07-22                    |
-| Author   | @ripienaar                    |
-| Status   | Implemented                   |
-| Tags     | jetstream, server, 2.11, 2.12 |
+| Metadata | Value                                 |
+|----------|---------------------------------------|
+| Date     | 2024-07-22                            |
+| Author   | @ripienaar                            |
+| Status   | Implemented                           |
+| Tags     | jetstream, server, client, 2.11, 2.12 |
 
 | Revision | Date       | Author          | Info                                    | Server Requirement |
 |----------|------------|-----------------|-----------------------------------------|--------------------|
 | 1        | 2024-07-22 | @ripienaar      | Initial design                          |                    |
 | 2        | 2025-08-05 | @MauriceVanVeen | Add required feature level in API calls | 2.12.0             |
 | 3        | 2025-08-11 | @ripienaar      | Mark as fully implemented               | 2.12.0             |
+| 4        | 2026-11-24 | @Jarema         | Add client rule for the server version  |                    |
 
 # Context and Problem Statement
 
@@ -180,3 +181,94 @@ This asserts whether the server that's responding supports this API level. The r
 
 A single server does not represent a cluster-wide supported API level. In the future we should keep track of a
 cluster-agreed API level, and have the servers enforce an agreed-upon API level.
+
+# Client use of the server version
+
+The `version` field in `INFO` is the release of the server a client is connected to. A JetStream request is answered
+by the meta-leader or by the server hosting the asset, and the connected server may be neither: it may be a leafnode
+on another release, or a server without JetStream, as the Context and Problem Statement describes. The release version
+therefore does not describe the server that handles the request.
+
+The requests a client sends, and how it handles their responses, must not depend on the release version a server
+reports, except as described in [Connection decisions](#connection-decisions). A client must not refuse a feature,
+choose an API subject, change or drop a configuration field, or fall back to an older API because of that version.
+For example, when `INFO` reports 2.9.0, a client still sends `filter_subjects` in a consumer configuration, and the
+server decides what to do with it.
+
+The rule applies to the release version wherever a client reads it: the `version` field in `INFO`, the `_nats.ver`
+metadata described in [Server-set metadata](#server-set-metadata), and the version that monitoring endpoints such as
+`varz` report.
+
+A client may read the version and expose it to users. It may check that the version in `INFO` is a valid semantic
+version, using the regular expression suggested at
+[semver.org](https://semver.org/#is-there-a-suggested-regular-expression-regex-to-check-a-semver-string),
+and may fail the attempt to connect to that server when it is not. A valid version must not fail the attempt, however
+old the release. See [Consequences](#consequences) for what this rule changes on older servers.
+
+## Checking the API level
+
+The rule does not cover the API level. The meta-leader answers `$JS.API.INFO`, and as JetStream clusters are
+expected to run a single release, the level it reports is taken to represent the cluster, which the release version of
+the connected server does not.
+
+A client can use the API level that `$JS.API.INFO` reports to decide whether a feature is available, and does so
+where an ADR asks for it, in the way that ADR describes, as [ADR-8](ADR-8.md) and [ADR-48](ADR-48.md) do for limit
+markers. ADR-8 states the same rule for that check: "clients should assert this using the `$JS.API.INFO` call or
+similar means (not connected server version)". When the reported level is lower than the feature needs, the client
+may refuse the feature. Sending the `Nats-Required-Api-Level` header stays optional on any request.
+
+## Connection decisions
+
+One exception applies. A decision about how to establish the connection to a server may read the release version in
+that server's own `INFO`. That version belongs to the server whose behavior is in question, which is not the case for
+a JetStream request. Whether to connect is not such a decision: only a version that is not a valid semantic version
+may fail the attempt to connect.
+
+## Version comparison helpers
+
+A client must deprecate its public functions that compare a server's release version with another version, or that
+report a feature as supported because of that version, no later than the release in which it stops making decisions
+from that version. It must remove them in its next release that may break its API. Accessors that return the version
+string stay.
+
+## Consequences
+
+Under this rule, an older server receives requests it may not support, where a client could otherwise have refused
+them, sent them to an older subject or changed them. The table lists the effects by server release, and the list
+below it gives the detail.
+
+| Server         | Effect                                                |
+|----------------|-------------------------------------------------------|
+| before 2.6.2   | Key-value buckets lack rollup and deny delete         |
+| before 2.7.2   | Updating an existing key fails                        |
+| before 2.9     | Creating a named consumer times out                   |
+| up to 2.10     | Unknown fields are dropped without an error           |
+| 2.11           | Unknown fields are dropped unless strict mode is on   |
+| before 2.11    | A batch direct get returns a single message           |
+| 2.12 and later | Unknown fields are rejected unless strict mode is off |
+| any release    | A request to an API subject it lacks times out        |
+
+ * Before 2.6.2, a key-value bucket is created without the rollup and deny delete settings that ADR-8 requires. These
+   servers do not know the fields and drop them, and the create succeeds.
+ * Before 2.7.2, a key-value bucket is created with discard policy `new`, as ADR-8 requires. These servers apply
+   `new` to the per-subject limit, so with the default history of 1 every update to an existing key fails with a 503
+   error, code 10077.
+ * Before 2.9, a client that creates a named consumer on `$JS.API.CONSUMER.CREATE.<stream>.<consumer>`, with the
+   stream name and the consumer name in place of the placeholders, gets no answer, and its request times out. The
+   timeout does not tell the user that the server is too old. A consumer created without a name on
+   `$JS.API.CONSUMER.CREATE.<stream>` is not affected.
+ * Up to 2.10, the server drops a field it does not know without an error. 2.11 does the same unless strict mode is
+   on, through the `strict` option in the `jetstream` configuration block, which is off by default in 2.11. For
+   example, before 2.10 a consumer's `filter_subjects` is dropped and the consumer receives every message in the
+   stream. On a work-queue stream the server rejects such a consumer when another consumer exists (code 10099), and
+   when it is the first, every later consumer is rejected (codes 10099 and 10100).
+ * Before 2.11, a batch direct get returns a single message without the `Nats-Num-Pending` header, and a batch
+   request that sets none of `seq`, `last_by_subj` and `next_by_subj` gets a 408 status instead. A client that
+   detects old servers by that header, as [ADR-31](ADR-31.md) describes, is not affected; a client that waits for the
+   end-of-batch marker waits until its timeout.
+ * From 2.12, strict mode is on by default, and the server rejects a field it does not know in a JetStream API
+   request, such as a stream or consumer configuration, with a 400 error, code 10025, so the request fails instead of
+   losing the field. A server with strict mode turned off drops the field as older servers do. Strict mode does not
+   apply to direct get and pull requests, which drop such a field.
+ * On any release, a request to an API subject the server does not have, such as the consumer reset API of
+   [ADR-60](ADR-60.md) on a server before 2.14, gets no answer and times out.
