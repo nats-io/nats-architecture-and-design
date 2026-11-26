@@ -7,6 +7,11 @@
 |Status  |Partially Implemented|
 |Tags    |server, client|
 
+| Revision | Date       | Author          | Info                                    |
+|----------|------------|-----------------|-----------------------------------------|
+| 1        | 2020-07-20 | @aricart        | Initial design                          |
+| 2        | 2026-11-18 | @MauriceVanVeen | Describe how other servers are notified |
+
 ## Context
 
 This document describes the _Lame Duck Mode_ server notification. When a server enters lame duck mode, it removes itself from being advertised in the cluster, and slowly starts evicting connected clients as per  [`lame_duck_duration`](https://docs.nats.io/nats-server/configuration#runtime-configuration). This document describes how this information is notified
@@ -16,6 +21,17 @@ to the client, in order to allow clients to cooperate and initiate an orderly mi
 ## Decision
 
 The server notififies that it has entered _lame duck mode_ by sending an [`INFO`](https://docs.nats.io/nats-protocol/nats-protocol#info) update. If the `ldm` property is set to true, the server has entered _lame_duck_mode_ and the client should initiate an orderly self-disconnect or close. Note the `ldm` property is only available on servers that implement the notification feature.
+
+### Notifying other servers
+
+The server also sends a `$SYS.SERVER.<id>.LAMEDUCK` event in the system account. Other
+servers handle it the same as a `$SYS.SERVER.<id>.SHUTDOWN` event, and mark the server
+as offline right away. For example, JetStream then treats it as offline when placing new
+streams and consumers, and when choosing a leader.
+
+While in lame duck mode, the server no longer broadcasts its `$SYS.SERVER.<id>.STATSZ`,
+as other servers would mark it online again when receiving it. It still responds to
+`STATSZ` requests, and keeps sending other events and replies until it shuts down.
 
 ## Consequences
 
