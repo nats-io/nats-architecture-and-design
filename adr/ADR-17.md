@@ -43,31 +43,36 @@ use pull mode, so the client only asks for messages it is ready to process.
 
 The user can provide:
 
-- `filter_subjects`. A single filter is sent as `filter_subject`. An empty entry in the
-  list is an error, even as its only entry; where the client takes a single filter instead
-  of a list, an empty one counts as not provided.
-- `deliver_policy`. `by_start_sequence` requires `opt_start_seq` and `by_start_time`
-  requires `opt_start_time`; either start option with another policy, or without one, is
-  an error. With `last_per_subject` and no filter, the client sends the filter `>`.
+- `filter_subjects`. A list of one entry is sent as `filter_subject`, and a list of more
+  entries as `filter_subjects` as given, so the server rejects an empty entry in it. A
+  list without entries counts as not provided, and so does an empty filter where the
+  client takes a single filter instead of a list.
+- `deliver_policy`, `opt_start_seq` and `opt_start_time`, sent as given. With
+  `last_per_subject` and no filter, the client sends the filter `>`.
 - `replay_policy`, `headers_only` and `metadata`.
-- `inactive_threshold`, default 5 minutes.
+- `inactive_threshold`. In pull mode the default is 5 minutes: no pull request is
+  outstanding between reads, and without it the server removes the consumer after its own
+  short default for ephemeral consumers. In push mode there is no default, since the
+  subscription on the deliver subject keeps the consumer active while the client is
+  connected.
 - `idle_heartbeat`, default 5 seconds, or for a continuous read the default of ADR-37's
   consume; set on the consumer in push mode and on each pull request in pull mode.
 - A name prefix, default a random unique value such as a NUID. The client names the
   consumers it creates `<prefix>_<n>`, where `n` starts at 1 and increments by 1 for each
-  recreation. A prefix that is not valid in a consumer name as ADR-6 defines it, or that
-  is longer than 234 bytes so that `<prefix>_<n>` could exceed 255 bytes, is an error.
-- The maximum recreation attempts, default no limit.
+  recreation.
+- The maximum recreation attempts, default no limit; a negative value is an error the
+  client detects itself, since this setting never reaches the server.
 
 The client sets `ack_policy: none`, `max_deliver: 1`, `mem_storage: true` and
 `num_replicas: 1`, and in push mode `flow_control: true` and the deliver subject. The user
 may provide one of these settings only with the value the client sets; another value, a
-deliver subject, or `flow_control` in pull mode is an error. Any other setting, a negative
-value, binding to an existing consumer and joining a queue group are an error. A zero,
-empty or `false` value of any setting or read option counts as not provided, and so does
-an enumerated setting equal to its default (`deliver_policy: all`,
-`replay_policy: instant`, `ack_policy: none`). The client detects every error above
-itself, before it sends any consumer create request.
+deliver subject, `flow_control` in pull mode, a consumer name or durable name, binding to
+an existing consumer and joining a queue group are an error, which the client detects
+itself before it sends any consumer create request. Any other setting the client accepts
+is sent to the server as given, and the server decides whether it is valid. A zero, empty
+or `false` value of any setting or read option counts as not provided, and so does an
+enumerated setting equal to its default (`deliver_policy: all`, `replay_policy: instant`,
+`ack_policy: none`).
 
 The client creates the first consumer when the ordered consumer is created, and creates
 every consumer with a create-or-update request. If creating the first one fails, creating
@@ -79,10 +84,10 @@ A client offers some or all of ADR-37's read methods on a pull ordered consumer:
 Next and Consume. Consume is the continuous read below, and Next is a Fetch with a batch
 of 1, so every rule about fetches holds for it.
 
-A pull ordered consumer is read either continuously or by fetches, and the first read
-decides which, even when that first read is an error. After a continuous read, another
-continuous read or a fetch is an error, even once the first read stopped. After a fetch, a
-continuous read is an error. Starting a fetch while another runs is an error.
+A pull ordered consumer is read either continuously or by fetches; the first read decides
+which, even when it is an error. A read of the other kind, or a second continuous read, is
+an error, also once the continuous read stopped. Starting a fetch while another runs is an
+error.
 
 A fetch takes a batch, a byte limit, an `expires` and no-wait as read options; a
 continuous read takes a batch, a byte limit and an `expires`, and sends its pull requests
@@ -90,23 +95,23 @@ as ADR-37's consume does. `idle_heartbeat` is set on the ordered consumer; a cli
 also take it per read, and then that is the provided value. Every pull request carries an
 `expires`, by default 30 seconds, and the `idle_heartbeat`, except a no-wait fetch's,
 which carries `no_wait: true` instead of either. When no `idle_heartbeat` is provided and
-a fetch's `expires` is under 10 seconds, the fetch sends no heartbeat. A read whose pull
-request would carry a provided `idle_heartbeat` over half its `expires`, a read option
-with a negative value, a no-wait fetch with an `expires`, and a fetch with neither a batch
-nor a byte limit are an error before the client sends the request.
+a fetch's `expires` is under 10 seconds, the fetch sends no heartbeat. A read option with
+a negative value, a no-wait fetch with an `expires`, and a fetch with neither a batch nor
+a byte limit are an error before the client sends the request; the client sends the other
+read options as given.
 
 Fetches do not create their own consumer; each fetch uses the current consumer. A fetch
 sends its batch and byte limit as the pull request's `batch` and `max_bytes`, and with
 only a byte limit it sends a batch of 1,000,000. It ends when its batch or byte limit is
 met, it expires, a gap ends it, the recreation attempts are used up, or the server ends
 its pull request with a status that is not a reason to recreate, such as a `409` status
-with description `Message Size Exceeds MaxBytes`; any other reason to recreate continues
-it with the new consumer. A fetch expires when the server ends its pull request with a
+with description `Message Size Exceeds MaxBytes`; a status ADR-37 lists as an error is
+reported to the application. A fetch expires when the server ends its pull request with a
 `408` status or, if none arrives, on the client's own timer shortly after its
 `expires`. Every stream message received for a pull request counts toward its limits, also
 one the client dropped or reported as an error, and a limit is met once the count or the
-bytes reach it. A message counts toward a byte limit with its subject, reply subject,
-headers and payload, as ADR-37 calculates message size.
+bytes reach it. A message counts toward a byte limit with its size as ADR-37 calculates
+it.
 
 ### Sequence tracking
 
@@ -128,19 +133,20 @@ starts the heartbeat interval again, changes no sequence and causes no recreatio
 
 The client handles heartbeats and flow control messages itself and never hands them to the
 application. Each consumer gets its own deliver subject, or in pull mode its own inbox,
-and every message belongs to the consumer whose subject it arrives on; one that arrives on
-an old consumer's subject is dropped, whatever its reply subject.
+and every message belongs to the consumer whose subject it arrives on. A message that
+arrives on an old consumer's subject is dropped, whatever its reply subject, and does not
+start the heartbeat interval again.
 
 Heartbeats are missed when neither a message nor a heartbeat arrives within twice the
 `idle_heartbeat` interval. The interval starts when a consumer is created, when a pull
 request is sent and when the client reconnects, and starts again whenever any message for
 the current consumer arrives: a stream message, a heartbeat, a flow control message or a
-status message. A message that arrives on an old consumer's subject does not count. The
-client does not check for missed heartbeats while it is not connected, while it recreates
-the consumer, for a pull request that carries no `idle_heartbeat`, or in pull mode while
-no pull request is outstanding. A pull request is outstanding from when it is sent until
-its batch or byte limit is met, or the server ends it with any status other than a `100`
-idle heartbeat, such as the `408` status that marks its expiry.
+status message. The client does not check for missed heartbeats while it is not connected,
+while it recreates the consumer, for a pull request that carries no positive
+`idle_heartbeat`, or in pull mode while no pull request is outstanding. A pull request is
+outstanding from when it is sent until its batch or byte limit is met, or the server ends
+it with any status other than a `100` idle heartbeat, such as the `408` status that marks
+its expiry.
 
 In push mode and for a continuous read, the client hands messages to the application in
 one or more of three ways, and every rule holds for each way it offers: a callback called
@@ -192,39 +198,32 @@ a reply, and a later reply is ignored. The client waits 1 second before the firs
 doubling the wait up to 10 seconds; the wait starts again at 1 second for each recreation.
 The maximum recreation attempts counts every attempt of one recreation, the first
 included. When they are used up, the client reports the error to the application and stops
-the read; a fetch first returns the messages accepted so far, then the error, and only
-that fetch ends: the next fetch starts the recreation again, with its attempts and waits
-counted afresh. Besides that, the read reports nothing about recovery. Whether the client
-also tells the application about recovery by other means, such as an error callback, is up
-to the client.
+the read, except that a fetch returns the messages accepted so far, then the error, and
+only that fetch ends. Besides that, the read reports nothing about recovery. Whether the
+client also tells the application about recovery by other means, such as an error
+callback, is up to the client.
 
 While the client is not connected, it neither starts nor continues a recreation; once it
 reconnects, it acts on a reason to recreate that arrived before the disconnect and resumes
-a recreation under way. An attempt still waiting for its reply when the connection drops
-does not count; once the client reconnects it sends the next attempt right away, in place
-of the wait it was in or of the attempt it lost, and the waits after it go on with the
-next one in the sequence.
+a recreation under way. How it times and counts attempts around a disconnect is up to the
+client.
 
-A gap during a fetch ends that fetch with the messages accepted before the gap; the old
-consumer stays the current one until the next fetch starts and recreates the consumer
-before its pull request. For any other reason to recreate, the fetch continues with the
-new consumer, with what is left of its batch, byte limit and expiry. A fetch's expiry runs
-from its start and keeps running while it waits for a new consumer, also while the client
-is not connected. A fetch that expires before the new consumer is created, or has less
-than 1 second left once it is, ends with the messages accepted so far. A new consumer
-created by then is the current one, and the next fetch uses it; otherwise the recreation
-stops with the fetch, a create reply that arrives after that is ignored, and the next
-fetch starts the recreation again with the same name before its pull request, with its
-attempts and waits counted afresh. A next fetch that creates the consumer before its pull
-request, after a gap or to restart a stopped recreation, sends its whole batch and byte
-limit and what is left of its expiry; a restarted recreation keeps its name.
+A gap ends a fetch with the messages accepted before it; the old consumer stays the
+current one until the next fetch starts and recreates the consumer before its pull
+request. For any other reason to recreate, the fetch continues with the new consumer, with
+what is left of its batch, byte limit and expiry. A fetch's expiry runs from its start and
+keeps running while it waits for a new consumer, also while the client is not connected. A
+fetch that expires before the new consumer is created, or has less than 1 second left once
+it is, ends with the messages accepted so far. When a fetch ends before the new consumer
+is created, the recreation stops with it and a create reply after that is ignored; the
+next fetch starts it again with the same name before its pull request, with its attempts
+and waits counted afresh. A fetch that creates the consumer before its pull request, after
+a gap or to restart a recreation, sends its whole batch and byte limit and what is left of
+its expiry.
 
-The client may let the application read the current consumer's info, which it asks the
-server for. Reading it is an error from when the client decides to recreate the consumer
-until the new one is created, and once the read has stopped, whether because the
-recreation attempts were used up or because the application stopped it. After a gap during
-a fetch, the client decides to recreate the consumer only when the next fetch starts, so
-until then reading it returns the old consumer's info.
+The client may let the application read the current consumer's info. Reading it is an
+error from when the client decides to recreate the consumer until the new one is created,
+and once the read has stopped; between fetches the read has not stopped.
 
 ## Consequences
 
@@ -238,4 +237,3 @@ until then reading it returns the old consumer's info.
   between can be skipped.
 - After a recreation, a `deliver_policy` of `last_per_subject` delivers every later
   message, not only the last one per subject.
-- The consumer's name changes with every recreation.
