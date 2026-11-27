@@ -80,6 +80,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-58](adr/ADR-58.md)|jetstream, client, kv|Key-Value Store Roadmap and future considerations (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-60](adr/ADR-60.md)|jetstream, client, server, 2.14, refinement|JetStream reliable stream sourcing/mirroring on WQ/Interest streams (updating [ADR-59](adr/ADR-59.md))|
 |[ADR-63](adr/ADR-63.md)|jetstream, server, client, 2.15|JetStream Stream Backup and Restore V2|
+|[ADR-64](adr/ADR-64.md)|client, configuration, spec, interoperability|NATS Client Connection Environment Variables|
 
 ## Jetstream
 
@@ -221,6 +222,7 @@ This repository captures Architecture, Design Specifications and Feature Guidanc
 |[ADR-54](adr/ADR-54.md)|jetstream, client, spec, orbit, kv, refinement|KV Codecs (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-57](adr/ADR-57.md)|jetstream, client, spec, kv, refinement|KV Subject Transforms (updating [ADR-8](adr/ADR-8.md))|
 |[ADR-59](adr/ADR-59.md)|server, jetstream, spec|JetStream Stream Sourcing and Mirroring|
+|[ADR-64](adr/ADR-64.md)|client, configuration, spec, interoperability|NATS Client Connection Environment Variables|
 
 ## Deprecated
 
